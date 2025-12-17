@@ -16,7 +16,7 @@ from pathlib import Path
 
 # Configuration
 APP_NAME = "ShutterstockAI-MetadataGenerator"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 MAIN_SCRIPT = "shutterstock_analyzer_unified.py"
 ICON_FILE = Path("ico/icone.ico")
 
