@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+eggs/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Logs
+*.log
+shutterstock_analyzer.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Application specific
+.processing_state.json
+nul
+
+# Test images and data (don't commit user photos)
+Shutterstock Image/
+Shutterstock  Image/
+Valid/
+Invalid/
+Shutterstock/
+Shutterstock_*/
+photos_unmatched/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Claude Code
+.claude/
