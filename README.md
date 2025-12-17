@@ -2,10 +2,11 @@
 
 > **Automate your stock photography workflow with AI-powered image analysis and metadata generation for Shutterstock**
 
-[![Release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/YOUR_USERNAME/shutterstock-ai-metadata-generator/releases)
+[![Release](https://img.shields.io/badge/release-v1.0.1-blue.svg)](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Ollama](https://img.shields.io/badge/AI-Ollama%20Vision-orange.svg)](https://ollama.ai)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Me-ff5e5b?logo=ko-fi)](https://ko-fi.com/kiriiaq)
 
 ---
 
@@ -66,15 +67,15 @@ Stock photographers spend **hours manually writing descriptions, keywords, and c
 ### Installation
 
 #### Option 1: Download Executable (Recommended)
-1. Download from [Releases](https://github.com/YOUR_USERNAME/shutterstock-ai-metadata-generator/releases):
-   - `ShutterstockAI-MetadataGenerator-v1.0.0.exe` (Release)
-   - `ShutterstockAI-MetadataGenerator-v1.0.0_debug.exe` (Debug with console)
+1. Download from [Releases](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases):
+   - `ShutterstockAI-MetadataGenerator-v1.0.1.exe` (Release)
+   - `ShutterstockAI-MetadataGenerator-v1.0.1_debug.exe` (Debug with console)
 2. Double-click to run - no installation needed!
 
 #### Option 2: Run from Source
 ```bash
-git clone https://github.com/YOUR_USERNAME/shutterstock-ai-metadata-generator.git
-cd shutterstock-ai-metadata-generator
+git clone https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator.git
+cd Shutterstock-AI-Metadata-Generator
 pip install -r requirements.txt
 python shutterstock_analyzer_unified.py
 ```
@@ -185,4 +186,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**If this tool saves you time, please star the repository!**
+## Support
+
+If this tool saves you time, consider supporting the project:
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kiriiaq)
+
+**Star this repository if it helps your stock photography workflow!**
