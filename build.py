@@ -18,6 +18,7 @@ from pathlib import Path
 APP_NAME = "ShutterstockAI-MetadataGenerator"
 VERSION = "1.0.0"
 MAIN_SCRIPT = "shutterstock_analyzer_unified.py"
+ICON_FILE = Path("ico/icone.ico")
 
 # Dossiers
 BUILD_DIR = Path("build")
@@ -68,6 +69,13 @@ def build_executable(debug: bool = False):
         cmd.append("--console")  # Affiche la console pour debug
     else:
         cmd.append("--windowed")  # Pas de console
+
+    # Icône de l'application
+    if ICON_FILE.exists():
+        cmd.extend(["--icon", str(ICON_FILE)])
+        print(f"Icône: {ICON_FILE}")
+    else:
+        print(f"Attention: Icône non trouvée ({ICON_FILE})")
 
     # Imports cachés nécessaires
     hidden_imports = [

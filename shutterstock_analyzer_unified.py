@@ -3855,13 +3855,19 @@ def create_gui():
                     self.after(0, self.upload_finished)
                     return
 
-                # Collecter les fichiers
+                # Collecter les fichiers (dossier principal + sous-dossiers)
                 path = Path(upload_dir)
                 files = []
+                # Parcourir récursivement tous les sous-dossiers
                 for ext in Utils.get_all_extensions():
                     files.extend(path.glob(f"*{ext}"))
                     files.extend(path.glob(f"*{ext.upper()}"))
+                    files.extend(path.glob(f"**/*{ext}"))  # Sous-dossiers
+                    files.extend(path.glob(f"**/*{ext.upper()}"))
                 files.extend(path.glob("*.csv"))
+                files.extend(path.glob("**/*.csv"))  # CSV dans sous-dossiers
+                # Dédupliquer (glob peut retourner des doublons)
+                files = list(set(files))
 
                 if not files:
                     self.after(0, lambda: self.upload_status.configure(text="Aucun fichier"))
