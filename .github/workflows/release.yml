@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      - name: Build Release executable
+        shell: cmd
+        run: |
+          pyinstaller --onefile --noconsole ^
+            --name "shutterstock-ai-%VERSION%-windows-release" ^
+            --icon "ico/icone.ico" ^
+            --add-data "ico;ico" ^
+            --hidden-import customtkinter ^
+            --hidden-import PIL._tkinter_finder ^
+            --hidden-import ollama ^
+            --hidden-import pydantic ^
+            --hidden-import piexif ^
+            --hidden-import CTkToolTip ^
+            --exclude-module matplotlib ^
+            --exclude-module scipy ^
+            --exclude-module jupyter ^
+            --exclude-module pytest ^
+            shutterstock_analyzer_unified.py
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+      - name: Build Debug executable
+        shell: cmd
+        run: |
+          pyinstaller --onefile --console --debug=all ^
+            --name "shutterstock-ai-%VERSION%-windows-debug" ^
+            --icon "ico/icone.ico" ^
+            --add-data "ico;ico" ^
+            --hidden-import customtkinter ^
+            --hidden-import PIL._tkinter_finder ^
+            --hidden-import ollama ^
+            --hidden-import pydantic ^
+            --hidden-import piexif ^
+            --hidden-import CTkToolTip ^
+            --exclude-module matplotlib ^
+            --exclude-module scipy ^
+            --exclude-module jupyter ^
+            --exclude-module pytest ^
+            shutterstock_analyzer_unified.py
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          SHUTTERSTOCK_DEBUG: "1"
+      - name: Generate checksums
+        shell: bash
+        run: cd dist && sha256sum *.exe > checksums-sha256.txt
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shutterstock-ai-${{ steps.version.outputs.VERSION }}-windows
+          path: |
+            dist/*.exe
+            dist/checksums-sha256.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Shutterstock AI Metadata Generator ${{ github.ref_name }}"
+          body: |
+            ## Shutterstock AI Metadata Generator ${{ github.ref_name }}
+
+            ### Downloads
+            - **Release**: `shutterstock-ai-${{ steps.version.outputs.VERSION }}-windows-release.exe`
+            - **Debug**: `shutterstock-ai-${{ steps.version.outputs.VERSION }}-windows-debug.exe`
+
+            Download the Release `.exe` and run it. No installation required.
+
+            ---
+            [Changelog](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)
+          files: |
+            dist/*.exe
+            dist/checksums-sha256.txt
