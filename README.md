@@ -186,6 +186,29 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
+## Build Executables
+
+```bash
+pip install -e ".[dev]"
+
+# Release (no console window)
+pyinstaller --onefile --noconsole --name "shutterstock-ai-release" --icon "ico/icone.ico" --add-data "ico;ico" shutterstock_analyzer_unified.py
+
+# Debug (with console)
+set SHUTTERSTOCK_DEBUG=1
+pyinstaller --onefile --console --debug=all --name "shutterstock-ai-debug" --icon "ico/icone.ico" --add-data "ico;ico" shutterstock_analyzer_unified.py
+```
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+ruff check .
+pytest --tb=short -q
+```
+
+---
+
 ## Support
 
 If this tool saves you time, consider supporting the project:

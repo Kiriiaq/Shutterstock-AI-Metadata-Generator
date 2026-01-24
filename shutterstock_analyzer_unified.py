@@ -21,6 +21,11 @@ import json
 import csv
 import logging
 import threading
+
+# Debug mode via environment variable
+if os.environ.get("SHUTTERSTOCK_DEBUG") == "1":
+    logging.basicConfig(level=logging.DEBUG)
+    logging.debug("Shutterstock AI Metadata Generator DEBUG mode enabled")
 import unicodedata
 import shutil
 import ftplib
