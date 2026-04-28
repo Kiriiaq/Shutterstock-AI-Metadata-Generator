@@ -4,32 +4,26 @@ Provides a unified API for all v2.0 functionality
 """
 
 import logging
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable, Tuple
-import hashlib
 import time
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .engines.metadata_reader import MetadataReader, ExifToolNotFoundError
-from .engines.metadata_writer import MetadataWriter
 from .engines.iptc_engine import IPTCEngine, IPTCTemplate
+from .engines.metadata_reader import ExifToolNotFoundError, MetadataReader
+from .engines.metadata_writer import MetadataWriter
 from .models.metadata_models import (
     ImageMetadata,
     IPTCFields,
     ShutterstockMetadata,
-    ProcessingJob,
-    ProcessingResult,
-    ValidationResult
+    ValidationResult,
 )
-from .storage.database import Database, ActionType, AuditLog
+from .storage.database import ActionType, AuditLog, Database
 from .workers.worker_pool import (
-    WorkerPool,
-    ProcessingPipeline,
-    Task,
-    TaskPriority,
     BatchResult,
+    Task,
+    WorkerPool,
     collect_image_files,
-    compute_file_hash
+    compute_file_hash,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,12 +35,7 @@ class ShutterstockAIv2:
     Provides unified API for all v2.0 functionality
     """
 
-    def __init__(
-        self,
-        db_path: Optional[Path] = None,
-        exiftool_path: Optional[str] = None,
-        max_workers: int = 4
-    ):
+    def __init__(self, db_path: Optional[Path] = None, exiftool_path: Optional[str] = None, max_workers: int = 4):
         """
         Initialize Shutterstock AI v2.0
 
@@ -63,12 +52,10 @@ class ShutterstockAIv2:
 
         # Initialize engines
         try:
-            self.metadata_reader = MetadataReader(
-                exiftool_path or self._settings.get("exiftool_path")
-            )
+            self.metadata_reader = MetadataReader(exiftool_path or self._settings.get("exiftool_path"))
             self.metadata_writer = MetadataWriter(
                 exiftool_path or self._settings.get("exiftool_path"),
-                create_backup=self._settings.get("create_backup", True)
+                create_backup=self._settings.get("create_backup", True),
             )
             self._exiftool_available = True
         except ExifToolNotFoundError:
@@ -144,7 +131,7 @@ class ShutterstockAIv2:
                 file_path=str(file_path),
                 success=True,
                 duration_ms=duration_ms,
-                details={"sources": [s.value for s in metadata.metadata_sources]}
+                details={"sources": [s.value for s in metadata.metadata_sources]},
             )
 
             return metadata
@@ -156,7 +143,7 @@ class ShutterstockAIv2:
                 file_path=str(file_path),
                 success=False,
                 error_message=str(e),
-                duration_ms=duration_ms
+                duration_ms=duration_ms,
             )
             logger.error(f"Failed to read metadata from {file_path}: {e}")
             return None
@@ -166,7 +153,7 @@ class ShutterstockAIv2:
         file_path: Path,
         iptc: Optional[IPTCFields] = None,
         shutterstock: Optional[ShutterstockMetadata] = None,
-        xmp: Optional[Dict[str, Any]] = None
+        xmp: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Write metadata to an image file
@@ -202,7 +189,7 @@ class ShutterstockAIv2:
                     file_hash=file_hash,
                     metadata_type="iptc",
                     metadata=iptc.to_dict(),
-                    source="user_input"
+                    source="user_input",
                 )
 
             if xmp:
@@ -215,7 +202,7 @@ class ShutterstockAIv2:
                 file_path=str(file_path),
                 file_hash=file_hash,
                 success=True,
-                duration_ms=duration_ms
+                duration_ms=duration_ms,
             )
 
             return True
@@ -227,16 +214,12 @@ class ShutterstockAIv2:
                 file_path=str(file_path),
                 success=False,
                 error_message=str(e),
-                duration_ms=duration_ms
+                duration_ms=duration_ms,
             )
             logger.error(f"Failed to write metadata to {file_path}: {e}")
             return False
 
-    def write_shutterstock_metadata(
-        self,
-        file_path: Path,
-        metadata: ShutterstockMetadata
-    ) -> bool:
+    def write_shutterstock_metadata(self, file_path: Path, metadata: ShutterstockMetadata) -> bool:
         """
         Write Shutterstock-formatted metadata to image
 
@@ -257,10 +240,7 @@ class ShutterstockAIv2:
             write_xmp = self._settings.get("write_xmp", True)
 
             self.metadata_writer.write_shutterstock_metadata(
-                file_path,
-                metadata,
-                write_iptc=write_iptc,
-                write_xmp=write_xmp
+                file_path, metadata, write_iptc=write_iptc, write_xmp=write_xmp
             )
 
             # Save to history
@@ -270,7 +250,7 @@ class ShutterstockAIv2:
                 file_hash=file_hash,
                 metadata_type="shutterstock",
                 metadata=metadata.to_csv_row(),
-                source="ai_generated"
+                source="ai_generated",
             )
 
             duration_ms = int((time.time() - start_time) * 1000)
@@ -279,7 +259,7 @@ class ShutterstockAIv2:
                 file_path=str(file_path),
                 file_hash=file_hash,
                 success=True,
-                duration_ms=duration_ms
+                duration_ms=duration_ms,
             )
 
             return True
@@ -291,11 +271,7 @@ class ShutterstockAIv2:
     # ==================== Batch Processing ====================
 
     def process_folder(
-        self,
-        folder_path: Path,
-        operations: List[str],
-        recursive: bool = True,
-        batch_name: Optional[str] = None
+        self, folder_path: Path, operations: List[str], recursive: bool = True, batch_name: Optional[str] = None
     ) -> BatchResult:
         """
         Process all images in a folder
@@ -317,13 +293,11 @@ class ShutterstockAIv2:
 
         if not files:
             logger.warning(f"No image files found in {folder_path}")
-            return BatchResult(
-                batch_id="empty",
-                total_tasks=0
-            )
+            return BatchResult(batch_id="empty", total_tasks=0)
 
         # Create batch in database
         import uuid
+
         batch_id = str(uuid.uuid4())
 
         self.database.create_batch(
@@ -331,13 +305,13 @@ class ShutterstockAIv2:
             source_folder=str(folder_path),
             total_files=len(files),
             name=batch_name,
-            options={"operations": operations, "recursive": recursive}
+            options={"operations": operations, "recursive": recursive},
         )
 
         self.database.log_action(
             ActionType.BATCH_START,
             details={"batch_id": batch_id, "files": len(files), "operations": operations},
-            batch_id=batch_id
+            batch_id=batch_id,
         )
 
         self._update_status(f"Processing {len(files)} files...")
@@ -352,7 +326,7 @@ class ShutterstockAIv2:
                     task_id=f"{batch_id}_{operation}_{file_path.name}",
                     task_type=operation,
                     file_path=file_path,
-                    params={"batch_id": batch_id}
+                    params={"batch_id": batch_id},
                 )
                 self.worker_pool.submit_task(task)
 
@@ -362,10 +336,7 @@ class ShutterstockAIv2:
 
         # Update batch status
         self.database.update_batch_progress(
-            batch_id,
-            processed=result.completed_tasks,
-            failed=result.failed_tasks,
-            status="completed"
+            batch_id, processed=result.completed_tasks, failed=result.failed_tasks, status="completed"
         )
 
         self.database.log_action(
@@ -374,16 +345,15 @@ class ShutterstockAIv2:
                 "batch_id": batch_id,
                 "completed": result.completed_tasks,
                 "failed": result.failed_tasks,
-                "duration": result.duration_seconds
+                "duration": result.duration_seconds,
             },
-            batch_id=batch_id
+            batch_id=batch_id,
         )
 
         self.worker_pool.stop()
 
         self._update_status(
-            f"Completed: {result.completed_tasks}/{result.total_tasks} files "
-            f"({result.failed_tasks} failed)"
+            f"Completed: {result.completed_tasks}/{result.total_tasks} files ({result.failed_tasks} failed)"
         )
 
         return result
@@ -451,7 +421,7 @@ class ShutterstockAIv2:
         max_size = 50 * 1024 * 1024  # 50 MB for JPEG
 
         if stat.st_size > max_size:
-            result.errors.append(f"File too large: {stat.st_size / (1024*1024):.1f} MB (max 50 MB)")
+            result.errors.append(f"File too large: {stat.st_size / (1024 * 1024):.1f} MB (max 50 MB)")
             result.is_valid = False
 
         # Check resolution
@@ -464,9 +434,7 @@ class ShutterstockAIv2:
 
                 min_mp = self._settings.get("min_resolution_mp", 4.0)
                 if megapixels < min_mp:
-                    result.errors.append(
-                        f"Resolution too low: {megapixels:.1f} MP (min {min_mp} MP)"
-                    )
+                    result.errors.append(f"Resolution too low: {megapixels:.1f} MP (min {min_mp} MP)")
                     result.is_valid = False
 
                 # Add to completeness score
@@ -497,11 +465,7 @@ class ShutterstockAIv2:
             ActionType.VALIDATION,
             file_path=str(file_path),
             success=result.is_valid,
-            details={
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "score": result.completeness_score
-            }
+            details={"errors": result.errors, "warnings": result.warnings, "score": result.completeness_score},
         )
 
         return result
@@ -622,21 +586,14 @@ class ShutterstockAIv2:
                 "type": h.metadata_type,
                 "source": h.source,
                 "version": h.version,
-                "metadata": h.metadata_json
+                "metadata": h.metadata_json,
             }
             for h in history
         ]
 
-    def get_audit_logs(
-        self,
-        file_path: Optional[Path] = None,
-        limit: int = 100
-    ) -> List[AuditLog]:
+    def get_audit_logs(self, file_path: Optional[Path] = None, limit: int = 100) -> List[AuditLog]:
         """Get audit logs"""
-        return self.database.get_audit_logs(
-            file_path=str(file_path) if file_path else None,
-            limit=limit
-        )
+        return self.database.get_audit_logs(file_path=str(file_path) if file_path else None, limit=limit)
 
     def get_statistics(self) -> Dict[str, Any]:
         """Get processing statistics"""
@@ -676,11 +633,7 @@ class ShutterstockAIv2:
 
     # ==================== AI vs Existing Comparison ====================
 
-    def compare_ai_with_existing(
-        self,
-        file_path: Path,
-        ai_metadata: ShutterstockMetadata
-    ) -> Dict[str, Any]:
+    def compare_ai_with_existing(self, file_path: Path, ai_metadata: ShutterstockMetadata) -> Dict[str, Any]:
         """
         Compare AI-generated metadata with existing metadata in file
 
@@ -699,7 +652,7 @@ class ShutterstockAIv2:
             "ai_only": [],
             "existing_only": [],
             "recommendation": "use_ai",
-            "merge_suggestion": None
+            "merge_suggestion": None,
         }
 
         # Read existing metadata
@@ -717,17 +670,16 @@ class ShutterstockAIv2:
             existing_title = existing_iptc.headline or existing_iptc.object_name
             if ai_metadata.title:
                 if existing_title.lower().strip() == ai_metadata.title.lower().strip():
-                    result["matches"].append({
-                        "field": "title",
-                        "value": existing_title
-                    })
+                    result["matches"].append({"field": "title", "value": existing_title})
                 else:
-                    result["conflicts"].append({
-                        "field": "title",
-                        "existing": existing_title,
-                        "ai": ai_metadata.title,
-                        "similarity": self._calculate_similarity(existing_title, ai_metadata.title)
-                    })
+                    result["conflicts"].append(
+                        {
+                            "field": "title",
+                            "existing": existing_title,
+                            "ai": ai_metadata.title,
+                            "similarity": self._calculate_similarity(existing_title, ai_metadata.title),
+                        }
+                    )
         else:
             if ai_metadata.title:
                 result["ai_only"].append("title")
@@ -736,17 +688,16 @@ class ShutterstockAIv2:
         if existing_iptc.caption:
             if ai_metadata.description:
                 if existing_iptc.caption.lower().strip() == ai_metadata.description.lower().strip():
-                    result["matches"].append({
-                        "field": "description",
-                        "value": existing_iptc.caption
-                    })
+                    result["matches"].append({"field": "description", "value": existing_iptc.caption})
                 else:
-                    result["conflicts"].append({
-                        "field": "description",
-                        "existing": existing_iptc.caption,
-                        "ai": ai_metadata.description,
-                        "similarity": self._calculate_similarity(existing_iptc.caption, ai_metadata.description)
-                    })
+                    result["conflicts"].append(
+                        {
+                            "field": "description",
+                            "existing": existing_iptc.caption,
+                            "ai": ai_metadata.description,
+                            "similarity": self._calculate_similarity(existing_iptc.caption, ai_metadata.description),
+                        }
+                    )
         else:
             if ai_metadata.description:
                 result["ai_only"].append("description")
@@ -769,17 +720,19 @@ class ShutterstockAIv2:
                 "overlap_ratio": round(overlap_ratio, 2),
                 "common": list(common_keywords),
                 "existing_only": list(existing_only_kw),
-                "ai_only": list(ai_only_kw)
+                "ai_only": list(ai_only_kw),
             }
 
             if overlap_ratio < 0.3:
-                result["conflicts"].append({
-                    "field": "keywords",
-                    "existing_count": len(existing_keywords),
-                    "ai_count": len(ai_keywords),
-                    "overlap": round(overlap_ratio * 100, 1),
-                    "message": "Low keyword overlap - significant difference"
-                })
+                result["conflicts"].append(
+                    {
+                        "field": "keywords",
+                        "existing_count": len(existing_keywords),
+                        "ai_count": len(ai_keywords),
+                        "overlap": round(overlap_ratio * 100, 1),
+                        "message": "Low keyword overlap - significant difference",
+                    }
+                )
         elif ai_keywords:
             result["ai_only"].append("keywords")
         elif existing_keywords:
@@ -798,9 +751,7 @@ class ShutterstockAIv2:
             result["recommendation_reason"] = f"{conflict_count} conflicts - manual review recommended"
 
         # Generate merge suggestion
-        result["merge_suggestion"] = self._generate_merge_suggestion(
-            existing_iptc, ai_metadata, result
-        )
+        result["merge_suggestion"] = self._generate_merge_suggestion(existing_iptc, ai_metadata, result)
 
         return result
 
@@ -822,10 +773,7 @@ class ShutterstockAIv2:
         return round(intersection / union, 2) if union > 0 else 0.0
 
     def _generate_merge_suggestion(
-        self,
-        existing: IPTCFields,
-        ai: ShutterstockMetadata,
-        comparison: Dict[str, Any]
+        self, existing: IPTCFields, ai: ShutterstockMetadata, comparison: Dict[str, Any]
     ) -> IPTCFields:
         """Generate a merged IPTC suggestion from existing and AI metadata"""
         merged = IPTCFields()
@@ -848,9 +796,7 @@ class ShutterstockAIv2:
             merged.caption = existing.caption or ai.description
 
         # Keywords: merge both sets
-        all_keywords = list(set(
-            (existing.keywords or []) + (ai.keywords or [])
-        ))
+        all_keywords = list(set((existing.keywords or []) + (ai.keywords or [])))
         merged.keywords = all_keywords[:50]  # Shutterstock max
 
         # Keep existing creator info
@@ -876,11 +822,7 @@ class ShutterstockAIv2:
     # ==================== Metadata Diff ====================
 
     def get_metadata_diff(
-        self,
-        file_path: Path,
-        new_metadata: Optional[IPTCFields] = None,
-        version1: int = None,
-        version2: int = None
+        self, file_path: Path, new_metadata: Optional[IPTCFields] = None, version1: int = None, version2: int = None
     ) -> Dict[str, Any]:
         """
         Get diff between metadata versions or current vs new
@@ -900,7 +842,7 @@ class ShutterstockAIv2:
             "additions": [],
             "removals": [],
             "unchanged": [],
-            "summary": ""
+            "summary": "",
         }
 
         # Get current metadata from file
@@ -919,6 +861,7 @@ class ShutterstockAIv2:
             v2_data = None
 
             import json as json_module
+
             for h in history:
                 if h.version == version1:
                     v1_data = IPTCFields.from_dict(json_module.loads(h.metadata_json))
@@ -933,27 +876,27 @@ class ShutterstockAIv2:
             history = self.database.get_metadata_history(str(file_path), "iptc")
             if history:
                 import json
+
                 latest = IPTCFields.from_dict(json.loads(history[0].metadata_json))
                 result = self._compare_iptc_fields(latest, current_iptc)
                 result["comparison_type"] = "history_vs_current"
 
         # Generate summary
-        total_changes = len(result.get("changes", [])) + len(result.get("additions", [])) + len(result.get("removals", []))
+        total_changes = (
+            len(result.get("changes", [])) + len(result.get("additions", [])) + len(result.get("removals", []))
+        )
         if total_changes == 0:
             result["summary"] = "No changes detected"
         else:
-            result["summary"] = f"{total_changes} changes: {len(result.get('changes', []))} modified, {len(result.get('additions', []))} added, {len(result.get('removals', []))} removed"
+            result["summary"] = (
+                f"{total_changes} changes: {len(result.get('changes', []))} modified, {len(result.get('additions', []))} added, {len(result.get('removals', []))} removed"
+            )
 
         return result
 
     def _compare_iptc_fields(self, old: IPTCFields, new: IPTCFields) -> Dict[str, Any]:
         """Compare two IPTCFields objects and return differences"""
-        result = {
-            "changes": [],
-            "additions": [],
-            "removals": [],
-            "unchanged": []
-        }
+        result = {"changes": [], "additions": [], "removals": [], "unchanged": []}
 
         # Fields to compare
         fields = [
@@ -973,7 +916,7 @@ class ShutterstockAIv2:
             ("category", "Category"),
             ("special_instructions", "Instructions"),
             ("transmission_reference", "Job ID"),
-            ("urgency", "Urgency")
+            ("urgency", "Urgency"),
         ]
 
         for field_name, display_name in fields:
@@ -986,30 +929,15 @@ class ShutterstockAIv2:
 
             if old_val == new_val:
                 if old_val is not None:
-                    result["unchanged"].append({
-                        "field": field_name,
-                        "display_name": display_name,
-                        "value": old_val
-                    })
+                    result["unchanged"].append({"field": field_name, "display_name": display_name, "value": old_val})
             elif old_val is None and new_val is not None:
-                result["additions"].append({
-                    "field": field_name,
-                    "display_name": display_name,
-                    "new_value": new_val
-                })
+                result["additions"].append({"field": field_name, "display_name": display_name, "new_value": new_val})
             elif old_val is not None and new_val is None:
-                result["removals"].append({
-                    "field": field_name,
-                    "display_name": display_name,
-                    "old_value": old_val
-                })
+                result["removals"].append({"field": field_name, "display_name": display_name, "old_value": old_val})
             else:
-                result["changes"].append({
-                    "field": field_name,
-                    "display_name": display_name,
-                    "old_value": old_val,
-                    "new_value": new_val
-                })
+                result["changes"].append(
+                    {"field": field_name, "display_name": display_name, "old_value": old_val, "new_value": new_val}
+                )
 
         # Compare keywords specially
         old_keywords = set(old.keywords or [])
@@ -1019,39 +947,39 @@ class ShutterstockAIv2:
         removed_keywords = old_keywords - new_keywords
 
         if added_keywords or removed_keywords:
-            result["changes"].append({
-                "field": "keywords",
-                "display_name": "Keywords",
-                "added": list(added_keywords),
-                "removed": list(removed_keywords),
-                "old_count": len(old_keywords),
-                "new_count": len(new_keywords)
-            })
+            result["changes"].append(
+                {
+                    "field": "keywords",
+                    "display_name": "Keywords",
+                    "added": list(added_keywords),
+                    "removed": list(removed_keywords),
+                    "old_count": len(old_keywords),
+                    "new_count": len(new_keywords),
+                }
+            )
         elif old_keywords:
-            result["unchanged"].append({
-                "field": "keywords",
-                "display_name": "Keywords",
-                "count": len(old_keywords)
-            })
+            result["unchanged"].append({"field": "keywords", "display_name": "Keywords", "count": len(old_keywords)})
 
         # Compare supplemental categories
         old_cats = set(old.supplemental_categories or [])
         new_cats = set(new.supplemental_categories or [])
 
         if old_cats != new_cats:
-            result["changes"].append({
-                "field": "supplemental_categories",
-                "display_name": "Categories",
-                "old_value": list(old_cats),
-                "new_value": list(new_cats)
-            })
+            result["changes"].append(
+                {
+                    "field": "supplemental_categories",
+                    "display_name": "Categories",
+                    "old_value": list(old_cats),
+                    "new_value": list(new_cats),
+                }
+            )
 
         return result
 
     def format_diff_for_display(self, diff: Dict[str, Any]) -> str:
         """Format a diff result for text display"""
         lines = []
-        lines.append(f"=== Metadata Diff ===")
+        lines.append("=== Metadata Diff ===")
         lines.append(f"File: {diff.get('file_path', 'Unknown')}")
         lines.append(f"Type: {diff.get('comparison_type', 'Unknown')}")
         lines.append("")
@@ -1087,12 +1015,7 @@ class ShutterstockAIv2:
 
     # ==================== AI Pipeline ====================
 
-    def init_ai(
-        self,
-        ollama_url: str = None,
-        model: str = None,
-        timeout: int = None
-    ):
+    def init_ai(self, ollama_url: str = None, model: str = None, timeout: int = None):
         """
         Initialize AI components
 
@@ -1102,8 +1025,8 @@ class ShutterstockAIv2:
             timeout: Request timeout in seconds
         """
         from .ai.ollama_client import OllamaClient
-        from .ai.vision_analyzer import VisionAnalyzer
         from .ai.prompt_templates import Platform
+        from .ai.vision_analyzer import VisionAnalyzer
 
         url = ollama_url or self._settings.get("ollama_url", "http://localhost:11434")
         timeout = timeout or int(self._settings.get("ollama_timeout", 120))
@@ -1111,10 +1034,7 @@ class ShutterstockAIv2:
 
         self.ollama_client = OllamaClient(base_url=url, timeout=timeout)
         self.vision_analyzer = VisionAnalyzer(
-            client=self.ollama_client,
-            model=model,
-            platform=Platform.SHUTTERSTOCK,
-            timeout=timeout
+            client=self.ollama_client, model=model, platform=Platform.SHUTTERSTOCK, timeout=timeout
         )
 
         # Register AI task handler
@@ -1129,11 +1049,11 @@ class ShutterstockAIv2:
         Returns:
             Status dictionary
         """
-        if not hasattr(self, 'ollama_client'):
+        if not hasattr(self, "ollama_client"):
             return {
                 "available": False,
                 "status": "not_initialized",
-                "message": "AI not initialized. Call init_ai() first."
+                "message": "AI not initialized. Call init_ai() first.",
             }
 
         try:
@@ -1147,20 +1067,12 @@ class ShutterstockAIv2:
                 "version": info.get("version", "unknown"),
                 "current_model": info.get("current_model"),
                 "vision_models": len(self.ollama_client.list_vision_models()),
-                "message": "Online" if connected else "Offline"
+                "message": "Online" if connected else "Offline",
             }
         except Exception as e:
-            return {
-                "available": False,
-                "status": "error",
-                "message": str(e)
-            }
+            return {"available": False, "status": "error", "message": str(e)}
 
-    def analyze_image_ai(
-        self,
-        file_path: Path,
-        skip_if_has_metadata: bool = False
-    ) -> Dict[str, Any]:
+    def analyze_image_ai(self, file_path: Path, skip_if_has_metadata: bool = False) -> Dict[str, Any]:
         """
         Analyze a single image using AI
 
@@ -1171,7 +1083,7 @@ class ShutterstockAIv2:
         Returns:
             Analysis result dictionary
         """
-        if not hasattr(self, 'vision_analyzer'):
+        if not hasattr(self, "vision_analyzer"):
             self.init_ai()
 
         file_path = Path(file_path)
@@ -1198,13 +1110,13 @@ class ShutterstockAIv2:
                             "success": True,
                             "skipped": True,
                             "reason": "Already has metadata",
-                            "file_path": str(file_path)
+                            "file_path": str(file_path),
                         }
 
             # Analyze with AI
             result = self.vision_analyzer.analyze_image(
                 file_path,
-                skip_if_has_metadata=False  # Already checked above
+                skip_if_has_metadata=False,  # Already checked above
             )
 
             elapsed = int((time.time() - start_time) * 1000)
@@ -1236,7 +1148,7 @@ class ShutterstockAIv2:
                     "editorial": result.editorial,
                     "model_used": result.model_used,
                     "processing_time_ms": elapsed,
-                    "tokens_per_second": result.tokens_per_second
+                    "tokens_per_second": result.tokens_per_second,
                 }
             else:
                 self.database.log_action(
@@ -1248,11 +1160,7 @@ class ShutterstockAIv2:
                     error_message=result.error,
                 )
 
-                return {
-                    "success": False,
-                    "file_path": str(file_path),
-                    "error": result.error
-                }
+                return {"success": False, "file_path": str(file_path), "error": result.error}
 
         except Exception as e:
             logger.error(f"AI analysis failed for {file_path}: {e}")
@@ -1263,11 +1171,7 @@ class ShutterstockAIv2:
                 error_message=str(e),
                 batch_id=batch_id,
             )
-            return {
-                "success": False,
-                "file_path": str(file_path),
-                "error": str(e)
-            }
+            return {"success": False, "file_path": str(file_path), "error": str(e)}
 
     def analyze_batch_ai(
         self,
@@ -1275,7 +1179,7 @@ class ShutterstockAIv2:
         skip_if_has_metadata: bool = True,
         write_metadata: bool = False,
         on_progress: Callable[[int, int, str], None] = None,
-        on_result: Callable[[Dict], None] = None
+        on_result: Callable[[Dict], None] = None,
     ) -> Dict[str, Any]:
         """
         Analyze multiple images using AI
@@ -1290,7 +1194,7 @@ class ShutterstockAIv2:
         Returns:
             Batch result summary
         """
-        if not hasattr(self, 'vision_analyzer'):
+        if not hasattr(self, "vision_analyzer"):
             self.init_ai()
 
         batch_id = f"ai_batch_{int(time.time())}"
@@ -1348,7 +1252,7 @@ class ShutterstockAIv2:
             file_paths,
             skip_if_has_metadata=skip_if_has_metadata,
             on_progress=progress_callback,
-            on_result=result_callback
+            on_result=result_callback,
         )
 
         elapsed = int((time.time() - start_time) * 1000)
@@ -1365,7 +1269,7 @@ class ShutterstockAIv2:
             "skipped": skipped,
             "duration_ms": elapsed,
             "success_rate": (completed / len(file_paths) * 100) if file_paths else 0,
-            "results": results
+            "results": results,
         }
 
     def _write_ai_result(self, result, batch_id: str):
@@ -1380,7 +1284,7 @@ class ShutterstockAIv2:
                 object_name=result.title[:64] if result.title else None,
                 caption=result.description,
                 keywords=result.keywords,
-                supplemental_categories=result.categories
+                supplemental_categories=result.categories,
             )
 
             # Apply defaults
@@ -1392,7 +1296,7 @@ class ShutterstockAIv2:
                 result.file_path,
                 iptc=iptc,
                 write_iptc=self._settings.get("write_iptc", True),
-                write_xmp=self._settings.get("write_xmp", True)
+                write_xmp=self._settings.get("write_xmp", True),
             )
 
             if success:
@@ -1426,7 +1330,7 @@ class ShutterstockAIv2:
         skip_if_has_metadata: bool = True,
         write_metadata: bool = False,
         on_progress: Callable = None,
-        on_result: Callable = None
+        on_result: Callable = None,
     ) -> Dict[str, Any]:
         """
         Process all images in a folder with AI
@@ -1446,11 +1350,7 @@ class ShutterstockAIv2:
         files = collect_image_files(folder, recursive=recursive)
 
         if not files:
-            return {
-                "success": False,
-                "error": f"No images found in {folder}",
-                "total": 0
-            }
+            return {"success": False, "error": f"No images found in {folder}", "total": 0}
 
         # Process batch
         return self.analyze_batch_ai(
@@ -1458,7 +1358,7 @@ class ShutterstockAIv2:
             skip_if_has_metadata=skip_if_has_metadata,
             write_metadata=write_metadata,
             on_progress=on_progress,
-            on_result=on_result
+            on_result=on_result,
         )
 
     # ==================== Cleanup ====================

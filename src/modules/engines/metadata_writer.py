@@ -4,32 +4,28 @@ Uses ExifTool for comprehensive metadata writing
 """
 
 import json
-import subprocess
-import shutil
-import tempfile
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
-from dataclasses import dataclass, field
 import logging
+import shutil
+import subprocess
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from ..models.metadata_models import (
-    ImageMetadata,
-    IPTCFields,
-    ShutterstockMetadata
-)
+from ..models.metadata_models import ImageMetadata, IPTCFields, ShutterstockMetadata
 
 logger = logging.getLogger(__name__)
 
 
 class MetadataWriteError(Exception):
     """Raised when metadata cannot be written to file"""
+
     pass
 
 
 @dataclass
 class DryRunResult:
     """Result of a dry run operation"""
+
     file_path: Path
     would_write: bool
     args: List[str]
@@ -44,12 +40,7 @@ class MetadataWriter:
     Supports backup creation, rollback, and dry run mode
     """
 
-    def __init__(
-        self,
-        exiftool_path: Optional[str] = None,
-        create_backup: bool = True,
-        dry_run: bool = False
-    ):
+    def __init__(self, exiftool_path: Optional[str] = None, create_backup: bool = True, dry_run: bool = False):
         """
         Initialize MetadataWriter
 
@@ -64,9 +55,7 @@ class MetadataWriter:
         self._dry_run_results: List[DryRunResult] = []
 
         if not self.exiftool_path:
-            raise MetadataWriteError(
-                "ExifTool not found. Please install from https://exiftool.org/"
-            )
+            raise MetadataWriteError("ExifTool not found. Please install from https://exiftool.org/")
 
     def _find_exiftool(self) -> Optional[str]:
         """Find ExifTool executable"""
@@ -135,11 +124,7 @@ class MetadataWriter:
         return self._run_exiftool_write(file_path, args)
 
     def write_shutterstock_metadata(
-        self,
-        file_path: Path,
-        metadata: ShutterstockMetadata,
-        write_iptc: bool = True,
-        write_xmp: bool = True
+        self, file_path: Path, metadata: ShutterstockMetadata, write_iptc: bool = True, write_xmp: bool = True
     ) -> bool:
         """
         Write Shutterstock metadata to an image file
@@ -162,11 +147,13 @@ class MetadataWriter:
 
         if write_iptc:
             # IPTC fields
-            args.extend([
-                f"-IPTC:ObjectName={metadata.title[:64]}",  # IPTC limit
-                f"-IPTC:Caption-Abstract={metadata.description}",
-                f"-IPTC:Headline={metadata.title[:256]}",
-            ])
+            args.extend(
+                [
+                    f"-IPTC:ObjectName={metadata.title[:64]}",  # IPTC limit
+                    f"-IPTC:Caption-Abstract={metadata.description}",
+                    f"-IPTC:Headline={metadata.title[:256]}",
+                ]
+            )
 
             # Keywords (IPTC supports multiple -Keywords tags)
             for kw in metadata.keywords[:50]:
@@ -180,10 +167,12 @@ class MetadataWriter:
 
         if write_xmp:
             # XMP Dublin Core
-            args.extend([
-                f"-XMP-dc:Title={metadata.title}",
-                f"-XMP-dc:Description={metadata.description}",
-            ])
+            args.extend(
+                [
+                    f"-XMP-dc:Title={metadata.title}",
+                    f"-XMP-dc:Description={metadata.description}",
+                ]
+            )
 
             # XMP Keywords
             keywords_str = ", ".join(metadata.keywords)
@@ -200,10 +189,7 @@ class MetadataWriter:
         return self._run_exiftool_write(file_path, args)
 
     def write_from_image_metadata(
-        self,
-        file_path: Path,
-        metadata: ImageMetadata,
-        fields_to_write: Optional[List[str]] = None
+        self, file_path: Path, metadata: ImageMetadata, fields_to_write: Optional[List[str]] = None
     ) -> bool:
         """
         Write metadata from an ImageMetadata object back to file
@@ -300,10 +286,7 @@ class MetadataWriter:
 
         return self._run_exiftool_write(file_path, args)
 
-    def write_batch(
-        self,
-        files_metadata: List[Tuple[Path, IPTCFields]]
-    ) -> List[Tuple[Path, bool, Optional[str]]]:
+    def write_batch(self, files_metadata: List[Tuple[Path, IPTCFields]]) -> List[Tuple[Path, bool, Optional[str]]]:
         """
         Write metadata to multiple files
 
@@ -421,7 +404,7 @@ class MetadataWriter:
                 file_path=file_path,
                 would_write=True,
                 args=args.copy(),
-                changes=[f"Would set {arg}" for arg in args if '=' in arg]
+                changes=[f"Would set {arg}" for arg in args if "=" in arg],
             )
             self._dry_run_results.append(dry_result)
             logger.info(f"[DRY RUN] Would write to: {file_path}")
@@ -444,13 +427,7 @@ class MetadataWriter:
         cmd.append(str(file_path))
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=60
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
 
             if result.returncode != 0:
                 error_msg = result.stderr.strip() or result.stdout.strip()
@@ -541,22 +518,30 @@ class MetadataWriter:
 
     # RAW file extensions that require XMP sidecar
     RAW_EXTENSIONS = {
-        '.cr2', '.cr3',  # Canon
-        '.nef', '.nrw',  # Nikon
-        '.arw', '.srf', '.sr2',  # Sony
-        '.orf',  # Olympus
-        '.rw2',  # Panasonic
-        '.pef', '.dng',  # Pentax, Adobe DNG
-        '.raf',  # Fujifilm
-        '.raw', '.rwl', '.rw2',  # Leica
-        '.3fr',  # Hasselblad
-        '.fff',  # Imacon
-        '.iiq',  # Phase One
-        '.srw',  # Samsung
-        '.x3f',  # Sigma
-        '.kdc', '.dcr',  # Kodak
-        '.mrw',  # Minolta
-        '.erf',  # Epson
+        ".cr2",
+        ".cr3",  # Canon
+        ".nef",
+        ".nrw",  # Nikon
+        ".arw",
+        ".srf",
+        ".sr2",  # Sony
+        ".orf",  # Olympus
+        ".rw2",  # Panasonic
+        ".pef",
+        ".dng",  # Pentax, Adobe DNG
+        ".raf",  # Fujifilm
+        ".raw",
+        ".rwl",
+        ".rw2",  # Leica
+        ".3fr",  # Hasselblad
+        ".fff",  # Imacon
+        ".iiq",  # Phase One
+        ".srw",  # Samsung
+        ".x3f",  # Sigma
+        ".kdc",
+        ".dcr",  # Kodak
+        ".mrw",  # Minolta
+        ".erf",  # Epson
     }
 
     def is_raw_file(self, file_path: Path) -> bool:
@@ -581,7 +566,7 @@ class MetadataWriter:
         Returns:
             Path to the XMP sidecar file
         """
-        return file_path.with_suffix('.xmp')
+        return file_path.with_suffix(".xmp")
 
     def xmp_sidecar_exists(self, file_path: Path) -> bool:
         """
@@ -600,7 +585,7 @@ class MetadataWriter:
         file_path: Path,
         iptc: Optional[IPTCFields] = None,
         xmp_data: Optional[Dict[str, Any]] = None,
-        copy_from_raw: bool = True
+        copy_from_raw: bool = True,
     ) -> Path:
         """
         Create XMP sidecar file for a RAW image
@@ -629,7 +614,7 @@ class MetadataWriter:
                 file_path=xmp_path,
                 would_write=True,
                 args=["create_xmp_sidecar"],
-                changes=[f"Would create XMP sidecar: {xmp_path}"]
+                changes=[f"Would create XMP sidecar: {xmp_path}"],
             )
             self._dry_run_results.append(dry_result)
             logger.info(f"[DRY RUN] Would create XMP sidecar: {xmp_path}")
@@ -637,21 +622,10 @@ class MetadataWriter:
 
         # Step 1: Create sidecar from RAW (copies existing metadata)
         if copy_from_raw:
-            cmd = [
-                self.exiftool_path,
-                "-o", str(xmp_path),
-                "-charset", "utf8",
-                str(file_path)
-            ]
+            cmd = [self.exiftool_path, "-o", str(xmp_path), "-charset", "utf8", str(file_path)]
 
             try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding='utf-8',
-                    timeout=60
-                )
+                result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
 
                 if result.returncode != 0 and "1 output files created" not in result.stdout:
                     # Create empty XMP sidecar
@@ -690,14 +664,11 @@ class MetadataWriter:
     </rdf:RDF>
 </x:xmpmeta>
 '''
-        with open(xmp_path, 'w', encoding='utf-8') as f:
+        with open(xmp_path, "w", encoding="utf-8") as f:
             f.write(xmp_content)
 
     def write_to_xmp_sidecar(
-        self,
-        file_path: Path,
-        iptc: Optional[IPTCFields] = None,
-        xmp_data: Optional[Dict[str, Any]] = None
+        self, file_path: Path, iptc: Optional[IPTCFields] = None, xmp_data: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Write metadata to XMP sidecar file
@@ -783,22 +754,10 @@ class MetadataWriter:
         if not xmp_path.exists():
             return None
 
-        cmd = [
-            self.exiftool_path,
-            "-json",
-            "-charset", "utf8",
-            "-XMP:all",
-            str(xmp_path)
-        ]
+        cmd = [self.exiftool_path, "-json", "-charset", "utf8", "-XMP:all", str(xmp_path)]
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30)
 
             if result.returncode == 0:
                 data = json.loads(result.stdout)
@@ -832,17 +791,12 @@ class MetadataWriter:
                 file_path=file_path,
                 would_write=True,
                 args=["sync_sidecar_to_raw"],
-                changes=[f"Would sync {xmp_path} to {file_path}"]
+                changes=[f"Would sync {xmp_path} to {file_path}"],
             )
             self._dry_run_results.append(dry_result)
             return True
 
-        cmd = [
-            self.exiftool_path,
-            "-tagsFromFile", str(xmp_path),
-            "-XMP:all",
-            "-charset", "utf8"
-        ]
+        cmd = [self.exiftool_path, "-tagsFromFile", str(xmp_path), "-XMP:all", "-charset", "utf8"]
 
         if not self.create_backup:
             cmd.append("-overwrite_original")
@@ -850,13 +804,7 @@ class MetadataWriter:
         cmd.append(str(file_path))
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=60
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
 
             if "1 image files updated" in result.stdout:
                 logger.info(f"Synced sidecar to RAW: {file_path}")
@@ -888,7 +836,7 @@ class MetadataWriter:
                 file_path=xmp_path,
                 would_write=True,
                 args=["delete_xmp_sidecar"],
-                changes=[f"Would delete XMP sidecar: {xmp_path}"]
+                changes=[f"Would delete XMP sidecar: {xmp_path}"],
             )
             self._dry_run_results.append(dry_result)
             return True
@@ -907,7 +855,7 @@ class MetadataWriter:
         iptc: Optional[IPTCFields] = None,
         xmp_data: Optional[Dict[str, Any]] = None,
         write_iptc: bool = True,
-        write_xmp: bool = True
+        write_xmp: bool = True,
     ) -> bool:
         """
         Automatically write metadata to file or XMP sidecar based on file type

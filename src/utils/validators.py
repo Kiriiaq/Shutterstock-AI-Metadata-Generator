@@ -3,32 +3,29 @@ Validators for image and metadata validation.
 Includes robust file validation with corruption detection.
 """
 
-import os
 import logging
-from pathlib import Path
-from typing import Dict, Any, Tuple, List, Optional
+import os
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 # Magic bytes for image format detection
 IMAGE_SIGNATURES = {
-    'jpeg': [b'\xFF\xD8\xFF'],
-    'png': [b'\x89PNG\r\n\x1a\n'],
-    'tiff_le': [b'II*\x00'],  # Little-endian TIFF
-    'tiff_be': [b'MM\x00*'],  # Big-endian TIFF
-    'gif': [b'GIF87a', b'GIF89a'],
-    'bmp': [b'BM'],
-    'webp': [b'RIFF'],  # WEBP (need to check for WEBP after RIFF)
+    "jpeg": [b"\xff\xd8\xff"],
+    "png": [b"\x89PNG\r\n\x1a\n"],
+    "tiff_le": [b"II*\x00"],  # Little-endian TIFF
+    "tiff_be": [b"MM\x00*"],  # Big-endian TIFF
+    "gif": [b"GIF87a", b"GIF89a"],
+    "bmp": [b"BM"],
+    "webp": [b"RIFF"],  # WEBP (need to check for WEBP after RIFF)
 }
 
 
 def validate_image_file(
-    file_path: Path,
-    check_content: bool = True,
-    min_size_bytes: int = 1024,
-    max_size_mb: float = 100.0
+    file_path: Path, check_content: bool = True, min_size_bytes: int = 1024, max_size_mb: float = 100.0
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Comprehensive image file validation with corruption detection.
@@ -69,7 +66,7 @@ def validate_image_file(
         return False, f"File too large: {size_mb:.1f} MB (max {max_size_mb} MB)", None
 
     # Check extension
-    valid_extensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.gif', '.bmp', '.webp', '.eps']
+    valid_extensions = [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".gif", ".bmp", ".webp", ".eps"]
     ext = file_path.suffix.lower()
     if ext not in valid_extensions:
         return False, f"Unsupported image format: {ext}", None
@@ -79,7 +76,7 @@ def validate_image_file(
 
     # Check magic bytes
     try:
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             header = f.read(16)
 
         detected_format = None
@@ -94,14 +91,14 @@ def validate_image_file(
                 break
 
         # Special check for WEBP (RIFF....WEBP)
-        if header.startswith(b'RIFF') and b'WEBP' in header:
-            detected_format = 'webp'
+        if header.startswith(b"RIFF") and b"WEBP" in header:
+            detected_format = "webp"
 
         # EPS files
-        if header.startswith(b'%!PS') or header.startswith(b'\xC5\xD0\xD3\xC6'):
-            detected_format = 'eps'
+        if header.startswith(b"%!PS") or header.startswith(b"\xc5\xd0\xd3\xc6"):
+            detected_format = "eps"
 
-        if detected_format is None and ext not in ['.eps']:
+        if detected_format is None and ext not in [".eps"]:
             return False, "Unknown or corrupted image format (invalid header)", None
 
     except PermissionError:
@@ -112,6 +109,7 @@ def validate_image_file(
     # Try opening with PIL for deeper validation
     try:
         from PIL import Image
+
         with Image.open(file_path) as img:
             img.verify()  # Verify image integrity
     except ImportError:
@@ -126,6 +124,7 @@ def validate_image_file(
 @dataclass
 class ValidationResult:
     """Result of a validation check."""
+
     is_valid: bool = True
     errors: List[str] = None
     warnings: List[str] = None
@@ -140,11 +139,7 @@ class ValidationResult:
             self.warnings = []
 
 
-def validate_image_dimensions(
-    width: int,
-    height: int,
-    min_megapixels: float = 4.0
-) -> Tuple[bool, Optional[str]]:
+def validate_image_dimensions(width: int, height: int, min_megapixels: float = 4.0) -> Tuple[bool, Optional[str]]:
     """
     Validate image dimensions meet minimum requirements.
 
@@ -164,10 +159,7 @@ def validate_image_dimensions(
     return True, None
 
 
-def validate_file_size(
-    file_path: Path,
-    max_size_mb: float = 50.0
-) -> Tuple[bool, Optional[str]]:
+def validate_file_size(file_path: Path, max_size_mb: float = 50.0) -> Tuple[bool, Optional[str]]:
     """
     Validate file size is within limits.
 
@@ -195,7 +187,7 @@ def validate_metadata_completeness(
     title: Optional[str] = None,
     description: Optional[str] = None,
     keywords: Optional[List[str]] = None,
-    categories: Optional[List[str]] = None
+    categories: Optional[List[str]] = None,
 ) -> ValidationResult:
     """
     Validate metadata completeness for Shutterstock submission.
@@ -300,7 +292,7 @@ def validate_shutterstock_requirements(
     title: Optional[str] = None,
     keywords: Optional[List[str]] = None,
     width: Optional[int] = None,
-    height: Optional[int] = None
+    height: Optional[int] = None,
 ) -> ValidationResult:
     """
     Validate all Shutterstock submission requirements.

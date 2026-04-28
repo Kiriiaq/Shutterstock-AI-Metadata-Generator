@@ -5,20 +5,21 @@ Generates metadata from images using AI
 
 import logging
 import time
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
-from .ollama_client import OllamaClient, OllamaError, OllamaStatus
-from .prompt_templates import PromptTemplates, PromptType, Platform
+from .ollama_client import OllamaClient, OllamaError
+from .prompt_templates import Platform, PromptTemplates, PromptType
 
 logger = logging.getLogger(__name__)
 
 
 class AnalysisStatus(Enum):
     """Status of image analysis"""
+
     PENDING = "pending"
     ANALYZING = "analyzing"
     COMPLETED = "completed"
@@ -29,6 +30,7 @@ class AnalysisStatus(Enum):
 @dataclass
 class AnalysisResult:
     """Result of image analysis"""
+
     file_path: Path
     status: AnalysisStatus
     title: Optional[str] = None
@@ -54,7 +56,7 @@ class AnalysisResult:
             "editorial": self.editorial,
             "error": self.error,
             "processing_time_ms": self.processing_time_ms,
-            "model_used": self.model_used
+            "model_used": self.model_used,
         }
 
     @property
@@ -66,6 +68,7 @@ class AnalysisResult:
 @dataclass
 class BatchProgress:
     """Progress tracking for batch analysis"""
+
     total: int = 0
     completed: int = 0
     failed: int = 0
@@ -108,7 +111,7 @@ class VisionAnalyzer:
         "llava:13b",
         "llava:7b",
         "llava:latest",
-        "moondream:latest"
+        "moondream:latest",
     ]
 
     def __init__(
@@ -116,7 +119,7 @@ class VisionAnalyzer:
         client: OllamaClient = None,
         model: str = None,
         platform: Platform = Platform.SHUTTERSTOCK,
-        timeout: int = 120
+        timeout: int = 120,
     ):
         """
         Initialize vision analyzer
@@ -188,7 +191,7 @@ class VisionAnalyzer:
         image_path: Path,
         prompt_type: PromptType = PromptType.FULL,
         skip_if_has_metadata: bool = False,
-        existing_metadata: Dict = None
+        existing_metadata: Dict = None,
     ) -> AnalysisResult:
         """
         Analyze a single image
@@ -205,10 +208,7 @@ class VisionAnalyzer:
         image_path = Path(image_path)
         start_time = time.time()
 
-        result = AnalysisResult(
-            file_path=image_path,
-            status=AnalysisStatus.PENDING
-        )
+        result = AnalysisResult(file_path=image_path, status=AnalysisStatus.PENDING)
 
         # Validate file
         if not image_path.exists():
@@ -240,11 +240,7 @@ class VisionAnalyzer:
             prompt = self.templates.get_prompt(prompt_type)
 
             # Analyze with vision model
-            response = self.client.analyze_image(
-                model=self.model,
-                image_path=image_path,
-                prompt=prompt
-            )
+            response = self.client.analyze_image(model=self.model, image_path=image_path, prompt=prompt)
 
             # Parse response
             parsed = self.templates.parse_response(response.response)
@@ -279,7 +275,7 @@ class VisionAnalyzer:
         max_workers: int = 1,
         skip_if_has_metadata: bool = False,
         on_progress: Callable[[BatchProgress], None] = None,
-        on_result: Callable[[AnalysisResult], None] = None
+        on_result: Callable[[AnalysisResult], None] = None,
     ) -> List[AnalysisResult]:
         """
         Analyze multiple images
@@ -298,10 +294,7 @@ class VisionAnalyzer:
         self._cancel_requested = False
         self._on_progress = on_progress
 
-        progress = BatchProgress(
-            total=len(image_paths),
-            start_time=time.time()
-        )
+        progress = BatchProgress(total=len(image_paths), start_time=time.time())
 
         results = []
 
@@ -313,11 +306,7 @@ class VisionAnalyzer:
 
                 progress.current_file = path.name
 
-                result = self.analyze_image(
-                    path,
-                    prompt_type=prompt_type,
-                    skip_if_has_metadata=skip_if_has_metadata
-                )
+                result = self.analyze_image(path, prompt_type=prompt_type, skip_if_has_metadata=skip_if_has_metadata)
 
                 results.append(result)
                 self._update_progress(progress, result)
@@ -329,12 +318,8 @@ class VisionAnalyzer:
             # Parallel processing (limited for API)
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
-                    executor.submit(
-                        self.analyze_image,
-                        path,
-                        prompt_type,
-                        skip_if_has_metadata
-                    ): path for path in image_paths
+                    executor.submit(self.analyze_image, path, prompt_type, skip_if_has_metadata): path
+                    for path in image_paths
                 }
 
                 for future in as_completed(futures):
@@ -347,11 +332,7 @@ class VisionAnalyzer:
                     try:
                         result = future.result()
                     except Exception as e:
-                        result = AnalysisResult(
-                            file_path=path,
-                            status=AnalysisStatus.FAILED,
-                            error=str(e)
-                        )
+                        result = AnalysisResult(file_path=path, status=AnalysisStatus.FAILED, error=str(e))
 
                     results.append(result)
                     self._update_progress(progress, result)
@@ -398,44 +379,27 @@ class VisionAnalyzer:
         prompt = self.templates.get_editorial_check_prompt()
 
         try:
-            response = self.client.analyze_image(
-                model=self.model,
-                image_path=image_path,
-                prompt=prompt
-            )
+            response = self.client.analyze_image(model=self.model, image_path=image_path, prompt=prompt)
 
             # Parse response
-            lines = response.response.strip().split('\n')
+            lines = response.response.strip().split("\n")
             editorial = False
             reason = ""
 
             for line in lines:
                 line = line.strip()
-                if line.upper().startswith('EDITORIAL:'):
+                if line.upper().startswith("EDITORIAL:"):
                     value = line[10:].strip().upper()
-                    editorial = value.startswith('YES')
-                elif line.upper().startswith('REASON:'):
+                    editorial = value.startswith("YES")
+                elif line.upper().startswith("REASON:"):
                     reason = line[7:].strip()
 
-            return {
-                "editorial": editorial,
-                "reason": reason,
-                "raw_response": response.response
-            }
+            return {"editorial": editorial, "reason": reason, "raw_response": response.response}
 
         except Exception as e:
-            return {
-                "editorial": False,
-                "reason": f"Check failed: {e}",
-                "error": str(e)
-            }
+            return {"editorial": False, "reason": f"Check failed: {e}", "error": str(e)}
 
-    def regenerate_field(
-        self,
-        image_path: Path,
-        field: str,
-        current_value: Any = None
-    ) -> Optional[Any]:
+    def regenerate_field(self, image_path: Path, field: str, current_value: Any = None) -> Optional[Any]:
         """
         Regenerate a specific metadata field
 
@@ -451,7 +415,7 @@ class VisionAnalyzer:
             "title": PromptType.TITLE_ONLY,
             "description": PromptType.DESCRIPTION_ONLY,
             "keywords": PromptType.KEYWORDS_ONLY,
-            "categories": PromptType.CATEGORIES_ONLY
+            "categories": PromptType.CATEGORIES_ONLY,
         }
 
         prompt_type = prompt_map.get(field.lower(), PromptType.FULL)

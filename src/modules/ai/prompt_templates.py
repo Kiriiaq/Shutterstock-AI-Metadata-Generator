@@ -3,13 +3,14 @@ Prompt Templates - Optimized prompts for metadata generation
 Supports multiple platforms (Shutterstock, Adobe Stock, generic)
 """
 
-from enum import Enum
-from typing import Dict, Optional, List
 from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List
 
 
 class PromptType(Enum):
     """Type of metadata generation"""
+
     FULL = "full"  # All fields
     TITLE_ONLY = "title"
     DESCRIPTION_ONLY = "description"
@@ -19,6 +20,7 @@ class PromptType(Enum):
 
 class Platform(Enum):
     """Target platform for metadata"""
+
     GENERIC = "generic"
     SHUTTERSTOCK = "shutterstock"
     ADOBE_STOCK = "adobe_stock"
@@ -29,6 +31,7 @@ class Platform(Enum):
 @dataclass
 class PlatformLimits:
     """Character/count limits for each platform"""
+
     title_max: int = 200
     description_max: int = 200
     keywords_min: int = 7
@@ -39,40 +42,20 @@ class PlatformLimits:
 # Platform-specific limits
 PLATFORM_LIMITS = {
     Platform.GENERIC: PlatformLimits(
-        title_max=200,
-        description_max=2000,
-        keywords_min=5,
-        keywords_max=50,
-        keyword_max_chars=50
+        title_max=200, description_max=2000, keywords_min=5, keywords_max=50, keyword_max_chars=50
     ),
     Platform.SHUTTERSTOCK: PlatformLimits(
-        title_max=200,
-        description_max=200,
-        keywords_min=7,
-        keywords_max=50,
-        keyword_max_chars=50
+        title_max=200, description_max=200, keywords_min=7, keywords_max=50, keyword_max_chars=50
     ),
     Platform.ADOBE_STOCK: PlatformLimits(
-        title_max=200,
-        description_max=200,
-        keywords_min=5,
-        keywords_max=50,
-        keyword_max_chars=50
+        title_max=200, description_max=200, keywords_min=5, keywords_max=50, keyword_max_chars=50
     ),
     Platform.GETTY: PlatformLimits(
-        title_max=250,
-        description_max=2000,
-        keywords_min=5,
-        keywords_max=75,
-        keyword_max_chars=50
+        title_max=250, description_max=2000, keywords_min=5, keywords_max=75, keyword_max_chars=50
     ),
     Platform.ISTOCK: PlatformLimits(
-        title_max=200,
-        description_max=200,
-        keywords_min=7,
-        keywords_max=50,
-        keyword_max_chars=50
-    )
+        title_max=200, description_max=200, keywords_min=7, keywords_max=50, keyword_max_chars=50
+    ),
 }
 
 
@@ -197,10 +180,7 @@ REASON: [brief explanation if YES]"""
         self.limits = PLATFORM_LIMITS.get(platform, PLATFORM_LIMITS[Platform.GENERIC])
 
     def get_prompt(
-        self,
-        prompt_type: PromptType = PromptType.FULL,
-        custom_instructions: str = None,
-        language: str = "en"
+        self, prompt_type: PromptType = PromptType.FULL, custom_instructions: str = None, language: str = "en"
     ) -> str:
         """
         Get formatted prompt for analysis
@@ -218,21 +198,14 @@ REASON: [brief explanation if YES]"""
                 title_max=self.limits.title_max,
                 desc_max=self.limits.description_max,
                 kw_min=self.limits.keywords_min,
-                kw_max=self.limits.keywords_max
+                kw_max=self.limits.keywords_max,
             )
         elif prompt_type == PromptType.TITLE_ONLY:
-            template = self.TITLE_TEMPLATE.format(
-                title_max=self.limits.title_max
-            )
+            template = self.TITLE_TEMPLATE.format(title_max=self.limits.title_max)
         elif prompt_type == PromptType.DESCRIPTION_ONLY:
-            template = self.DESCRIPTION_TEMPLATE.format(
-                desc_max=self.limits.description_max
-            )
+            template = self.DESCRIPTION_TEMPLATE.format(desc_max=self.limits.description_max)
         elif prompt_type == PromptType.KEYWORDS_ONLY:
-            template = self.KEYWORDS_TEMPLATE.format(
-                kw_min=self.limits.keywords_min,
-                kw_max=self.limits.keywords_max
-            )
+            template = self.KEYWORDS_TEMPLATE.format(kw_min=self.limits.keywords_min, kw_max=self.limits.keywords_max)
         elif prompt_type == PromptType.CATEGORIES_ONLY:
             template = self.CATEGORIES_TEMPLATE
         else:
@@ -240,7 +213,7 @@ REASON: [brief explanation if YES]"""
                 title_max=self.limits.title_max,
                 desc_max=self.limits.description_max,
                 kw_min=self.limits.keywords_min,
-                kw_max=self.limits.keywords_max
+                kw_max=self.limits.keywords_max,
             )
 
         # Add language instruction if not English
@@ -273,31 +246,31 @@ REASON: [brief explanation if YES]"""
             "keywords": [],
             "categories": [],
             "editorial": False,
-            "raw_response": response
+            "raw_response": response,
         }
 
-        lines = response.strip().split('\n')
+        lines = response.strip().split("\n")
 
         for line in lines:
             line = line.strip()
 
-            if line.upper().startswith('TITLE:'):
+            if line.upper().startswith("TITLE:"):
                 result["title"] = self._clean_value(line[6:])
 
-            elif line.upper().startswith('DESCRIPTION:'):
+            elif line.upper().startswith("DESCRIPTION:"):
                 result["description"] = self._clean_value(line[12:])
 
-            elif line.upper().startswith('KEYWORDS:'):
+            elif line.upper().startswith("KEYWORDS:"):
                 keywords_str = self._clean_value(line[9:])
                 result["keywords"] = self._parse_keywords(keywords_str)
 
-            elif line.upper().startswith('CATEGORIES:'):
+            elif line.upper().startswith("CATEGORIES:"):
                 cats_str = self._clean_value(line[11:])
                 result["categories"] = self._parse_categories(cats_str)
 
-            elif line.upper().startswith('EDITORIAL:'):
+            elif line.upper().startswith("EDITORIAL:"):
                 value = self._clean_value(line[10:]).upper()
-                result["editorial"] = value.startswith('YES')
+                result["editorial"] = value.startswith("YES")
 
         # Validate and trim to limits
         result = self._apply_limits(result)
@@ -310,15 +283,15 @@ REASON: [brief explanation if YES]"""
         # Remove surrounding quotes
         if value.startswith('"') and value.endswith('"'):
             value = value[1:-1]
-        if value.startswith('[') and value.endswith(']'):
+        if value.startswith("[") and value.endswith("]"):
             value = value[1:-1]
         return value.strip()
 
     def _parse_keywords(self, keywords_str: str) -> List[str]:
         """Parse keywords string into list"""
         # Handle various separators
-        keywords_str = keywords_str.replace(';', ',')
-        keywords = [k.strip() for k in keywords_str.split(',')]
+        keywords_str = keywords_str.replace(";", ",")
+        keywords = [k.strip() for k in keywords_str.split(",")]
         # Filter empty and clean
         keywords = [k for k in keywords if k and len(k) <= self.limits.keyword_max_chars]
         # Remove duplicates while preserving order
@@ -333,16 +306,35 @@ REASON: [brief explanation if YES]"""
 
     def _parse_categories(self, cats_str: str) -> List[str]:
         """Parse categories string into list"""
-        cats = [c.strip() for c in cats_str.split(',')]
+        cats = [c.strip() for c in cats_str.split(",")]
         # Map to valid categories
         valid_categories = [
-            "Animals", "Arts", "Backgrounds/Textures", "Beauty/Fashion",
-            "Buildings/Landmarks", "Business/Finance", "Celebrities",
-            "Editorial", "Education", "Food/Drink", "Healthcare/Medical",
-            "Holidays", "Industrial", "Interiors", "Miscellaneous",
-            "Nature", "Objects", "Parks/Outdoor", "People", "Religion",
-            "Science", "Signs/Symbols", "Sports/Recreation", "Technology",
-            "Transportation", "Vintage"
+            "Animals",
+            "Arts",
+            "Backgrounds/Textures",
+            "Beauty/Fashion",
+            "Buildings/Landmarks",
+            "Business/Finance",
+            "Celebrities",
+            "Editorial",
+            "Education",
+            "Food/Drink",
+            "Healthcare/Medical",
+            "Holidays",
+            "Industrial",
+            "Interiors",
+            "Miscellaneous",
+            "Nature",
+            "Objects",
+            "Parks/Outdoor",
+            "People",
+            "Religion",
+            "Science",
+            "Signs/Symbols",
+            "Sports/Recreation",
+            "Technology",
+            "Transportation",
+            "Vintage",
         ]
 
         result = []
@@ -359,14 +351,14 @@ REASON: [brief explanation if YES]"""
     def _apply_limits(self, result: Dict) -> Dict:
         """Apply platform limits to parsed result"""
         if result["title"]:
-            result["title"] = result["title"][:self.limits.title_max]
+            result["title"] = result["title"][: self.limits.title_max]
 
         if result["description"]:
-            result["description"] = result["description"][:self.limits.description_max]
+            result["description"] = result["description"][: self.limits.description_max]
 
         # Ensure keyword count within limits
         if len(result["keywords"]) > self.limits.keywords_max:
-            result["keywords"] = result["keywords"][:self.limits.keywords_max]
+            result["keywords"] = result["keywords"][: self.limits.keywords_max]
 
         return result
 

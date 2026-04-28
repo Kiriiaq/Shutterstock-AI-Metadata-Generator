@@ -3,15 +3,15 @@ IPTCEngine - Complete IPTC metadata management
 Handles editorial workflows, templates, and validation
 """
 
+import json
+import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
 from pathlib import Path
-import json
-import re
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
-from ..models.metadata_models import IPTCFields, ShutterstockMetadata, SHUTTERSTOCK_CATEGORIES
+from ..models.metadata_models import SHUTTERSTOCK_CATEGORIES, IPTCFields, ShutterstockMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,7 @@ class IPTCTemplate:
     """
     Reusable IPTC metadata template
     """
+
     name: str
     description: str = ""
 
@@ -244,7 +245,7 @@ class IPTCEngine:
 
         # Categories: map supplemental_categories to Shutterstock categories
         categories = []
-        for cat in (iptc.supplemental_categories or []):
+        for cat in iptc.supplemental_categories or []:
             matched = self._match_shutterstock_category(cat)
             if matched and matched not in categories:
                 categories.append(matched)
@@ -354,7 +355,7 @@ class IPTCEngine:
         # Country code validation
         if iptc.country_code:
             if len(iptc.country_code) != 3:
-                errors.append(f"Country code must be 3 characters (ISO 3166-1 alpha-3)")
+                errors.append("Country code must be 3 characters (ISO 3166-1 alpha-3)")
             elif iptc.country_code.upper() not in COUNTRY_CODES:
                 warnings.append(f"Unrecognized country code: {iptc.country_code}")
 
@@ -399,10 +400,10 @@ class IPTCEngine:
             kw = kw.lower().strip()
 
             # Remove special characters except hyphen
-            kw = re.sub(r'[^\w\s-]', '', kw)
+            kw = re.sub(r"[^\w\s-]", "", kw)
 
             # Normalize whitespace
-            kw = re.sub(r'\s+', ' ', kw)
+            kw = re.sub(r"\s+", " ", kw)
 
             # Skip empty, too short, or duplicates
             if len(kw) < 2:
@@ -416,10 +417,7 @@ class IPTCEngine:
         return cleaned
 
     def generate_copyright_notice(
-        self,
-        year: Optional[int] = None,
-        holder: str = "",
-        rights: str = "All Rights Reserved"
+        self, year: Optional[int] = None, holder: str = "", rights: str = "All Rights Reserved"
     ) -> str:
         """
         Generate a standard copyright notice
@@ -455,7 +453,7 @@ class IPTCEngine:
         result = IPTCFields()
 
         # Get all field names
-        fields = [f for f in dir(base) if not f.startswith('_') and not callable(getattr(base, f))]
+        fields = [f for f in dir(base) if not f.startswith("_") and not callable(getattr(base, f))]
 
         for field_name in fields:
             base_value = getattr(base, field_name, None)
@@ -495,7 +493,7 @@ class IPTCEngine:
     def save_templates(self, file_path: Path):
         """Save all templates to JSON file"""
         data = {name: tpl.to_dict() for name, tpl in self.templates.items()}
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def load_templates(self, file_path: Path):
@@ -503,7 +501,7 @@ class IPTCEngine:
         if not file_path.exists():
             return
 
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         for name, tpl_data in data.items():

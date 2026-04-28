@@ -2,14 +2,15 @@
 Audit Page - View processing history, logs, and statistics
 """
 
-import customtkinter as ctk
-from tkinter import ttk, filedialog, messagebox
+import threading
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, List, Callable
-import threading
+from tkinter import filedialog, messagebox, ttk
+from typing import List, Optional
 
-from ...modules.storage.database import Database, ActionType, AuditLog
+import customtkinter as ctk
+
+from ...modules.storage.database import ActionType, AuditLog, Database
 
 
 class AuditPage(ctk.CTkFrame):
@@ -64,10 +65,7 @@ class AuditPage(ctk.CTkFrame):
         # Action type filter
         ctk.CTkLabel(filter_frame, text="Action:").pack(side="left", padx=(10, 5))
         self.action_filter = ctk.CTkComboBox(
-            filter_frame,
-            values=["All"] + [a.value for a in ActionType],
-            width=150,
-            command=self._on_filter_change
+            filter_frame, values=["All"] + [a.value for a in ActionType], width=150, command=self._on_filter_change
         )
         self.action_filter.set("All")
         self.action_filter.pack(side="left", padx=5)
@@ -78,7 +76,7 @@ class AuditPage(ctk.CTkFrame):
             filter_frame,
             values=["All Time", "Today", "Last 7 Days", "Last 30 Days", "This Month"],
             width=120,
-            command=self._on_filter_change
+            command=self._on_filter_change,
         )
         self.date_filter.set("Last 7 Days")
         self.date_filter.pack(side="left", padx=5)
@@ -86,29 +84,16 @@ class AuditPage(ctk.CTkFrame):
         # Success filter
         ctk.CTkLabel(filter_frame, text="Status:").pack(side="left", padx=(20, 5))
         self.success_filter = ctk.CTkComboBox(
-            filter_frame,
-            values=["All", "Success", "Failed"],
-            width=100,
-            command=self._on_filter_change
+            filter_frame, values=["All", "Success", "Failed"], width=100, command=self._on_filter_change
         )
         self.success_filter.set("All")
         self.success_filter.pack(side="left", padx=5)
 
         # Refresh button
-        ctk.CTkButton(
-            filter_frame,
-            text="Refresh",
-            width=80,
-            command=self._load_data
-        ).pack(side="left", padx=(20, 5))
+        ctk.CTkButton(filter_frame, text="Refresh", width=80, command=self._load_data).pack(side="left", padx=(20, 5))
 
         # Export button
-        ctk.CTkButton(
-            filter_frame,
-            text="Export",
-            width=80,
-            command=self._export_logs
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(filter_frame, text="Export", width=80, command=self._export_logs).pack(side="left", padx=5)
 
         # ============ Log Table Section ============
         table_frame = ctk.CTkFrame(self)
@@ -118,12 +103,7 @@ class AuditPage(ctk.CTkFrame):
 
         # Treeview for logs
         columns = ("timestamp", "action", "file", "status", "duration", "batch")
-        self.log_tree = ttk.Treeview(
-            table_frame,
-            columns=columns,
-            show="headings",
-            selectmode="browse"
-        )
+        self.log_tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
 
         # Configure columns
         self.log_tree.heading("timestamp", text="Timestamp", anchor="w")
@@ -156,17 +136,13 @@ class AuditPage(ctk.CTkFrame):
         # Style for treeview
         style = ttk.Style()
         style.configure("Treeview", rowheight=25)
-        style.configure("Treeview.Heading", font=('Segoe UI', 10, 'bold'))
+        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"))
 
         # ============ Details Panel ============
         details_frame = ctk.CTkFrame(self)
         details_frame.grid(row=3, column=0, padx=10, pady=(0, 10), sticky="ew")
 
-        ctk.CTkLabel(
-            details_frame,
-            text="Double-click a log entry to view details",
-            text_color="gray"
-        ).pack(pady=10)
+        ctk.CTkLabel(details_frame, text="Double-click a log entry to view details", text_color="gray").pack(pady=10)
 
         self.details_text = ctk.CTkTextbox(details_frame, height=100)
         self.details_text.pack(fill="x", padx=10, pady=(0, 10))
@@ -177,18 +153,9 @@ class AuditPage(ctk.CTkFrame):
         frame = ctk.CTkFrame(parent)
         frame.grid(row=0, column=column, padx=5, pady=5, sticky="ew")
 
-        ctk.CTkLabel(
-            frame,
-            text=label,
-            font=ctk.CTkFont(size=11),
-            text_color="gray"
-        ).pack(pady=(5, 0))
+        ctk.CTkLabel(frame, text=label, font=ctk.CTkFont(size=11), text_color="gray").pack(pady=(5, 0))
 
-        value_label = ctk.CTkLabel(
-            frame,
-            text=value,
-            font=ctk.CTkFont(size=24, weight="bold")
-        )
+        value_label = ctk.CTkLabel(frame, text=value, font=ctk.CTkFont(size=24, weight="bold"))
         value_label.pack(pady=(0, 5))
 
         return value_label
@@ -253,7 +220,7 @@ class AuditPage(ctk.CTkFrame):
                 action_type=self._filter_action,
                 start_date=self._filter_start_date,
                 end_date=self._filter_end_date,
-                limit=500
+                limit=500,
             )
 
             # Filter by success if needed
@@ -263,16 +230,16 @@ class AuditPage(ctk.CTkFrame):
             # Update table on main thread
             self.after(0, lambda: self._update_table(logs))
 
-        except Exception as e:
+        except Exception:
             self.after(0, lambda: messagebox.showerror("Error", f"Failed to load data: {e}"))
 
     def _update_stats(self, stats: dict):
         """Update statistics display"""
-        self.stat_total.configure(text=str(stats.get('total_processed', 0)))
-        self.stat_ai.configure(text=str(stats.get('with_ai_analysis', 0)))
-        self.stat_metadata.configure(text=str(stats.get('with_metadata', 0)))
-        self.stat_errors.configure(text=str(stats.get('recent_errors', 0)))
-        self.stat_batches.configure(text=str(stats.get('total_batches', 0)))
+        self.stat_total.configure(text=str(stats.get("total_processed", 0)))
+        self.stat_ai.configure(text=str(stats.get("with_ai_analysis", 0)))
+        self.stat_metadata.configure(text=str(stats.get("with_metadata", 0)))
+        self.stat_errors.configure(text=str(stats.get("recent_errors", 0)))
+        self.stat_batches.configure(text=str(stats.get("total_batches", 0)))
 
     def _update_table(self, logs: List[AuditLog]):
         """Update log table"""
@@ -286,14 +253,19 @@ class AuditPage(ctk.CTkFrame):
             duration = f"{log.duration_ms}ms" if log.duration_ms else "-"
             file_name = Path(log.file_path).name if log.file_path else "-"
 
-            self.log_tree.insert("", "end", values=(
-                log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                log.action_type.value,
-                file_name,
-                status,
-                duration,
-                log.batch_id[:8] if log.batch_id else "-"
-            ), tags=("error",) if not log.success else ())
+            self.log_tree.insert(
+                "",
+                "end",
+                values=(
+                    log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                    log.action_type.value,
+                    file_name,
+                    status,
+                    duration,
+                    log.batch_id[:8] if log.batch_id else "-",
+                ),
+                tags=("error",) if not log.success else (),
+            )
 
         # Style error rows
         self.log_tree.tag_configure("error", foreground="red")
@@ -305,16 +277,14 @@ class AuditPage(ctk.CTkFrame):
             return
 
         item = self.log_tree.item(selection[0])
-        values = item['values']
+        values = item["values"]
 
         # Get full log entry
         timestamp_str = values[0]
         timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
 
         logs = self.database.get_audit_logs(
-            start_date=timestamp - timedelta(seconds=1),
-            end_date=timestamp + timedelta(seconds=1),
-            limit=1
+            start_date=timestamp - timedelta(seconds=1), end_date=timestamp + timedelta(seconds=1), limit=1
         )
 
         if logs:
@@ -342,11 +312,7 @@ class AuditPage(ctk.CTkFrame):
         file_path = filedialog.asksaveasfilename(
             title="Export Audit Logs",
             defaultextension=".json",
-            filetypes=[
-                ("JSON Files", "*.json"),
-                ("CSV Files", "*.csv"),
-                ("All Files", "*.*")
-            ]
+            filetypes=[("JSON Files", "*.json"), ("CSV Files", "*.csv"), ("All Files", "*.*")],
         )
 
         if not file_path:

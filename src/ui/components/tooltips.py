@@ -2,9 +2,9 @@
 Tooltips module - Provides tooltip functionality for CustomTkinter widgets
 """
 
+from typing import Dict, Optional
+
 import customtkinter as ctk
-from typing import Optional, Dict, Any
-import threading
 
 
 class ToolTip:
@@ -21,7 +21,7 @@ class ToolTip:
         wrap_length: int = 300,
         bg_color: str = "#333333",
         fg_color: str = "#ffffff",
-        font_size: int = 11
+        font_size: int = 11,
     ):
         """
         Create a tooltip for a widget
@@ -90,11 +90,7 @@ class ToolTip:
         self.tooltip_window.wm_attributes("-topmost", True)
 
         # Create tooltip content
-        frame = ctk.CTkFrame(
-            self.tooltip_window,
-            fg_color=self.bg_color,
-            corner_radius=6
-        )
+        frame = ctk.CTkFrame(self.tooltip_window, fg_color=self.bg_color, corner_radius=6)
         frame.pack(fill="both", expand=True)
 
         label = ctk.CTkLabel(
@@ -103,7 +99,7 @@ class ToolTip:
             text_color=self.fg_color,
             font=ctk.CTkFont(size=self.font_size),
             wraplength=self.wrap_length,
-            justify="left"
+            justify="left",
         )
         label.pack(padx=10, pady=6)
 
@@ -148,7 +144,6 @@ class ToolTipManager:
         "ftps_password": "Your Shutterstock FTP password (from contributor dashboard)",
         "debug_mode": "Enable detailed logging for troubleshooting",
         "log_level": "Minimum log level to record",
-
         # Write page
         "iptc_title": "Short title for the image (max 64 chars). Used as ObjectName.",
         "iptc_headline": "Descriptive headline (max 256 chars). Main title field.",
@@ -167,35 +162,27 @@ class ToolTipManager:
         "template_selector": "Apply preset template values to fill common fields",
         "backup_checkbox": "Create a backup before writing metadata",
         "dry_run": "Simulate writing without actually modifying files",
-
         # Audit page
         "action_filter": "Filter logs by action type",
         "date_filter": "Filter logs by time period",
         "success_filter": "Filter by success or failure status",
         "export_logs": "Export filtered logs to JSON or CSV file",
-
         # Processing
         "recursive_scan": "Include files in subdirectories",
         "exclude_folders": "Folder names to skip (e.g., _backup, thumbs)",
         "exclude_patterns": "File patterns to skip (e.g., *_thumb.*, *.bak)",
-
         # Validation
         "validation_score": "Overall quality score based on completeness, quality, and SEO",
         "completeness_score": "How complete the metadata is (0-100)",
         "quality_score": "Quality of title, description, and keywords (0-100)",
-        "seo_score": "Search engine optimization score (0-100)"
+        "seo_score": "Search engine optimization score (0-100)",
     }
 
     def __init__(self):
         """Initialize tooltip manager"""
         self._tooltips: Dict[str, ToolTip] = {}
 
-    def attach(
-        self,
-        widget: ctk.CTkBaseClass,
-        key: str,
-        custom_text: Optional[str] = None
-    ) -> ToolTip:
+    def attach(self, widget: ctk.CTkBaseClass, key: str, custom_text: Optional[str] = None) -> ToolTip:
         """
         Attach a tooltip to a widget
 
@@ -212,12 +199,7 @@ class ToolTipManager:
         self._tooltips[id(widget)] = tooltip
         return tooltip
 
-    def attach_custom(
-        self,
-        widget: ctk.CTkBaseClass,
-        text: str,
-        **kwargs
-    ) -> ToolTip:
+    def attach_custom(self, widget: ctk.CTkBaseClass, text: str, **kwargs) -> ToolTip:
         """
         Attach a custom tooltip to a widget
 
@@ -270,12 +252,7 @@ class InfoButton(ctk.CTkButton):
     Small info button that shows tooltip on hover
     """
 
-    def __init__(
-        self,
-        parent,
-        tooltip_text: str,
-        **kwargs
-    ):
+    def __init__(self, parent, tooltip_text: str, **kwargs):
         """
         Create info button with tooltip
 
@@ -292,7 +269,7 @@ class InfoButton(ctk.CTkButton):
             font=ctk.CTkFont(size=10, weight="bold"),
             fg_color="gray",
             hover_color="#555555",
-            **kwargs
+            **kwargs,
         )
 
         # Attach tooltip

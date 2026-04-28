@@ -3,17 +3,16 @@
 Splash Screen Module - Loading screen with progress bar
 """
 
-import tkinter as tk
-from tkinter import ttk
 import threading
 import time
+import tkinter as tk
+from tkinter import ttk
 
 
 class SplashScreen:
     """Modern splash screen with progress bar."""
 
-    def __init__(self, title: str = "Loading...", version: str = "1.0.0",
-                 width: int = 400, height: int = 200):
+    def __init__(self, title: str = "Loading...", version: str = "1.0.0", width: int = 400, height: int = 200):
         self.title = title
         self.version = version
         self.width = width
@@ -44,35 +43,25 @@ class SplashScreen:
         frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Title
-        title_label = tk.Label(
-            frame,
-            text=self.title,
-            font=("Segoe UI", 18, "bold"),
-            fg="#ffffff",
-            bg="#1a1a2e"
-        )
+        title_label = tk.Label(frame, text=self.title, font=("Segoe UI", 18, "bold"), fg="#ffffff", bg="#1a1a2e")
         title_label.pack(pady=(10, 5))
 
         # Version
         version_label = tk.Label(
-            frame,
-            text=f"Version {self.version}",
-            font=("Segoe UI", 10),
-            fg="#888888",
-            bg="#1a1a2e"
+            frame, text=f"Version {self.version}", font=("Segoe UI", 10), fg="#888888", bg="#1a1a2e"
         )
         version_label.pack()
 
         # Progress bar style
         style = ttk.Style()
-        style.theme_use('clam')
+        style.theme_use("clam")
         style.configure(
             "Custom.Horizontal.TProgressbar",
-            troughcolor='#2d2d44',
-            background='#4a90d9',
-            darkcolor='#4a90d9',
-            lightcolor='#4a90d9',
-            bordercolor='#1a1a2e'
+            troughcolor="#2d2d44",
+            background="#4a90d9",
+            darkcolor="#4a90d9",
+            lightcolor="#4a90d9",
+            bordercolor="#1a1a2e",
         )
 
         # Progress bar
@@ -82,24 +71,18 @@ class SplashScreen:
             variable=self.progress_var,
             maximum=100,
             length=self.width - 60,
-            mode='determinate',
-            style="Custom.Horizontal.TProgressbar"
+            mode="determinate",
+            style="Custom.Horizontal.TProgressbar",
         )
         self.progress_bar.pack(pady=(30, 10))
 
         # Status label
         self.status_var = tk.StringVar(value="Initializing...")
-        status_label = tk.Label(
-            frame,
-            textvariable=self.status_var,
-            font=("Segoe UI", 9),
-            fg="#aaaaaa",
-            bg="#1a1a2e"
-        )
+        status_label = tk.Label(frame, textvariable=self.status_var, font=("Segoe UI", 9), fg="#aaaaaa", bg="#1a1a2e")
         status_label.pack()
 
         # Keep on top
-        self.root.attributes('-topmost', True)
+        self.root.attributes("-topmost", True)
         self.root.update()
 
     def update_progress(self, value: float, status: str = None):
@@ -128,8 +111,7 @@ class SplashScreen:
         self.root = None
 
 
-def run_with_splash(app_name: str, version: str, load_steps: list,
-                    launch_callback, error_callback=None):
+def run_with_splash(app_name: str, version: str, load_steps: list, launch_callback, error_callback=None):
     """
     Run application with splash screen.
 

@@ -4,18 +4,18 @@ Provides folder selection, recursive scanning, image preview, and batch selectio
 """
 
 import csv
-import customtkinter as ctk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
-import threading
-import time
 import logging
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Callable, Set
+import threading
 from dataclasses import dataclass
+from pathlib import Path
+from tkinter import filedialog, messagebox
+from typing import Callable, List, Optional
 
-from ...modules.workers.worker_pool import collect_image_files
+import customtkinter as ctk
+from PIL import Image
+
 from ...modules.engines.metadata_reader import MetadataReader
+from ...modules.workers.worker_pool import collect_image_files
 from ..components.tooltips import add_tooltip
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ImageItem:
     """Represents an image in the scan list"""
+
     path: Path
     size_bytes: int = 0
     width: int = 0
@@ -57,7 +58,7 @@ class ImageListItem(ctk.CTkFrame):
         image_item: ImageItem,
         on_select: Callable[[Path, bool], None] = None,
         on_preview: Callable[[Path], None] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(parent, height=40, **kwargs)
 
@@ -70,20 +71,12 @@ class ImageListItem(ctk.CTkFrame):
         # Checkbox
         self.selected_var = ctk.BooleanVar(value=image_item.selected)
         self.checkbox = ctk.CTkCheckBox(
-            self,
-            text="",
-            variable=self.selected_var,
-            width=24,
-            command=self._on_checkbox_changed
+            self, text="", variable=self.selected_var, width=24, command=self._on_checkbox_changed
         )
         self.checkbox.grid(row=0, column=0, padx=5)
 
         # Filename
-        self.name_label = ctk.CTkLabel(
-            self,
-            text=image_item.path.name,
-            anchor="w"
-        )
+        self.name_label = ctk.CTkLabel(self, text=image_item.path.name, anchor="w")
         self.name_label.grid(row=0, column=1, sticky="w", padx=5)
         self.name_label.bind("<Button-1>", self._on_click)
 
@@ -93,22 +86,13 @@ class ImageListItem(ctk.CTkFrame):
         self.size_label.grid(row=0, column=2, padx=5)
 
         # Dimensions
-        self.dims_label = ctk.CTkLabel(
-            self,
-            text=image_item.dimensions_str,
-            width=100
-        )
+        self.dims_label = ctk.CTkLabel(self, text=image_item.dimensions_str, width=100)
         self.dims_label.grid(row=0, column=3, padx=5)
 
         # Metadata indicator
         meta_text = "Has metadata" if image_item.has_metadata else "No metadata"
         meta_color = "green" if image_item.has_metadata else "gray"
-        self.meta_label = ctk.CTkLabel(
-            self,
-            text=meta_text,
-            text_color=meta_color,
-            width=100
-        )
+        self.meta_label = ctk.CTkLabel(self, text=meta_text, text_color=meta_color, width=100)
         self.meta_label.grid(row=0, column=4, padx=5)
 
     def _on_checkbox_changed(self):
@@ -130,7 +114,7 @@ class ScanPage(ctk.CTkFrame):
     Scan page for folder scanning and image selection
     """
 
-    SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.tiff', '.tif', '.webp'}
+    SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"}
 
     def __init__(
         self,
@@ -138,7 +122,7 @@ class ScanPage(ctk.CTkFrame):
         metadata_reader: MetadataReader = None,
         on_images_selected: Callable[[List[Path]], None] = None,
         on_process_requested: Callable[[List[Path]], None] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(parent, **kwargs)
 
@@ -180,11 +164,9 @@ class ScanPage(ctk.CTkFrame):
         section = ctk.CTkFrame(self)
         section.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
 
-        ctk.CTkLabel(
-            section,
-            text="Source Folder",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(anchor="w", padx=10, pady=5)
+        ctk.CTkLabel(section, text="Source Folder", font=ctk.CTkFont(size=16, weight="bold")).pack(
+            anchor="w", padx=10, pady=5
+        )
 
         # Folder row
         folder_row = ctk.CTkFrame(section, fg_color="transparent")
@@ -194,21 +176,10 @@ class ScanPage(ctk.CTkFrame):
         self.folder_entry.pack(side="left", padx=5)
         add_tooltip(self.folder_entry, "Path to folder containing images")
 
-        self.browse_btn = ctk.CTkButton(
-            folder_row,
-            text="Browse",
-            width=80,
-            command=self._browse_folder
-        )
+        self.browse_btn = ctk.CTkButton(folder_row, text="Browse", width=80, command=self._browse_folder)
         self.browse_btn.pack(side="left", padx=5)
 
-        self.scan_btn = ctk.CTkButton(
-            folder_row,
-            text="Scan",
-            width=80,
-            fg_color="green",
-            command=self._start_scan
-        )
+        self.scan_btn = ctk.CTkButton(folder_row, text="Scan", width=80, fg_color="green", command=self._start_scan)
         self.scan_btn.pack(side="left", padx=5)
 
     def _create_options_section(self):
@@ -222,9 +193,7 @@ class ScanPage(ctk.CTkFrame):
         # Recursive option
         self.recursive_var = ctk.BooleanVar(value=True)
         self.recursive_cb = ctk.CTkCheckBox(
-            options_row,
-            text="Recursive (include subfolders)",
-            variable=self.recursive_var
+            options_row, text="Recursive (include subfolders)", variable=self.recursive_var
         )
         self.recursive_cb.pack(side="left", padx=10)
         add_tooltip(self.recursive_cb, "recursive_scan")
@@ -237,17 +206,13 @@ class ScanPage(ctk.CTkFrame):
             options_row,
             values=["All images", "Without metadata", "With metadata"],
             width=150,
-            command=self._apply_filter
+            command=self._apply_filter,
         )
         self.filter_combo.set("All images")
         self.filter_combo.pack(side="left", padx=5)
 
         # Status label
-        self.status_label = ctk.CTkLabel(
-            options_row,
-            text="",
-            text_color="gray"
-        )
+        self.status_label = ctk.CTkLabel(options_row, text="", text_color="gray")
         self.status_label.pack(side="right", padx=10)
 
     def _create_image_list_section(self):
@@ -264,31 +229,15 @@ class ScanPage(ctk.CTkFrame):
         header.grid_propagate(False)
 
         # Selection controls
-        self.select_all_btn = ctk.CTkButton(
-            header,
-            text="Select All",
-            width=80,
-            height=24,
-            command=self._select_all
-        )
+        self.select_all_btn = ctk.CTkButton(header, text="Select All", width=80, height=24, command=self._select_all)
         self.select_all_btn.pack(side="left", padx=5, pady=3)
 
         self.deselect_all_btn = ctk.CTkButton(
-            header,
-            text="Deselect All",
-            width=80,
-            height=24,
-            command=self._deselect_all
+            header, text="Deselect All", width=80, height=24, command=self._deselect_all
         )
         self.deselect_all_btn.pack(side="left", padx=5, pady=3)
 
-        self.invert_btn = ctk.CTkButton(
-            header,
-            text="Invert",
-            width=60,
-            height=24,
-            command=self._invert_selection
-        )
+        self.invert_btn = ctk.CTkButton(header, text="Invert", width=60, height=24, command=self._invert_selection)
         self.invert_btn.pack(side="left", padx=5, pady=3)
 
         # Count label
@@ -320,11 +269,7 @@ class ScanPage(ctk.CTkFrame):
         section.grid(row=2, column=1, sticky="nsew", padx=10, pady=5)
         section.grid_propagate(False)
 
-        ctk.CTkLabel(
-            section,
-            text="Preview",
-            font=ctk.CTkFont(size=14, weight="bold")
-        ).pack(pady=5)
+        ctk.CTkLabel(section, text="Preview", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=5)
 
         # Preview canvas
         self.preview_label = ctk.CTkLabel(section, text="Select an image")
@@ -348,27 +293,20 @@ class ScanPage(ctk.CTkFrame):
             height=40,
             fg_color="green",
             font=ctk.CTkFont(size=14, weight="bold"),
-            command=self._process_selected
+            command=self._process_selected,
         )
         self.process_btn.pack(side="right", padx=10)
         add_tooltip(self.process_btn, "Start AI analysis on selected images")
 
         # Export list button
-        self.export_btn = ctk.CTkButton(
-            section,
-            text="Export List",
-            width=100,
-            command=self._export_list
-        )
+        self.export_btn = ctk.CTkButton(section, text="Export List", width=100, command=self._export_list)
         self.export_btn.pack(side="left", padx=10)
 
     # ==================== Actions ====================
 
     def _browse_folder(self):
         """Open folder browser"""
-        folder = filedialog.askdirectory(
-            title="Select Image Folder"
-        )
+        folder = filedialog.askdirectory(title="Select Image Folder")
         if folder:
             self.folder_entry.delete(0, "end")
             self.folder_entry.insert(0, folder)
@@ -398,9 +336,7 @@ class ScanPage(ctk.CTkFrame):
             try:
                 # Collect files
                 files = collect_image_files(
-                    folder_path,
-                    recursive=self.recursive_var.get(),
-                    extensions=self.SUPPORTED_EXTENSIONS
+                    folder_path, recursive=self.recursive_var.get(), extensions=self.SUPPORTED_EXTENSIONS
                 )
 
                 # Get metadata status for each
@@ -420,9 +356,7 @@ class ScanPage(ctk.CTkFrame):
                         if self.metadata_reader:
                             meta = self.metadata_reader.read_quick_info(f)
                             if meta:
-                                item.has_metadata = bool(
-                                    meta.get("has_iptc") or meta.get("has_xmp")
-                                )
+                                item.has_metadata = bool(meta.get("has_iptc") or meta.get("has_xmp"))
                     except Exception as e:
                         logger.debug(f"Error reading {f}: {e}")
 
@@ -430,8 +364,9 @@ class ScanPage(ctk.CTkFrame):
 
                     # Update progress
                     if i % 10 == 0:
-                        self.after(0, lambda c=i+1, t=len(files):
-                            self.status_label.configure(text=f"Scanning... {c}/{t}"))
+                        self.after(
+                            0, lambda c=i + 1, t=len(files): self.status_label.configure(text=f"Scanning... {c}/{t}")
+                        )
 
                 self._images = images
                 self.after(0, self._on_scan_complete)
@@ -448,10 +383,7 @@ class ScanPage(ctk.CTkFrame):
         self.scan_btn.configure(state="normal", text="Scan")
 
         count = len(self._images)
-        self.status_label.configure(
-            text=f"Found {count} images",
-            text_color="green"
-        )
+        self.status_label.configure(text=f"Found {count} images", text_color="green")
 
         self._populate_list()
         self._update_counts()
@@ -476,10 +408,7 @@ class ScanPage(ctk.CTkFrame):
 
         for item in self._images:
             widget = ImageListItem(
-                self.list_frame,
-                item,
-                on_select=self._on_item_selected,
-                on_preview=self._show_preview
+                self.list_frame, item, on_select=self._on_item_selected, on_preview=self._show_preview
             )
             widget.pack(fill="x", pady=1)
             self._list_widgets.append(widget)
@@ -559,7 +488,7 @@ class ScanPage(ctk.CTkFrame):
         """Update preview info text"""
         info_lines = [
             f"Filename: {path.name}",
-            f"Size: {path.stat().st_size / (1024*1024):.2f} MB",
+            f"Size: {path.stat().st_size / (1024 * 1024):.2f} MB",
             f"Dimensions: {img.width}x{img.height}",
             f"Resolution: {(img.width * img.height) / 1_000_000:.1f} MP",
             f"Format: {img.format}",
@@ -600,9 +529,7 @@ class ScanPage(ctk.CTkFrame):
             self.on_process_requested(selected)
         else:
             messagebox.showinfo(
-                "Process",
-                f"Would process {len(selected)} images.\n"
-                "Connect to AI Control page for actual processing."
+                "Process", f"Would process {len(selected)} images.\nConnect to AI Control page for actual processing."
             )
 
     def _export_list(self):
@@ -612,8 +539,7 @@ class ScanPage(ctk.CTkFrame):
             return
 
         file_path = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+            defaultextension=".csv", filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
         )
 
         if file_path:
@@ -622,14 +548,16 @@ class ScanPage(ctk.CTkFrame):
                     writer = csv.writer(f)
                     writer.writerow(["Path", "Size (MB)", "Width", "Height", "Has Metadata", "Selected"])
                     for img in self._images:
-                        writer.writerow([
-                            str(img.path),
-                            f"{img.size_mb:.2f}",
-                            img.width,
-                            img.height,
-                            img.has_metadata,
-                            img.selected,
-                        ])
+                        writer.writerow(
+                            [
+                                str(img.path),
+                                f"{img.size_mb:.2f}",
+                                img.width,
+                                img.height,
+                                img.has_metadata,
+                                img.selected,
+                            ]
+                        )
 
                 messagebox.showinfo("Export", f"Exported to {file_path}")
 

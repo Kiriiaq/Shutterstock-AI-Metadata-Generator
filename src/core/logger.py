@@ -9,10 +9,7 @@ from typing import Optional
 
 
 def setup_logger(
-    name: str = "ShutterstockAI",
-    level: int = logging.DEBUG,
-    log_file: Optional[Path] = None,
-    console: bool = True
+    name: str = "ShutterstockAI", level: int = logging.DEBUG, log_file: Optional[Path] = None, console: bool = True
 ) -> logging.Logger:
     """
     Set up and return a configured logger.
@@ -33,10 +30,7 @@ def setup_logger(
     logger.handlers.clear()
 
     # Create formatter
-    formatter = logging.Formatter(
-        '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        datefmt='%H:%M:%S'
-    )
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%H:%M:%S")
 
     # Console handler
     if console:
@@ -49,7 +43,7 @@ def setup_logger(
     if log_file:
         log_file = Path(log_file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

@@ -3,14 +3,14 @@ AI Control Page - UI for managing Ollama/LLaMA integration
 Provides controls for testing, starting, stopping, and monitoring AI
 """
 
-import customtkinter as ctk
-from tkinter import messagebox
-import threading
-import time
 import logging
-from typing import Optional, Callable, Dict, Any
+import threading
+from tkinter import messagebox
+from typing import Any, Callable, Dict
 
-from ...modules.ai.ollama_client import OllamaClient, OllamaStatus, ModelInfo
+import customtkinter as ctk
+
+from ...modules.ai.ollama_client import OllamaClient, OllamaStatus
 from ...modules.ai.vision_analyzer import VisionAnalyzer
 from ..components.tooltips import add_tooltip
 
@@ -20,22 +20,12 @@ logger = logging.getLogger(__name__)
 class StatusIndicator(ctk.CTkLabel):
     """Visual status indicator with colored dot"""
 
-    COLORS = {
-        "green": "#22c55e",
-        "red": "#ef4444",
-        "orange": "#f97316",
-        "gray": "#6b7280"
-    }
+    COLORS = {"green": "#22c55e", "red": "#ef4444", "orange": "#f97316", "gray": "#6b7280"}
 
     def __init__(self, parent, size: int = 16, **kwargs):
         self._color = "gray"
         super().__init__(
-            parent,
-            text="●",
-            font=ctk.CTkFont(size=size),
-            text_color=self.COLORS[self._color],
-            width=size + 4,
-            **kwargs
+            parent, text="●", font=ctk.CTkFont(size=size), text_color=self.COLORS[self._color], width=size + 4, **kwargs
         )
 
     def set_color(self, color: str):
@@ -56,11 +46,7 @@ class AIControlPage(ctk.CTkFrame):
     """
 
     def __init__(
-        self,
-        parent,
-        settings: Dict[str, Any] = None,
-        on_status_change: Callable[[OllamaStatus], None] = None,
-        **kwargs
+        self, parent, settings: Dict[str, Any] = None, on_status_change: Callable[[OllamaStatus], None] = None, **kwargs
     ):
         super().__init__(parent, **kwargs)
 
@@ -85,26 +71,15 @@ class AIControlPage(ctk.CTkFrame):
         url = self.settings.get("ollama_url", "http://localhost:11434")
         timeout = int(self.settings.get("ollama_timeout", 120))
 
-        self.client = OllamaClient(
-            base_url=url,
-            timeout=timeout,
-            on_status_change=self._handle_status_change
-        )
-        self.analyzer = VisionAnalyzer(
-            client=self.client,
-            model=self.settings.get("ollama_model")
-        )
+        self.client = OllamaClient(base_url=url, timeout=timeout, on_status_change=self._handle_status_change)
+        self.analyzer = VisionAnalyzer(client=self.client, model=self.settings.get("ollama_model"))
 
     def _create_ui(self):
         """Create the UI components"""
         self.grid_columnconfigure(0, weight=1)
 
         # Title
-        title = ctk.CTkLabel(
-            self,
-            text="AI Control Panel",
-            font=ctk.CTkFont(size=20, weight="bold")
-        )
+        title = ctk.CTkLabel(self, text="AI Control Panel", font=ctk.CTkFont(size=20, weight="bold"))
         title.grid(row=0, column=0, pady=(10, 20), sticky="w", padx=20)
 
         # Main container
@@ -133,20 +108,12 @@ class AIControlPage(ctk.CTkFrame):
         header = ctk.CTkFrame(section, fg_color="transparent")
         header.pack(fill="x", padx=10, pady=5)
 
-        ctk.CTkLabel(
-            header,
-            text="Connection",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(side="left")
+        ctk.CTkLabel(header, text="Connection", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
 
         self.connection_indicator = StatusIndicator(header)
         self.connection_indicator.pack(side="left", padx=10)
 
-        self.connection_label = ctk.CTkLabel(
-            header,
-            text="Unknown",
-            text_color="gray"
-        )
+        self.connection_label = ctk.CTkLabel(header, text="Unknown", text_color="gray")
         self.connection_label.pack(side="left")
 
         # URL display
@@ -165,20 +132,12 @@ class AIControlPage(ctk.CTkFrame):
         btn_frame.pack(fill="x", padx=10, pady=10)
 
         self.check_btn = ctk.CTkButton(
-            btn_frame,
-            text="Check Connection",
-            width=140,
-            command=self._check_connection_async
+            btn_frame, text="Check Connection", width=140, command=self._check_connection_async
         )
         self.check_btn.pack(side="left", padx=5)
         add_tooltip(self.check_btn, "Test connection to Ollama server")
 
-        self.refresh_btn = ctk.CTkButton(
-            btn_frame,
-            text="Refresh Models",
-            width=140,
-            command=self._refresh_models
-        )
+        self.refresh_btn = ctk.CTkButton(btn_frame, text="Refresh Models", width=140, command=self._refresh_models)
         self.refresh_btn.pack(side="left", padx=5)
         add_tooltip(self.refresh_btn, "Refresh list of available models")
 
@@ -191,11 +150,7 @@ class AIControlPage(ctk.CTkFrame):
         header = ctk.CTkFrame(section, fg_color="transparent")
         header.pack(fill="x", padx=10, pady=5)
 
-        ctk.CTkLabel(
-            header,
-            text="Vision Model",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(side="left")
+        ctk.CTkLabel(header, text="Vision Model", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
 
         self.model_indicator = StatusIndicator(header)
         self.model_indicator.pack(side="left", padx=10)
@@ -207,20 +162,13 @@ class AIControlPage(ctk.CTkFrame):
         ctk.CTkLabel(model_frame, text="Select Model:", width=100).pack(side="left")
 
         self.model_combo = ctk.CTkComboBox(
-            model_frame,
-            values=["Loading..."],
-            width=300,
-            command=self._on_model_selected
+            model_frame, values=["Loading..."], width=300, command=self._on_model_selected
         )
         self.model_combo.pack(side="left", padx=5)
         add_tooltip(self.model_combo, "ollama_model")
 
         # Model info
-        self.model_info_label = ctk.CTkLabel(
-            section,
-            text="",
-            text_color="gray"
-        )
+        self.model_info_label = ctk.CTkLabel(section, text="", text_color="gray")
         self.model_info_label.pack(padx=10, pady=5, anchor="w")
 
         # Load/Unload buttons
@@ -228,21 +176,13 @@ class AIControlPage(ctk.CTkFrame):
         btn_frame.pack(fill="x", padx=10, pady=10)
 
         self.load_btn = ctk.CTkButton(
-            btn_frame,
-            text="Load Model",
-            width=120,
-            fg_color="green",
-            command=self._load_model
+            btn_frame, text="Load Model", width=120, fg_color="green", command=self._load_model
         )
         self.load_btn.pack(side="left", padx=5)
         add_tooltip(self.load_btn, "Load selected model into memory")
 
         self.unload_btn = ctk.CTkButton(
-            btn_frame,
-            text="Unload Model",
-            width=120,
-            fg_color="gray",
-            command=self._unload_model
+            btn_frame, text="Unload Model", width=120, fg_color="gray", command=self._unload_model
         )
         self.unload_btn.pack(side="left", padx=5)
         add_tooltip(self.unload_btn, "Unload model from memory to free resources")
@@ -253,31 +193,21 @@ class AIControlPage(ctk.CTkFrame):
         section.pack(fill="x", padx=10, pady=10)
 
         # Header
-        ctk.CTkLabel(
-            section,
-            text="Test AI",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(padx=10, pady=5, anchor="w")
+        ctk.CTkLabel(section, text="Test AI", font=ctk.CTkFont(size=16, weight="bold")).pack(
+            padx=10, pady=5, anchor="w"
+        )
 
         # Test button
         btn_frame = ctk.CTkFrame(section, fg_color="transparent")
         btn_frame.pack(fill="x", padx=10, pady=5)
 
         self.test_btn = ctk.CTkButton(
-            btn_frame,
-            text="Test AI Response",
-            width=160,
-            fg_color="blue",
-            command=self._test_ai
+            btn_frame, text="Test AI Response", width=160, fg_color="blue", command=self._test_ai
         )
         self.test_btn.pack(side="left", padx=5)
         add_tooltip(self.test_btn, "Send a test prompt to verify AI is working")
 
-        self.test_status = ctk.CTkLabel(
-            btn_frame,
-            text="",
-            text_color="gray"
-        )
+        self.test_status = ctk.CTkLabel(btn_frame, text="", text_color="gray")
         self.test_status.pack(side="left", padx=10)
 
         # Test result
@@ -292,11 +222,9 @@ class AIControlPage(ctk.CTkFrame):
         section.pack(fill="x", padx=10, pady=10)
 
         # Header
-        ctk.CTkLabel(
-            section,
-            text="Status Information",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(padx=10, pady=5, anchor="w")
+        ctk.CTkLabel(section, text="Status Information", font=ctk.CTkFont(size=16, weight="bold")).pack(
+            padx=10, pady=5, anchor="w"
+        )
 
         # Status grid
         self.status_text = ctk.CTkTextbox(section, height=120)
@@ -322,7 +250,7 @@ class AIControlPage(ctk.CTkFrame):
             OllamaStatus.OFFLINE: ("red", "Offline"),
             OllamaStatus.BUSY: ("orange", "Busy"),
             OllamaStatus.ERROR: ("red", "Error"),
-            OllamaStatus.UNKNOWN: ("gray", "Unknown")
+            OllamaStatus.UNKNOWN: ("gray", "Unknown"),
         }
 
         color, text = status_map.get(status, ("gray", "Unknown"))
@@ -547,10 +475,7 @@ class AIControlPage(ctk.CTkFrame):
 
     def is_ready(self) -> bool:
         """Check if AI is ready for analysis"""
-        return (
-            self.client.status == OllamaStatus.ONLINE and
-            self.analyzer.model is not None
-        )
+        return self.client.status == OllamaStatus.ONLINE and self.analyzer.model is not None
 
     def get_selected_model(self) -> str:
         """Get currently selected model"""

@@ -4,11 +4,11 @@ Pydantic models for data validation
 
 from .metadata_models import (
     ImageMetadata,
-    ShutterstockMetadata,
     IPTCFields,
     ProcessingJob,
     ProcessingResult,
-    ValidationResult
+    ShutterstockMetadata,
+    ValidationResult,
 )
 
 __all__ = [
@@ -17,5 +17,5 @@ __all__ = [
     "IPTCFields",
     "ProcessingJob",
     "ProcessingResult",
-    "ValidationResult"
+    "ValidationResult",
 ]

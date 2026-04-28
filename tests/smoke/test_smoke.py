@@ -5,11 +5,9 @@ surface area that is actually wired up today (ShutterstockAIv2 + DB + workers
 + engines + utils). UI is exercised by tests/ui/ with headless instantiation.
 """
 
-import pytest
-
 
 def test_database_crud(tmp_path):
-    from src.modules.storage.database import Database, ActionType
+    from src.modules.storage.database import ActionType, Database
 
     db = Database(tmp_path / "smoke.db")
     db.set_setting("audit_key", "audit_value")
@@ -234,4 +232,5 @@ class _RaiseExifToolMissing:
 
     def __init__(self, *args, **kwargs):
         from src.modules.engines.metadata_reader import ExifToolNotFoundError
+
         raise ExifToolNotFoundError("forced for smoke test")

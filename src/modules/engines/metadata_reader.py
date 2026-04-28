@@ -4,30 +4,28 @@ Uses ExifTool for comprehensive metadata extraction
 """
 
 import json
-import subprocess
-import shutil
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
 import logging
 import re
+import shutil
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from ..models.metadata_models import (
-    ImageMetadata,
-    IPTCFields,
-    MetadataSource
-)
+from ..models.metadata_models import ImageMetadata, IPTCFields, MetadataSource
 
 logger = logging.getLogger(__name__)
 
 
 class ExifToolNotFoundError(Exception):
     """Raised when ExifTool is not installed or not found"""
+
     pass
 
 
 class MetadataReadError(Exception):
     """Raised when metadata cannot be read from file"""
+
     pass
 
 
@@ -41,8 +39,10 @@ class MetadataReader:
         "-json",
         "-n",  # Numeric values
         "-G1",  # Group names
-        "-charset", "utf8",
-        "-api", "largefilesupport=1"
+        "-charset",
+        "utf8",
+        "-api",
+        "largefilesupport=1",
     ]
 
     # Mapping of EXIF tags to our fields
@@ -219,13 +219,7 @@ class MetadataReader:
         cmd = [self.exiftool_path] + self.EXIFTOOL_ARGS + [str(file_path)]
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30)
 
             if result.returncode != 0 and "Warning" not in result.stderr:
                 raise MetadataReadError(f"ExifTool error: {result.stderr}")
@@ -247,8 +241,8 @@ class MetadataReader:
                 cmd,
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                timeout=300  # Longer timeout for batch
+                encoding="utf-8",
+                timeout=300,  # Longer timeout for batch
             )
 
             data = json.loads(result.stdout)
@@ -266,12 +260,7 @@ class MetadataReader:
         stat = file_path.stat()
 
         metadata = ImageMetadata(
-            file_path=file_path,
-            file_name=file_path.name,
-            file_size=stat.st_size,
-            raw_exif={},
-            raw_iptc={},
-            raw_xmp={}
+            file_path=file_path, file_name=file_path.name, file_size=stat.st_size, raw_exif={}, raw_iptc={}, raw_xmp={}
         )
 
         sources = []
@@ -401,7 +390,7 @@ class MetadataReader:
         ]
 
         # Remove timezone if present
-        value = re.sub(r'[+-]\d{2}:\d{2}$', '', value)
+        value = re.sub(r"[+-]\d{2}:\d{2}$", "", value)
 
         for fmt in formats:
             try:
@@ -448,7 +437,7 @@ class MetadataReader:
             if value >= 1:
                 return f"{value}s"
             else:
-                return f"1/{int(1/value)}s"
+                return f"1/{int(1 / value)}s"
 
         return str(value)
 
@@ -466,17 +455,11 @@ class MetadataReader:
             "-FileSize",
             "-MIMEType",
             "-Orientation",
-            str(file_path)
+            str(file_path),
         ]
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=10
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
 
             data = json.loads(result.stdout)
             if data:
@@ -494,30 +477,12 @@ class MetadataReader:
         Returns:
             Dict with keys 'exif', 'iptc', 'xmp' and boolean values
         """
-        cmd = [
-            self.exiftool_path,
-            "-json",
-            "-G1",
-            "-EXIF:all",
-            "-IPTC:all",
-            "-XMP:all",
-            str(file_path)
-        ]
+        cmd = [self.exiftool_path, "-json", "-G1", "-EXIF:all", "-IPTC:all", "-XMP:all", str(file_path)]
 
-        result = {
-            "exif": False,
-            "iptc": False,
-            "xmp": False
-        }
+        result = {"exif": False, "iptc": False, "xmp": False}
 
         try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=10
-            )
+            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
 
             data = json.loads(proc.stdout)
             if data:

@@ -2,21 +2,22 @@
 File utilities for image processing.
 """
 
-import os
-import hashlib
 import fnmatch
-import shutil
+import hashlib
 import logging
-from pathlib import Path
-from typing import List, Optional, Set, Tuple, Dict, Any
-from enum import Enum
+import os
+import shutil
 from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class ValidationErrorCode(Enum):
     """Standardized validation error codes."""
+
     FILE_NOT_FOUND = "FILE_NOT_FOUND"
     PERMISSION_DENIED_READ = "PERMISSION_DENIED_READ"
     PERMISSION_DENIED_WRITE = "PERMISSION_DENIED_WRITE"
@@ -32,6 +33,7 @@ class ValidationErrorCode(Enum):
 @dataclass
 class FileValidationResult:
     """Structured file validation result."""
+
     is_valid: bool
     error_code: Optional[ValidationErrorCode] = None
     error_message: Optional[str] = None
@@ -46,7 +48,7 @@ class FileValidationResult:
 
 
 # Supported image extensions
-IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.tif', '.tiff', '.png', '.eps']
+IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".tif", ".tiff", ".png", ".eps"]
 
 
 def is_valid_image_extension(file_path: Path) -> bool:
@@ -88,7 +90,7 @@ def compute_file_hash(file_path: Path, chunk_size: int = 8192) -> str:
     """
     sha256 = hashlib.sha256()
 
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         while chunk := f.read(chunk_size):
             sha256.update(chunk)
 
@@ -101,7 +103,7 @@ def collect_image_files(
     extensions: Optional[List[str]] = None,
     exclude_extensions: Optional[List[str]] = None,
     exclude_folders: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None
+    exclude_patterns: Optional[List[str]] = None,
 ) -> List[Path]:
     """
     Collect all image files from a directory with filtering options.
@@ -135,7 +137,7 @@ def collect_image_files(
     directory = Path(directory)
     files = []
 
-    pattern = '**/*' if recursive else '*'
+    pattern = "**/*" if recursive else "*"
 
     for ext in extensions:
         # Skip if in exclude list
@@ -183,16 +185,94 @@ def collect_image_files(
 
 # Default stopwords for keyword cleaning
 DEFAULT_STOPWORDS: Set[str] = {
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-    'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-    'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
-    'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it',
-    'we', 'they', 'what', 'which', 'who', 'whom', 'when', 'where', 'why',
-    'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other',
-    'some', 'such', 'no', 'not', 'only', 'same', 'so', 'than', 'too',
-    'very', 'just', 'also', 'now', 'here', 'there', 'then', 'once',
-    'image', 'photo', 'picture', 'stock', 'shutterstock', 'photography'
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "as",
+    "is",
+    "was",
+    "are",
+    "were",
+    "been",
+    "be",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "can",
+    "need",
+    "this",
+    "that",
+    "these",
+    "those",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "what",
+    "which",
+    "who",
+    "whom",
+    "when",
+    "where",
+    "why",
+    "how",
+    "all",
+    "each",
+    "every",
+    "both",
+    "few",
+    "more",
+    "most",
+    "other",
+    "some",
+    "such",
+    "no",
+    "not",
+    "only",
+    "same",
+    "so",
+    "than",
+    "too",
+    "very",
+    "just",
+    "also",
+    "now",
+    "here",
+    "there",
+    "then",
+    "once",
+    "image",
+    "photo",
+    "picture",
+    "stock",
+    "shutterstock",
+    "photography",
 }
 
 
@@ -204,7 +284,7 @@ def clean_keywords(
     max_length: int = 64,
     max_keywords: int = 50,
     remove_duplicates: bool = True,
-    lowercase: bool = True
+    lowercase: bool = True,
 ) -> List[str]:
     """
     Clean and filter keywords list.
@@ -243,10 +323,10 @@ def clean_keywords(
         kw = kw.strip()
 
         # Remove special characters except hyphen and space
-        kw = re.sub(r'[^\w\s-]', '', kw)
+        kw = re.sub(r"[^\w\s-]", "", kw)
 
         # Normalize whitespace
-        kw = re.sub(r'\s+', ' ', kw).strip()
+        kw = re.sub(r"\s+", " ", kw).strip()
 
         # Skip if too short or too long
         if len(kw) < min_length or len(kw) > max_length:
@@ -271,10 +351,7 @@ def clean_keywords(
     return cleaned
 
 
-def validate_disk_space(
-    path: str,
-    required_mb: float = 100.0
-) -> FileValidationResult:
+def validate_disk_space(path: str, required_mb: float = 100.0) -> FileValidationResult:
     """
     Check if there's enough disk space for operations.
 
@@ -299,29 +376,28 @@ def validate_disk_space(
                 is_valid=False,
                 error_code=ValidationErrorCode.INSUFFICIENT_SPACE,
                 error_message=f"Insufficient disk space: {free_mb:.1f} MB available, {required_mb:.1f} MB required",
-                file_info={'free_mb': free_mb, 'required_mb': required_mb}
+                file_info={"free_mb": free_mb, "required_mb": required_mb},
             )
 
         return FileValidationResult(
             is_valid=True,
             file_info={
-                'free_mb': free_mb,
-                'total_mb': usage.total / (1024 * 1024),
-                'used_mb': usage.used / (1024 * 1024)
-            }
+                "free_mb": free_mb,
+                "total_mb": usage.total / (1024 * 1024),
+                "used_mb": usage.used / (1024 * 1024),
+            },
         )
 
     except Exception as e:
         return FileValidationResult(
             is_valid=False,
             error_code=ValidationErrorCode.PERMISSION_DENIED_READ,
-            error_message=f"Cannot check disk space: {e}"
+            error_message=f"Cannot check disk space: {e}",
         )
 
 
 def read_file_with_encoding_fallback(
-    file_path: str,
-    encodings: List[str] = None
+    file_path: str, encodings: List[str] = None
 ) -> Tuple[Optional[str], str, Optional[str]]:
     """
     Read a text file with automatic encoding detection.
@@ -334,30 +410,27 @@ def read_file_with_encoding_fallback(
         Tuple of (content, detected_encoding, error_message)
     """
     if encodings is None:
-        encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']
+        encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
 
     path = Path(file_path)
 
     if not path.exists():
-        return None, '', f"File not found: {file_path}"
+        return None, "", f"File not found: {file_path}"
 
     for encoding in encodings:
         try:
-            with open(path, 'r', encoding=encoding) as f:
+            with open(path, "r", encoding=encoding) as f:
                 content = f.read()
             return content, encoding, None
         except UnicodeDecodeError:
             continue
         except Exception as e:
-            return None, '', f"Error reading file: {e}"
+            return None, "", f"Error reading file: {e}"
 
-    return None, '', f"Cannot decode file with encodings: {encodings}"
+    return None, "", f"Cannot decode file with encodings: {encodings}"
 
 
-def validate_output_directory(
-    dir_path: str,
-    required_space_mb: float = 100.0
-) -> FileValidationResult:
+def validate_output_directory(dir_path: str, required_space_mb: float = 100.0) -> FileValidationResult:
     """
     Validate output directory is usable.
 
@@ -378,21 +451,19 @@ def validate_output_directory(
             return FileValidationResult(
                 is_valid=False,
                 error_code=ValidationErrorCode.PERMISSION_DENIED_WRITE,
-                error_message=f"Cannot create directory: {dir_path}"
+                error_message=f"Cannot create directory: {dir_path}",
             )
         except Exception as e:
             return FileValidationResult(
                 is_valid=False,
                 error_code=ValidationErrorCode.DIRECTORY_NOT_FOUND,
-                error_message=f"Error creating directory: {e}"
+                error_message=f"Error creating directory: {e}",
             )
 
     # Check it's a directory
     if not path.is_dir():
         return FileValidationResult(
-            is_valid=False,
-            error_code=ValidationErrorCode.INVALID_FORMAT,
-            error_message=f"Not a directory: {dir_path}"
+            is_valid=False, error_code=ValidationErrorCode.INVALID_FORMAT, error_message=f"Not a directory: {dir_path}"
         )
 
     # Check write permission
@@ -400,7 +471,7 @@ def validate_output_directory(
         return FileValidationResult(
             is_valid=False,
             error_code=ValidationErrorCode.PERMISSION_DENIED_WRITE,
-            error_message=f"Permission denied (write): {dir_path}"
+            error_message=f"Permission denied (write): {dir_path}",
         )
 
     # Check disk space
