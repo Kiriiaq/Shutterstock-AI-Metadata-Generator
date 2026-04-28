@@ -194,7 +194,7 @@ class OllamaClient:
             response = requests.get(f"{self.base_url}/api/version", timeout=3)
             if response.status_code == 200:
                 info["version"] = response.json().get("version", "unknown")
-        except:
+        except (requests.RequestException, ValueError):
             info["version"] = "unknown"
 
         return info

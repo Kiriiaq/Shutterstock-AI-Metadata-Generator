@@ -3,6 +3,7 @@ Scan Page - UI for scanning folders and selecting images for processing
 Provides folder selection, recursive scanning, image preview, and batch selection
 """
 
+import csv
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
@@ -617,14 +618,22 @@ class ScanPage(ctk.CTkFrame):
 
         if file_path:
             try:
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write("Path,Size (MB),Width,Height,Has Metadata,Selected\n")
+                with open(file_path, "w", encoding="utf-8", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Path", "Size (MB)", "Width", "Height", "Has Metadata", "Selected"])
                     for img in self._images:
-                        f.write(f'"{img.path}",{img.size_mb:.2f},{img.width},{img.height},{img.has_metadata},{img.selected}\n')
+                        writer.writerow([
+                            str(img.path),
+                            f"{img.size_mb:.2f}",
+                            img.width,
+                            img.height,
+                            img.has_metadata,
+                            img.selected,
+                        ])
 
                 messagebox.showinfo("Export", f"Exported to {file_path}")
 
-            except Exception as e:
+            except OSError as e:
                 messagebox.showerror("Error", f"Export failed: {e}")
 
     # ==================== Public API ====================
