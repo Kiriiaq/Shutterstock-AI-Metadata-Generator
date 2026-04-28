@@ -563,6 +563,52 @@ class Database:
 
     # ==================== File Status Methods ====================
 
+    def set_file_flags(
+        self,
+        file_path: str,
+        has_metadata: Optional[bool] = None,
+        has_ai_analysis: Optional[bool] = None,
+    ) -> None:
+        """Update boolean flags on file_status without touching hash/size/last_modified.
+
+        Creates a minimal placeholder row if none exists, then UPDATEs only the
+        requested flags. Safe to call from pipelines that don't track full
+        identity (e.g. AI analysis pipeline).
+        """
+        if has_metadata is None and has_ai_analysis is None:
+            return
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        now = datetime.now().isoformat()
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO file_status
+                (file_path, file_hash, file_size, last_modified, last_processed)
+            VALUES (?, '', 0, ?, ?)
+            """,
+            (file_path, now, now),
+        )
+
+        updates: List[str] = []
+        params: List[Any] = []
+        if has_metadata is not None:
+            updates.append("has_metadata = ?")
+            params.append(1 if has_metadata else 0)
+        if has_ai_analysis is not None:
+            updates.append("has_ai_analysis = ?")
+            params.append(1 if has_ai_analysis else 0)
+        updates.append("last_processed = ?")
+        params.append(now)
+        params.append(file_path)
+
+        cursor.execute(
+            f"UPDATE file_status SET {', '.join(updates)} WHERE file_path = ?",
+            params,
+        )
+        conn.commit()
+
     def update_file_status(
         self,
         file_path: str,

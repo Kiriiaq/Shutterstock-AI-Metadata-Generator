@@ -1187,12 +1187,12 @@ class ShutterstockAIv2:
                 existing = self.read_metadata(file_path)
                 if existing and existing.has_iptc:
                     if existing.iptc.headline and existing.iptc.keywords:
-                        self.database.add_audit_log(
+                        self.database.log_action(
+                            ActionType.AI_ANALYSIS,
                             file_path=str(file_path),
-                            action=ActionType.AI_ANALYSIS,
                             success=True,
                             batch_id=batch_id,
-                            details="Skipped - already has metadata"
+                            details={"message": "Skipped - already has metadata"},
                         )
                         return {
                             "success": True,
@@ -1211,19 +1211,19 @@ class ShutterstockAIv2:
 
             if result.is_successful:
                 # Log success
-                self.database.add_audit_log(
+                self.database.log_action(
+                    ActionType.AI_ANALYSIS,
                     file_path=str(file_path),
-                    action=ActionType.AI_ANALYSIS,
                     success=True,
                     duration_ms=elapsed,
                     batch_id=batch_id,
-                    details=f"Model: {result.model_used}, Keywords: {len(result.keywords)}"
+                    details={"model": result.model_used, "keywords_count": len(result.keywords)},
                 )
 
                 # Update file status
-                self.database.update_file_status(
+                self.database.set_file_flags(
                     str(file_path),
-                    has_ai_analysis=True
+                    has_ai_analysis=True,
                 )
 
                 return {
@@ -1239,13 +1239,13 @@ class ShutterstockAIv2:
                     "tokens_per_second": result.tokens_per_second
                 }
             else:
-                self.database.add_audit_log(
+                self.database.log_action(
+                    ActionType.AI_ANALYSIS,
                     file_path=str(file_path),
-                    action=ActionType.AI_ANALYSIS,
                     success=False,
                     duration_ms=elapsed,
                     batch_id=batch_id,
-                    error_message=result.error
+                    error_message=result.error,
                 )
 
                 return {
@@ -1256,12 +1256,12 @@ class ShutterstockAIv2:
 
         except Exception as e:
             logger.error(f"AI analysis failed for {file_path}: {e}")
-            self.database.add_audit_log(
+            self.database.log_action(
+                ActionType.AI_ANALYSIS,
                 file_path=str(file_path),
-                action=ActionType.AI_ANALYSIS,
                 success=False,
                 error_message=str(e),
-                batch_id=batch_id
+                batch_id=batch_id,
             )
             return {
                 "success": False,
@@ -1386,17 +1386,17 @@ class ShutterstockAIv2:
             )
 
             if success:
-                self.database.add_audit_log(
+                self.database.log_action(
+                    ActionType.METADATA_WRITE,
                     file_path=str(result.file_path),
-                    action=ActionType.METADATA_WRITE,
                     success=True,
                     batch_id=batch_id,
-                    details="AI metadata written"
+                    details={"message": "AI metadata written"},
                 )
 
-                self.database.update_file_status(
+                self.database.set_file_flags(
                     str(result.file_path),
-                    has_metadata=True
+                    has_metadata=True,
                 )
 
         except Exception as e:

@@ -42,6 +42,27 @@ def test_database_batch_lifecycle(tmp_path):
     db.close()
 
 
+def test_database_set_file_flags(tmp_path):
+    """set_file_flags must update boolean flags without requiring hash/size."""
+    from src.modules.storage.database import Database
+
+    db = Database(tmp_path / "flags.db")
+    db.set_file_flags("/tmp/img1.jpg", has_ai_analysis=True)
+    row = db.get_file_status("/tmp/img1.jpg")
+    assert row is not None
+    assert row["has_ai_analysis"] == 1
+    assert row["has_metadata"] == 0
+
+    db.set_file_flags("/tmp/img1.jpg", has_metadata=True)
+    row = db.get_file_status("/tmp/img1.jpg")
+    assert row["has_metadata"] == 1
+    assert row["has_ai_analysis"] == 1
+
+    # No-op when both kwargs are None
+    db.set_file_flags("/tmp/img1.jpg")
+    db.close()
+
+
 def test_iptc_engine_templates():
     from src.modules.engines.iptc_engine import IPTCEngine
 
