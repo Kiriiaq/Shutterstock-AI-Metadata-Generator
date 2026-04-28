@@ -352,7 +352,12 @@ def main():
 
             if self.api:
                 try:
-                    write_page = WritePage(tab, self.api)
+                    write_page = WritePage(
+                        tab,
+                        database=self.api.database,
+                        metadata_reader=self.api.metadata_reader,
+                        metadata_writer=self.api.metadata_writer,
+                    )
                     write_page.grid(row=0, column=0, sticky="nsew")
                 except Exception as e:
                     logger.error(f"Failed to create WritePage: {e}")
