@@ -364,7 +364,7 @@ class OllamaClient:
         try:
             # Ollama automatically unloads after timeout
             # Force by loading with keep_alive=0
-            response = requests.post(
+            requests.post(
                 f"{self.base_url}/api/generate",
                 json={"model": self._current_model, "prompt": "", "keep_alive": 0, "stream": False},
                 timeout=30,
