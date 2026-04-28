@@ -7,11 +7,24 @@ import sys
 import logging
 from pathlib import Path
 
+
+def resource_path(relative_path: str) -> Path:
+    """Resolve a path that works in both source tree and PyInstaller bundle."""
+    if getattr(sys, "frozen", False):
+        base = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
+    else:
+        base = Path(__file__).parent
+    return base / relative_path
+
+
 # Configuration Windows pour l'icone dans la barre des taches
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
         import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShutterstockAI.v2.0")
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "ShutterstockAnalyzer.v2.0"
+        )
     except Exception:
         pass
 
@@ -100,9 +113,18 @@ def main():
         def __init__(self):
             super().__init__()
 
-            self.title("Shutterstock AI Metadata Generator v2.0")
+            self.title("ShutterstockAnalyzer v2.0.0 - AI Metadata Generator for Stock Photography")
             self.geometry("1400x900")
             self.minsize(1200, 800)
+
+            # Window icon (top-left corner). Uses resource_path so it works
+            # in both source tree and PyInstaller --onefile bundle.
+            icon_path = resource_path("assets/icons/icone.ico")
+            if icon_path.exists():
+                try:
+                    self.iconbitmap(str(icon_path))
+                except Exception as e:
+                    logger.warning(f"Could not set window icon: {e}")
 
             # Set theme
             ctk.set_appearance_mode("dark")
