@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CHECKLIST IHM — ShutterstockAnalyzer v2.0.0</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --panel-2: #243246;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #3b82f6;
+  --ok: #22c55e;
+  --warn: #f97316;
+  --ko: #ef4444;
+  --border: #334155;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+header h1 { margin: 0 0 4px; font-size: 20px; }
+header .sub { color: var(--muted); font-size: 13px; }
+.toolbar {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+button:hover { background: var(--accent); border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); }
+button.danger { background: var(--ko); border-color: var(--ko); }
+main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+section {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+section h2 { margin: 0 0 16px; font-size: 17px; color: var(--accent); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+}
+.item {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.item.hidden { display: none; }
+.item h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.badge.bloq { background: var(--ko); color: white; }
+.badge.maj { background: var(--warn); color: white; }
+.badge.min { background: var(--muted); color: white; }
+.item .loc { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.checks { margin: 8px 0; }
+.checks label {
+  display: block;
+  margin: 4px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+.checks input[type=checkbox] { margin-right: 8px; }
+.status-radios {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0;
+}
+.status-radios label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.status-radios input { margin: 0; }
+textarea { min-height: 50px; }
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0;
+}
+input[type=range] { width: 100%; }
+.range-value { text-align: right; font-weight: bold; }
+.flex-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.shot-preview {
+  margin-top: 8px;
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
+}
+@media print {
+  body { background: white; color: black; }
+  header, .toolbar, .flex-toolbar, button { display: none; }
+  section { page-break-inside: avoid; border: 1px solid #ccc; background: white; }
+  .item { background: white; border-color: #ccc; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Checklist IHM — ShutterstockAnalyzer v2.0.0</h1>
+  <div class="sub">audit/20260428 · Validation manuelle des 6 onglets + accessibilité · Auto-save dans localStorage</div>
+  <div class="toolbar">
+    <button id="btn-only-issues">Afficher seulement ❌ et ⚠️</button>
+    <button id="btn-show-all">Tout afficher</button>
+    <button class="primary" id="btn-export-json">Exporter JSON</button>
+    <button class="primary" id="btn-export-md">Exporter Markdown</button>
+    <button id="btn-copy-summary">Copier résumé</button>
+    <button onclick="window.print()">Imprimer / PDF</button>
+    <button class="danger" id="btn-reset">Réinitialiser</button>
+  </div>
+</header>
+
+<main>
+
+<section id="session">
+  <h2>1. Session</h2>
+  <div class="grid">
+    <div class="field"><label>Date</label><input type="date" data-field="date" /></div>
+    <div class="field"><label>Version testée</label><input type="text" data-field="version" value="2.0.0" /></div>
+    <div class="field"><label>Testeur</label><input type="text" data-field="tester" /></div>
+    <div class="field"><label>Environnement</label>
+      <select data-field="environment">
+        <option>Dev</option><option>Recette</option><option>Prod</option>
+      </select>
+    </div>
+    <div class="field"><label>OS / Build</label><input type="text" data-field="os" placeholder="ex: Windows 11 22H2" /></div>
+    <div class="field"><label>Profil EXE</label>
+      <select data-field="profile">
+        <option>Source (python main.py)</option>
+        <option>EXE Debug</option>
+        <option>EXE Release</option>
+      </select>
+    </div>
+  </div>
+</section>
+
+<section id="checks">
+  <h2>2. Checklist par élément (pré-rempli depuis l'inventaire)</h2>
+  <div id="items"></div>
+</section>
+
+<section id="a11y">
+  <h2>3. Accessibilité</h2>
+  <div class="checks">
+    <label><input type="checkbox" data-a11y="kbd-tab" /> Navigation clavier complète (Tab / Shift+Tab)</label>
+    <label><input type="checkbox" data-a11y="kbd-enter-esc" /> Enter et Escape gérés sur les dialogues</label>
+    <label><input type="checkbox" data-a11y="focus" /> Focus visible sur tous les widgets interactifs</label>
+    <label><input type="checkbox" data-a11y="dpi-100" /> Lisible à DPI 100 %</label>
+    <label><input type="checkbox" data-a11y="dpi-125" /> Lisible à DPI 125 %</label>
+    <label><input type="checkbox" data-a11y="dpi-150" /> Lisible à DPI 150 %</label>
+    <label><input type="checkbox" data-a11y="contrast" /> Contraste suffisant (texte sur fond, indicateurs)</label>
+    <label><input type="checkbox" data-a11y="window-resize" /> Redimensionnement propre (pas de chevauchement, scrollbars correctes)</label>
+  </div>
+</section>
+
+<section id="global">
+  <h2>4. Évaluation globale</h2>
+  <div class="summary-row">
+    <span>Ergonomie</span>
+    <input type="range" min="0" max="5" step="1" data-rating="ergo" />
+    <span class="range-value" data-rating-value="ergo">0/5</span>
+  </div>
+  <div class="summary-row">
+    <span>Lisibilité</span>
+    <input type="range" min="0" max="5" step="1" data-rating="readability" />
+    <span class="range-value" data-rating-value="readability">0/5</span>
+  </div>
+  <div class="summary-row">
+    <span>Cohérence</span>
+    <input type="range" min="0" max="5" step="1" data-rating="consistency" />
+    <span class="range-value" data-rating-value="consistency">0/5</span>
+  </div>
+  <div class="field" style="margin-top: 16px;">
+    <label>Points forts</label>
+    <textarea data-field="strengths"></textarea>
+  </div>
+  <div class="field">
+    <label>Points à améliorer</label>
+    <textarea data-field="improvements"></textarea>
+  </div>
+</section>
+
+<section id="exports">
+  <h2>5. Synthèse rapide</h2>
+  <pre id="summary-out" style="white-space: pre-wrap; background: var(--bg); padding: 12px; border-radius: 6px; border: 1px solid var(--border); margin: 0;"></pre>
+</section>
+
+</main>
+
+<script>
+'use strict';
+
+const ITEMS = [
+  // === Onglet AI Control ===
+  { id: 'AI-01', tab: 'AI Control', label: 'btn Check Connection', loc: 'src/ui/pages/ai_control_page.py', crit: 'Majeur' },
+  { id: 'AI-02', tab: 'AI Control', label: 'btn Refresh Models', loc: 'src/ui/pages/ai_control_page.py', crit: 'Majeur' },
+  { id: 'AI-03', tab: 'AI Control', label: 'combo Select Model', loc: 'src/ui/pages/ai_control_page.py', crit: 'Majeur' },
+  { id: 'AI-04', tab: 'AI Control', label: 'btn Load Model', loc: 'src/ui/pages/ai_control_page.py', crit: 'Majeur' },
+  { id: 'AI-05', tab: 'AI Control', label: 'btn Unload Model', loc: 'src/ui/pages/ai_control_page.py', crit: 'Mineur' },
+  { id: 'AI-06', tab: 'AI Control', label: 'btn Test AI Response', loc: 'src/ui/pages/ai_control_page.py', crit: 'Majeur' },
+  { id: 'AI-07', tab: 'AI Control', label: 'entry Server URL', loc: 'src/ui/pages/ai_control_page.py', crit: 'Mineur' },
+  // === Onglet Scan Images ===
+  { id: 'SC-01', tab: 'Scan Images', label: 'btn Browse', loc: 'src/ui/pages/scan_page.py', crit: 'Majeur' },
+  { id: 'SC-02', tab: 'Scan Images', label: 'btn Scan (recursive checkbox)', loc: 'src/ui/pages/scan_page.py', crit: 'Bloquant' },
+  { id: 'SC-04', tab: 'Scan Images', label: 'combo Filter (All/With/Without metadata)', loc: 'src/ui/pages/scan_page.py', crit: 'Majeur' },
+  { id: 'SC-05', tab: 'Scan Images', label: 'btn Select All / Deselect All / Invert', loc: 'src/ui/pages/scan_page.py', crit: 'Majeur' },
+  { id: 'SC-06', tab: 'Scan Images', label: 'clic image → preview + EXIF', loc: 'src/ui/pages/scan_page.py', crit: 'Majeur' },
+  { id: 'SC-07', tab: 'Scan Images', label: 'btn Process Selected Images', loc: 'src/ui/pages/scan_page.py', crit: 'Bloquant' },
+  { id: 'SC-08', tab: 'Scan Images', label: 'btn Export List (CSV)', loc: 'src/ui/pages/scan_page.py', crit: 'Mineur' },
+  // === Onglet AI Process ===
+  { id: 'PR-01', tab: 'AI Process', label: 'checkbox Skip images with existing metadata', loc: 'main.py', crit: 'Majeur' },
+  { id: 'PR-02', tab: 'AI Process', label: 'checkbox Write AI results to files', loc: 'main.py', crit: 'Majeur' },
+  { id: 'PR-03', tab: 'AI Process', label: 'btn Start AI Processing (B-2/B-3/B-4/B-5 fix)', loc: 'main.py / integration.py', crit: 'Bloquant' },
+  { id: 'PR-04', tab: 'AI Process', label: 'btn Stop', loc: 'main.py', crit: 'Majeur' },
+  // === Onglet Metadata Editor ===
+  { id: 'WR-00', tab: 'Metadata Editor', label: 'Tab construit (B-1 fix)', loc: 'main.py / write_page.py', crit: 'Bloquant' },
+  { id: 'WR-01', tab: 'Metadata Editor', label: 'btn Read from File (ExifTool)', loc: 'src/ui/pages/write_page.py', crit: 'Bloquant' },
+  { id: 'WR-02', tab: 'Metadata Editor', label: 'btn Write to File (IPTC + XMP)', loc: 'src/ui/pages/write_page.py', crit: 'Bloquant' },
+  { id: 'WR-03', tab: 'Metadata Editor', label: 'btn Write to All Files (disabled — coming soon)', loc: 'src/ui/pages/write_page.py / B-11', crit: 'Mineur' },
+  { id: 'WR-04', tab: 'Metadata Editor', label: 'Apply IPTC Template', loc: 'src/ui/pages/write_page.py', crit: 'Majeur' },
+  // === Onglet Audit Log ===
+  { id: 'AU-01', tab: 'Audit Log', label: 'combo Action filter', loc: 'src/ui/pages/audit_page.py', crit: 'Majeur' },
+  { id: 'AU-02', tab: 'Audit Log', label: 'combo Period filter', loc: 'src/ui/pages/audit_page.py', crit: 'Majeur' },
+  { id: 'AU-03', tab: 'Audit Log', label: 'combo Status filter (Success/Failed)', loc: 'src/ui/pages/audit_page.py', crit: 'Majeur' },
+  { id: 'AU-04', tab: 'Audit Log', label: 'btn Refresh', loc: 'src/ui/pages/audit_page.py', crit: 'Mineur' },
+  { id: 'AU-05', tab: 'Audit Log', label: 'btn Export (JSON/CSV)', loc: 'src/ui/pages/audit_page.py', crit: 'Mineur' },
+  { id: 'AU-06', tab: 'Audit Log', label: 'double-clic ligne → détails', loc: 'src/ui/pages/audit_page.py', crit: 'Majeur' },
+  // === Onglet Settings ===
+  { id: 'ST-01', tab: 'Settings', label: 'btn Save Settings', loc: 'src/ui/pages/settings_page.py', crit: 'Bloquant' },
+  { id: 'ST-02', tab: 'Settings', label: 'btn Test Ollama', loc: 'src/ui/pages/settings_page.py', crit: 'Majeur' },
+  { id: 'ST-03', tab: 'Settings', label: 'btn Test FTPS (disabled — coming soon)', loc: 'src/ui/pages/settings_page.py / B-12', crit: 'Mineur' },
+  { id: 'ST-04', tab: 'Settings', label: 'btn Create New Template (disabled — coming soon)', loc: 'src/ui/pages/settings_page.py / B-12', crit: 'Mineur' },
+  { id: 'ST-05', tab: 'Settings', label: 'btn Vacuum Database', loc: 'src/ui/pages/settings_page.py', crit: 'Mineur' },
+  { id: 'ST-06', tab: 'Settings', label: 'btn Export / Import Templates', loc: 'src/ui/pages/settings_page.py', crit: 'Majeur' },
+  { id: 'ST-07', tab: 'Settings', label: 'btn Reset to Defaults', loc: 'src/ui/pages/settings_page.py', crit: 'Mineur' },
+  { id: 'ST-08', tab: 'Settings', label: 'btn Export / Import Settings (JSON)', loc: 'src/ui/pages/settings_page.py', crit: 'Mineur' },
+  // === Header / Footer ===
+  { id: 'HD-01', tab: 'Header', label: 'Indicateur ExifTool: OK / NOT FOUND', loc: 'main.py', crit: 'Majeur' },
+  { id: 'HD-02', tab: 'Header', label: 'Indicateur AI: Online/Offline/Busy/Error/Unknown', loc: 'main.py', crit: 'Majeur' },
+  { id: 'HD-03', tab: 'Window', label: 'Title = "ShutterstockAnalyzer v2.0.0 - AI Metadata Generator for Stock Photography"', loc: 'main.py / B-7', crit: 'Bloquant' },
+  { id: 'HD-04', tab: 'Window', label: 'Icône custom (assets/icons/icone.ico) coin sup. gauche', loc: 'main.py / B-7', crit: 'Majeur' },
+  { id: 'HD-05', tab: 'Window', label: 'Icône custom dans la barre des tâches', loc: 'main.py (AppUserModelID)', crit: 'Majeur' },
+  { id: 'HD-06', tab: 'Window', label: 'on_closing : ferme API + window proprement', loc: 'main.py', crit: 'Majeur' }
+];
+
+const STORAGE_KEY = 'shutterstock-checklist-v2';
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { items: {}, fields: {}, a11y: {}, ratings: { ergo: 0, readability: 0, consistency: 0 } };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  refreshSummary();
+}
+
+function critBadge(crit) {
+  const cls = crit === 'Bloquant' ? 'bloq' : crit === 'Majeur' ? 'maj' : 'min';
+  return `<span class="badge ${cls}">${crit}</span>`;
+}
+
+function renderItems() {
+  const root = document.getElementById('items');
+  root.innerHTML = '';
+  let currentTab = '';
+  for (const it of ITEMS) {
+    if (it.tab !== currentTab) {
+      const h = document.createElement('h3');
+      h.textContent = `Onglet : ${it.tab}`;
+      h.style.color = '#94a3b8';
+      h.style.marginTop = '16px';
+      h.style.marginBottom = '8px';
+      h.style.borderBottom = '1px solid var(--border)';
+      h.style.paddingBottom = '4px';
+      root.appendChild(h);
+      currentTab = it.tab;
+    }
+    const cur = state.items[it.id] || {};
+    const status = cur.status || '';
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.dataset.id = it.id;
+    div.dataset.status = status;
+    div.innerHTML = `
+      <h3>${it.id} — ${it.label} ${critBadge(it.crit)}</h3>
+      <div class="loc">${it.loc}</div>
+      <div class="checks">
+        <label><input type="checkbox" data-check="visible" ${cur.visible ? 'checked' : ''} /> Visible et lisible</label>
+        <label><input type="checkbox" data-check="label" ${cur.label_ok ? 'checked' : ''} /> Label compréhensible</label>
+        <label><input type="checkbox" data-check="action" ${cur.action ? 'checked' : ''} /> Action déclenchée fonctionne</label>
+        <label><input type="checkbox" data-check="result" ${cur.result ? 'checked' : ''} /> Résultat clair pour l'utilisateur</label>
+        <label><input type="checkbox" data-check="errors" ${cur.errors ? 'checked' : ''} /> Cas d'erreur gérés (pas de traceback exposé)</label>
+      </div>
+      <div class="status-radios">
+        <label><input type="radio" name="status-${it.id}" value="ok" ${status === 'ok' ? 'checked' : ''} /> ✅ OK</label>
+        <label><input type="radio" name="status-${it.id}" value="partial" ${status === 'partial' ? 'checked' : ''} /> ⚠️ Partiel</label>
+        <label><input type="radio" name="status-${it.id}" value="ko" ${status === 'ko' ? 'checked' : ''} /> ❌ KO</label>
+      </div>
+      <div class="field">
+        <label>Commentaire</label>
+        <textarea data-comment="${it.id}">${cur.comment || ''}</textarea>
+      </div>
+      <div class="field">
+        <label>Capture (optionnelle)</label>
+        <input type="file" accept="image/*" data-shot="${it.id}" />
+        ${cur.shot ? `<img class="shot-preview" src="${cur.shot}" alt="capture" />` : ''}
+      </div>
+    `;
+
+    div.querySelectorAll('input[data-check]').forEach(el => {
+      el.addEventListener('change', () => {
+        state.items[it.id] = state.items[it.id] || {};
+        const k = el.dataset.check === 'label' ? 'label_ok' : el.dataset.check;
+        state.items[it.id][k] = el.checked;
+        saveState();
+      });
+    });
+    div.querySelectorAll(`input[name="status-${it.id}"]`).forEach(el => {
+      el.addEventListener('change', () => {
+        state.items[it.id] = state.items[it.id] || {};
+        state.items[it.id].status = el.value;
+        div.dataset.status = el.value;
+        saveState();
+      });
+    });
+    div.querySelector(`textarea[data-comment="${it.id}"]`).addEventListener('input', e => {
+      state.items[it.id] = state.items[it.id] || {};
+      state.items[it.id].comment = e.target.value;
+      saveState();
+    });
+    div.querySelector(`input[data-shot="${it.id}"]`).addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.items[it.id] = state.items[it.id] || {};
+        state.items[it.id].shot = reader.result;
+        saveState();
+        renderItems();
+      };
+      reader.readAsDataURL(f);
+    });
+
+    root.appendChild(div);
+  }
+}
+
+function bindFields() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const k = el.dataset.field;
+    if (state.fields[k] !== undefined) el.value = state.fields[k];
+    el.addEventListener('input', () => {
+      state.fields[k] = el.value;
+      saveState();
+    });
+  });
+  document.querySelectorAll('[data-a11y]').forEach(el => {
+    const k = el.dataset.a11y;
+    el.checked = !!state.a11y[k];
+    el.addEventListener('change', () => {
+      state.a11y[k] = el.checked;
+      saveState();
+    });
+  });
+  document.querySelectorAll('[data-rating]').forEach(el => {
+    const k = el.dataset.rating;
+    el.value = state.ratings[k] || 0;
+    document.querySelector(`[data-rating-value="${k}"]`).textContent = `${el.value}/5`;
+    el.addEventListener('input', () => {
+      state.ratings[k] = +el.value;
+      document.querySelector(`[data-rating-value="${k}"]`).textContent = `${el.value}/5`;
+      saveState();
+    });
+  });
+}
+
+function refreshSummary() {
+  const total = ITEMS.length;
+  let ok = 0, partial = 0, ko = 0, untested = 0;
+  for (const it of ITEMS) {
+    const s = state.items[it.id] && state.items[it.id].status;
+    if (s === 'ok') ok++;
+    else if (s === 'partial') partial++;
+    else if (s === 'ko') ko++;
+    else untested++;
+  }
+  const date = state.fields.date || '(date non renseignée)';
+  const tester = state.fields.tester || '(testeur non renseigné)';
+  const env = state.fields.environment || '(env)';
+  const profile = state.fields.profile || '(profil)';
+  const out = document.getElementById('summary-out');
+  out.textContent =
+`Date         : ${date}
+Testeur      : ${tester}
+Environnement: ${env} · ${profile}
+Total items  : ${total}
+✅ OK        : ${ok}
+⚠️ Partiel  : ${partial}
+❌ KO       : ${ko}
+○ Non testé  : ${untested}
+Notes        : ergo ${state.ratings.ergo || 0}/5 · lisibilité ${state.ratings.readability || 0}/5 · cohérence ${state.ratings.consistency || 0}/5`;
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify({ items: state.items, fields: state.fields, a11y: state.a11y, ratings: state.ratings, exported_at: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `checklist-ihm-${(state.fields.date || 'undated')}.json`;
+  a.click();
+}
+
+function exportMarkdown() {
+  const lines = [];
+  lines.push(`# Checklist IHM — ShutterstockAnalyzer v2.0.0`);
+  lines.push(``);
+  lines.push(`**Date** : ${state.fields.date || '-'}  `);
+  lines.push(`**Testeur** : ${state.fields.tester || '-'}  `);
+  lines.push(`**Environnement** : ${state.fields.environment || '-'} · ${state.fields.profile || '-'}  `);
+  lines.push(`**OS** : ${state.fields.os || '-'}`);
+  lines.push(``);
+  lines.push(`## Synthèse`);
+  let ok = 0, partial = 0, ko = 0, untested = 0;
+  for (const it of ITEMS) {
+    const s = state.items[it.id] && state.items[it.id].status;
+    if (s === 'ok') ok++;
+    else if (s === 'partial') partial++;
+    else if (s === 'ko') ko++;
+    else untested++;
+  }
+  lines.push(`- ✅ OK : ${ok}`);
+  lines.push(`- ⚠️ Partiel : ${partial}`);
+  lines.push(`- ❌ KO : ${ko}`);
+  lines.push(`- ○ Non testé : ${untested}`);
+  lines.push(``);
+  lines.push(`Notes : ergo ${state.ratings.ergo || 0}/5 · lisibilité ${state.ratings.readability || 0}/5 · cohérence ${state.ratings.consistency || 0}/5`);
+  lines.push(``);
+
+  let curTab = '';
+  for (const it of ITEMS) {
+    if (it.tab !== curTab) {
+      lines.push(``);
+      lines.push(`## ${it.tab}`);
+      curTab = it.tab;
+    }
+    const cur = state.items[it.id] || {};
+    const icon = cur.status === 'ok' ? '✅' : cur.status === 'partial' ? '⚠️' : cur.status === 'ko' ? '❌' : '○';
+    lines.push(`- ${icon} **${it.id}** *(${it.crit})* — ${it.label}${cur.comment ? ` — ${cur.comment}` : ''}`);
+  }
+  lines.push(``);
+  lines.push(`## Accessibilité`);
+  const a11yLabels = {
+    'kbd-tab': 'Navigation clavier',
+    'kbd-enter-esc': 'Enter/Escape',
+    'focus': 'Focus visible',
+    'dpi-100': 'DPI 100%',
+    'dpi-125': 'DPI 125%',
+    'dpi-150': 'DPI 150%',
+    'contrast': 'Contraste',
+    'window-resize': 'Redimensionnement',
+  };
+  for (const [k, label] of Object.entries(a11yLabels)) {
+    lines.push(`- [${state.a11y[k] ? 'x' : ' '}] ${label}`);
+  }
+  lines.push(``);
+  lines.push(`## Évaluation`);
+  if (state.fields.strengths) lines.push(`**Points forts** : ${state.fields.strengths}`);
+  if (state.fields.improvements) lines.push(`**Points à améliorer** : ${state.fields.improvements}`);
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `checklist-ihm-${(state.fields.date || 'undated')}.md`;
+  a.click();
+}
+
+function copySummary() {
+  const text = document.getElementById('summary-out').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Résumé copié dans le presse-papier'));
+}
+
+function reset() {
+  if (!confirm('Réinitialiser TOUS les champs et la sauvegarde locale ?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = loadState();
+  renderItems();
+  bindFields();
+  refreshSummary();
+}
+
+function filterIssues() {
+  document.querySelectorAll('.item').forEach(el => {
+    const s = el.dataset.status;
+    el.classList.toggle('hidden', s === 'ok' || !s ? false : s === 'partial' || s === 'ko' ? false : true);
+    // actually we want to SHOW only partial and ko:
+    if (s === 'partial' || s === 'ko') {
+      el.classList.remove('hidden');
+    } else {
+      el.classList.add('hidden');
+    }
+  });
+}
+
+function showAll() {
+  document.querySelectorAll('.item').forEach(el => el.classList.remove('hidden'));
+}
+
+document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+document.getElementById('btn-export-md').addEventListener('click', exportMarkdown);
+document.getElementById('btn-copy-summary').addEventListener('click', copySummary);
+document.getElementById('btn-reset').addEventListener('click', reset);
+document.getElementById('btn-only-issues').addEventListener('click', filterIssues);
+document.getElementById('btn-show-all').addEventListener('click', showAll);
+
+renderItems();
+bindFields();
+refreshSummary();
+
+// Default date today
+if (!state.fields.date) {
+  const today = new Date().toISOString().slice(0, 10);
+  state.fields.date = today;
+  document.querySelector('[data-field="date"]').value = today;
+  saveState();
+}
+</script>
+
+</body>
+</html>
