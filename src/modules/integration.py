@@ -1296,8 +1296,13 @@ class ShutterstockAIv2:
         batch_id = f"ai_batch_{int(time.time())}"
         start_time = time.time()
 
-        # Create batch record
-        self.database.create_batch(batch_id, len(file_paths))
+        # Create batch record. AI batches are file-list driven (no source
+        # folder), so we pass empty string for the schema-required column.
+        self.database.create_batch(
+            batch_id=batch_id,
+            source_folder="",
+            total_files=len(file_paths),
+        )
 
         results = []
         completed = 0
@@ -1330,9 +1335,13 @@ class ShutterstockAIv2:
             if on_result:
                 on_result(result_dict)
 
-            # Update batch progress
-            total_done = completed + failed + skipped
-            self.database.update_batch_progress(batch_id, total_done)
+            # Update batch progress. The DB schema only persists processed
+            # vs failed; skipped count is rolled into processed (not-failed).
+            self.database.update_batch_progress(
+                batch_id,
+                processed=completed + skipped,
+                failed=failed,
+            )
 
         # Run batch analysis
         self.vision_analyzer.analyze_batch(
@@ -1344,8 +1353,9 @@ class ShutterstockAIv2:
 
         elapsed = int((time.time() - start_time) * 1000)
 
-        # Complete batch
-        self.database.complete_batch(batch_id, completed, failed)
+        # Complete batch. Counts have already been persisted by the
+        # update_batch_progress calls in result_callback above.
+        self.database.complete_batch(batch_id, status="completed")
 
         return {
             "batch_id": batch_id,
