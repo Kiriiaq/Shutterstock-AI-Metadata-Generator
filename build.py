@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 
 APP_NAME = "ShutterstockAnalyzer"
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 ICON = "assets/icons/icone.ico"
 
 HIDDEN_IMPORTS = [
