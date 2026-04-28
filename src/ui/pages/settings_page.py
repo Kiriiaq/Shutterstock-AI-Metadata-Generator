@@ -392,11 +392,14 @@ class SettingsPage(ctk.CTkFrame):
         self.ftps_password.pack(side="left", padx=5)
         add_tooltip(self.ftps_password, "ftps_password")
 
+        # FTPS test is a stub today; disabled until implemented.
         ctk.CTkButton(
             row3,
-            text="Test Connection",
-            width=120,
-            command=self._test_ftps
+            text="Test (coming soon)",
+            width=160,
+            fg_color="gray",
+            state="disabled",
+            command=self._test_ftps,
         ).pack(side="left", padx=10)
 
     def _create_paths_settings(self, parent):
@@ -451,10 +454,14 @@ class SettingsPage(ctk.CTkFrame):
         row2 = ctk.CTkFrame(parent)
         row2.pack(fill="x", pady=2)
 
+        # Inline template editor is a stub today; disabled until implemented.
+        # Import/Export below work and remain enabled.
         ctk.CTkButton(
             row2,
-            text="Create New Template",
-            command=self._create_template
+            text="Create New Template (coming soon)",
+            fg_color="gray",
+            state="disabled",
+            command=self._create_template,
         ).pack(side="left", padx=5)
 
         ctk.CTkButton(

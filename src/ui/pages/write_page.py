@@ -185,11 +185,14 @@ class WritePage(ctk.CTkFrame):
         batch_frame = ctk.CTkFrame(right_panel)
         batch_frame.pack(fill="x", padx=5, pady=(0, 5))
 
+        # Batch write is a stub today; surface that honestly in the UI rather
+        # than letting users click an enabled button that just shows a popup.
         ctk.CTkButton(
             batch_frame,
-            text="Write to All Files",
-            fg_color="orange",
-            command=self._write_batch
+            text="Write to All Files (coming soon)",
+            fg_color="gray",
+            state="disabled",
+            command=self._write_batch,
         ).pack(side="left", padx=5, pady=5)
 
         self.backup_var = ctk.BooleanVar(value=True)
