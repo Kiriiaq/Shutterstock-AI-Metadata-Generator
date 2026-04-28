@@ -89,22 +89,21 @@ def test_iptc_fields_roundtrip_scalars():
     assert restored.country_code == "FRA"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="B-16: IPTCFields.from_dict drops list fields (keywords, "
-    "supplemental_categories) because hasattr(cls, key) returns False for "
-    "fields declared with field(default_factory=...). Fix scheduled in Phase E.",
-)
-def test_iptc_fields_roundtrip_lists_known_broken():
-    """Will pass once metadata_models.IPTCFields.from_dict is fixed."""
+def test_iptc_fields_roundtrip_lists():
+    """List fields (keywords, supplemental_categories) roundtrip via to/from_dict.
+
+    Regression guard for B-16: previously dropped because the from_dict
+    filter used hasattr(cls, key) which returns False for fields declared
+    with field(default_factory=...).
+    """
     from src.modules.models.metadata_models import IPTCFields
 
-    fields = IPTCFields(
+    src_fields = IPTCFields(
         headline="x",
         keywords=["mountain", "sunset"],
         supplemental_categories=["Nature", "Landscape"],
     )
-    restored = IPTCFields.from_dict(fields.to_dict())
+    restored = IPTCFields.from_dict(src_fields.to_dict())
     assert restored.keywords == ["mountain", "sunset"]
     assert restored.supplemental_categories == ["Nature", "Landscape"]
 

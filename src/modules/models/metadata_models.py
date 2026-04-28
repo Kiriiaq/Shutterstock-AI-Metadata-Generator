@@ -2,7 +2,7 @@
 Pydantic models for metadata validation and data structures
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields as dataclass_fields
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Dict, Any
@@ -111,18 +111,26 @@ class IPTCFields:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "IPTCFields":
-        """Create from dictionary"""
-        fields = {}
+        """Create from dictionary.
+
+        Uses dataclasses.fields(cls) instead of hasattr(cls, key) so that
+        list-typed fields declared via field(default_factory=list) (keywords,
+        supplemental_categories) are accepted — hasattr returns False for
+        those at the class level.
+        """
+        valid_names = {f.name for f in dataclass_fields(cls)}
+        init_kwargs: Dict[str, Any] = {}
         for key, value in data.items():
-            if hasattr(cls, key):
-                if key == "date_created" and isinstance(value, str):
-                    try:
-                        fields[key] = datetime.fromisoformat(value)
-                    except ValueError:
-                        pass
-                else:
-                    fields[key] = value
-        return cls(**fields)
+            if key not in valid_names:
+                continue
+            if key == "date_created" and isinstance(value, str):
+                try:
+                    init_kwargs[key] = datetime.fromisoformat(value)
+                except ValueError:
+                    continue
+            else:
+                init_kwargs[key] = value
+        return cls(**init_kwargs)
 
 
 @dataclass
