@@ -28,6 +28,15 @@ env/
 *.manifest
 *.spec
 
+# Coverage artifacts (pytest-cov)
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# Audit working files (generated, not source of truth)
+_archive/legacy_ui_v1/__pycache__/
+
 # Logs
 *.log
 shutterstock_analyzer.log
