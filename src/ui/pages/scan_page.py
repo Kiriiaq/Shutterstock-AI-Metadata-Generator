@@ -373,7 +373,8 @@ class ScanPage(ctk.CTkFrame):
 
             except Exception as e:
                 logger.error(f"Scan error: {e}")
-                self.after(0, lambda: self._on_scan_error(str(e)))
+                # Default-arg captures the value before the except block exits.
+                self.after(0, lambda err=str(e): self._on_scan_error(err))
 
         threading.Thread(target=scan, daemon=True).start()
 

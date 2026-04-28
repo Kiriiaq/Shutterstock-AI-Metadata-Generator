@@ -225,13 +225,16 @@ class AuditPage(ctk.CTkFrame):
 
             # Filter by success if needed
             if self._filter_success is not None:
-                logs = [l for l in logs if l.success == self._filter_success]
+                logs = [log for log in logs if log.success == self._filter_success]
 
             # Update table on main thread
             self.after(0, lambda: self._update_table(logs))
 
-        except Exception:
-            self.after(0, lambda: messagebox.showerror("Error", f"Failed to load data: {e}"))
+        except Exception as e:
+            # Capture e as default arg — Python 3 deletes the exception
+            # variable on except-block exit, so the lambda would otherwise
+            # see an undefined name when the after() callback fires.
+            self.after(0, lambda err=str(e): messagebox.showerror("Error", f"Failed to load data: {err}"))
 
     def _update_stats(self, stats: dict):
         """Update statistics display"""

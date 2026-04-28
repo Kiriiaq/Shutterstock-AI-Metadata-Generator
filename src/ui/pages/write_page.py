@@ -597,12 +597,6 @@ class WritePage(ctk.CTkFrame):
         ):
             return
 
-        # Get list of files
-        files = []
-        for widget in self.file_list.winfo_children():
-            if isinstance(widget, ctk.CTkButton):
-                # Extract file path from button command
-                # This is a simplification - in production, store paths properly
-                pass
-
+        # Stub: list collection + batch loop deferred until a proper
+        # path-bound model replaces button-text introspection.
         messagebox.showinfo("Batch Write", "Batch write feature coming soon...")

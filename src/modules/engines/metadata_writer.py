@@ -382,9 +382,11 @@ class MetadataWriter:
             "instructions": "XMP-photoshop:Instructions",
         }
 
-        for field, tag in xmp_mapping.items():
-            if field in xmp_data and xmp_data[field] is not None:
-                value = xmp_data[field]
+        # Loop variable named xmp_field to avoid shadowing the dataclasses
+        # `field` import at module level.
+        for xmp_field, tag in xmp_mapping.items():
+            if xmp_field in xmp_data and xmp_data[xmp_field] is not None:
+                value = xmp_data[xmp_field]
                 if isinstance(value, list):
                     # Clear first, then add each
                     args.append(f"-{tag}=")
