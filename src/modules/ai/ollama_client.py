@@ -3,42 +3,48 @@ Ollama Client - API client for local Ollama server
 Handles connection, model management, and image analysis
 """
 
-import requests
 import base64
 import json
-import time
 import logging
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Callable
+import time
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
 
 class OllamaError(Exception):
     """Base exception for Ollama errors"""
+
     pass
 
 
 class OllamaConnectionError(OllamaError):
     """Connection to Ollama server failed"""
+
     pass
 
 
 class OllamaModelError(OllamaError):
     """Model-related error"""
+
     pass
 
 
 class OllamaTimeoutError(OllamaError):
     """Request timeout"""
+
     pass
 
 
 class OllamaStatus(Enum):
     """Ollama server status"""
+
     UNKNOWN = "unknown"
     OFFLINE = "offline"
     ONLINE = "online"
@@ -49,6 +55,7 @@ class OllamaStatus(Enum):
 @dataclass
 class ModelInfo:
     """Information about an Ollama model"""
+
     name: str
     size: int = 0
     digest: str = ""
@@ -58,18 +65,19 @@ class ModelInfo:
     @property
     def size_gb(self) -> float:
         """Size in gigabytes"""
-        return self.size / (1024 ** 3) if self.size else 0
+        return self.size / (1024**3) if self.size else 0
 
     @property
     def is_vision(self) -> bool:
         """Check if model supports vision"""
-        vision_models = ['llama3.2-vision', 'llava', 'moondream', 'bakllava']
+        vision_models = ["llama3.2-vision", "llava", "moondream", "bakllava"]
         return any(v in self.name.lower() for v in vision_models)
 
 
 @dataclass
 class GenerateResponse:
     """Response from generate endpoint"""
+
     response: str
     model: str
     done: bool
@@ -96,10 +104,7 @@ class OllamaClient:
     DEFAULT_URL = "http://localhost:11434"
 
     def __init__(
-        self,
-        base_url: str = None,
-        timeout: int = 120,
-        on_status_change: Callable[[OllamaStatus], None] = None
+        self, base_url: str = None, timeout: int = 120, on_status_change: Callable[[OllamaStatus], None] = None
     ):
         """
         Initialize Ollama client
@@ -109,7 +114,7 @@ class OllamaClient:
             timeout: Request timeout in seconds
             on_status_change: Callback when status changes
         """
-        self.base_url = (base_url or self.DEFAULT_URL).rstrip('/')
+        self.base_url = (base_url or self.DEFAULT_URL).rstrip("/")
         self.timeout = timeout
         self.on_status_change = on_status_change
 
@@ -150,10 +155,7 @@ class OllamaClient:
             True if server is online
         """
         try:
-            response = requests.get(
-                f"{self.base_url}/api/tags",
-                timeout=5
-            )
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
 
             if response.status_code == 200:
                 self.status = OllamaStatus.ONLINE
@@ -186,7 +188,7 @@ class OllamaClient:
             "url": self.base_url,
             "current_model": self._current_model,
             "models_available": len(self._models_cache),
-            "last_check": self._last_check
+            "last_check": self._last_check,
         }
 
         # Try to get server version
@@ -206,12 +208,7 @@ class OllamaClient:
         Returns:
             Test result with timing
         """
-        result = {
-            "success": False,
-            "message": "",
-            "response_time_ms": 0,
-            "model": None
-        }
+        result = {"success": False, "message": "", "response_time_ms": 0, "model": None}
 
         if not self.check_connection():
             result["message"] = f"Cannot connect to Ollama at {self.base_url}"
@@ -235,11 +232,7 @@ class OllamaClient:
         # Simple test prompt
         start_time = time.time()
         try:
-            response = self.generate(
-                model=test_model,
-                prompt="Say 'OK' if you are working.",
-                stream=False
-            )
+            response = self.generate(model=test_model, prompt="Say 'OK' if you are working.", stream=False)
 
             elapsed = (time.time() - start_time) * 1000
             result["success"] = True
@@ -268,10 +261,7 @@ class OllamaClient:
             return self._models_cache
 
         try:
-            response = requests.get(
-                f"{self.base_url}/api/tags",
-                timeout=10
-            )
+            response = requests.get(f"{self.base_url}/api/tags", timeout=10)
 
             if response.status_code == 200:
                 data = response.json()
@@ -283,7 +273,7 @@ class OllamaClient:
                         size=m.get("size", 0),
                         digest=m.get("digest", ""),
                         modified_at=m.get("modified_at", ""),
-                        details=m.get("details", {})
+                        details=m.get("details", {}),
                     )
                     models.append(model)
 
@@ -345,12 +335,8 @@ class OllamaClient:
 
             response = requests.post(
                 f"{self.base_url}/api/generate",
-                json={
-                    "model": model_name,
-                    "prompt": "",
-                    "stream": False
-                },
-                timeout=self.timeout
+                json={"model": model_name, "prompt": "", "stream": False},
+                timeout=self.timeout,
             )
 
             if response.status_code == 200:
@@ -380,13 +366,8 @@ class OllamaClient:
             # Force by loading with keep_alive=0
             response = requests.post(
                 f"{self.base_url}/api/generate",
-                json={
-                    "model": self._current_model,
-                    "prompt": "",
-                    "keep_alive": 0,
-                    "stream": False
-                },
-                timeout=30
+                json={"model": self._current_model, "prompt": "", "keep_alive": 0, "stream": False},
+                timeout=30,
             )
 
             self._current_model = None
@@ -406,7 +387,7 @@ class OllamaClient:
         images: List[str] = None,
         stream: bool = False,
         options: Dict[str, Any] = None,
-        on_token: Callable[[str], None] = None
+        on_token: Callable[[str], None] = None,
     ) -> GenerateResponse:
         """
         Generate response from model
@@ -422,11 +403,7 @@ class OllamaClient:
         Returns:
             GenerateResponse object
         """
-        payload = {
-            "model": model,
-            "prompt": prompt,
-            "stream": stream
-        }
+        payload = {"model": model, "prompt": prompt, "stream": stream}
 
         if images:
             payload["images"] = images
@@ -454,11 +431,7 @@ class OllamaClient:
 
     def _generate_sync(self, payload: Dict) -> GenerateResponse:
         """Synchronous generation"""
-        response = requests.post(
-            f"{self.base_url}/api/generate",
-            json=payload,
-            timeout=self.timeout
-        )
+        response = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=self.timeout)
 
         if response.status_code != 200:
             raise OllamaError(f"API error: {response.status_code}")
@@ -475,21 +448,12 @@ class OllamaClient:
             load_duration=data.get("load_duration", 0),
             prompt_eval_count=data.get("prompt_eval_count", 0),
             eval_count=data.get("eval_count", 0),
-            eval_duration=data.get("eval_duration", 0)
+            eval_duration=data.get("eval_duration", 0),
         )
 
-    def _generate_stream(
-        self,
-        payload: Dict,
-        on_token: Callable[[str], None]
-    ) -> GenerateResponse:
+    def _generate_stream(self, payload: Dict, on_token: Callable[[str], None]) -> GenerateResponse:
         """Streaming generation"""
-        response = requests.post(
-            f"{self.base_url}/api/generate",
-            json=payload,
-            timeout=self.timeout,
-            stream=True
-        )
+        response = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=self.timeout, stream=True)
 
         if response.status_code != 200:
             raise OllamaError(f"API error: {response.status_code}")
@@ -520,7 +484,7 @@ class OllamaClient:
             load_duration=final_data.get("load_duration", 0),
             prompt_eval_count=final_data.get("prompt_eval_count", 0),
             eval_count=final_data.get("eval_count", 0),
-            eval_duration=final_data.get("eval_duration", 0)
+            eval_duration=final_data.get("eval_duration", 0),
         )
 
     # ==================== Image Helpers ====================
@@ -540,11 +504,7 @@ class OllamaClient:
             return base64.b64encode(f.read()).decode("utf-8")
 
     def analyze_image(
-        self,
-        model: str,
-        image_path: Path,
-        prompt: str,
-        options: Dict[str, Any] = None
+        self, model: str, image_path: Path, prompt: str, options: Dict[str, Any] = None
     ) -> GenerateResponse:
         """
         Analyze an image with a prompt
@@ -560,9 +520,4 @@ class OllamaClient:
         """
         image_b64 = self.encode_image(image_path)
 
-        return self.generate(
-            model=model,
-            prompt=prompt,
-            images=[image_b64],
-            options=options
-        )
+        return self.generate(model=model, prompt=prompt, images=[image_b64], options=options)

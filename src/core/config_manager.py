@@ -3,9 +3,10 @@ Gestionnaire de profils Shutterstock Analyzer.
 """
 
 import json
-from pathlib import Path
-from typing import Optional, List
 from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
+
 from .params import ShutterstockParams
 
 
@@ -29,7 +30,7 @@ class ConfigManager:
         path = self.profiles_dir / f"{name}.json"
         if not path.exists():
             return ShutterstockParams()
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         self.current_profile = name
         self._current_data = data
@@ -42,10 +43,10 @@ class ConfigManager:
             "profile_name": name,
             "created_at": self._current_data.get("created_at", datetime.now().isoformat()),
             "modified_at": datetime.now().isoformat(),
-            "params": params.to_dict()
+            "params": params.to_dict(),
         }
         path = self.profiles_dir / f"{name}.json"
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         self.current_profile = name
 
@@ -61,11 +62,11 @@ class ConfigManager:
     def export_json(self, name: str, export_path: Path):
         params = self.load_profile(name)
         data = {"schema_version": self.SCHEMA_VERSION, "params": params.to_dict()}
-        with open(export_path, 'w', encoding='utf-8') as f:
+        with open(export_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def import_json(self, import_path: Path) -> str:
-        with open(import_path, 'r', encoding='utf-8') as f:
+        with open(import_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         name = data.get("profile_name", import_path.stem)
         params = ShutterstockParams.from_dict(data.get("params", {}))

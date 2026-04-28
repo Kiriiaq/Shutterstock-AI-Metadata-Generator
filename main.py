@@ -3,8 +3,8 @@ Shutterstock AI Metadata Generator v2.0
 Main entry point with debug console
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 
@@ -22,9 +22,7 @@ if sys.platform == "win32":
     try:
         import ctypes
 
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-            "ShutterstockAnalyzer.v2.0"
-        )
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShutterstockAnalyzer.v2.0")
     except Exception:
         pass
 
@@ -32,17 +30,15 @@ if sys.platform == "win32":
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Setup logging for debug
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%H:%M:%S'
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%H:%M:%S")
 logger = logging.getLogger("ShutterstockAI")
+
 
 def main():
     """Main application entry point with splash screen"""
-    import time
     import threading
+    import time
+
     from src.utils.splash_screen import SplashScreen
 
     # Show splash screen with progress bar
@@ -58,16 +54,18 @@ def main():
         try:
             splash.update_progress(10, "Loading CustomTkinter...")
             import customtkinter
+
             ctk = customtkinter
             time.sleep(0.1)
 
             splash.update_progress(30, "Loading modules...")
             from src.modules.integration import ShutterstockAIv2
-            from src.ui.pages.settings_page import SettingsPage
-            from src.ui.pages.audit_page import AuditPage
-            from src.ui.pages.write_page import WritePage
             from src.ui.pages.ai_control_page import AIControlPage
+            from src.ui.pages.audit_page import AuditPage
             from src.ui.pages.scan_page import ScanPage
+            from src.ui.pages.settings_page import SettingsPage
+            from src.ui.pages.write_page import WritePage
+
             time.sleep(0.1)
 
             splash.update_progress(50, "Modules loaded...")
@@ -160,9 +158,7 @@ def main():
             header.grid_propagate(False)
 
             ctk.CTkLabel(
-                header,
-                text="Shutterstock AI Metadata Generator v2.0",
-                font=ctk.CTkFont(size=20, weight="bold")
+                header, text="Shutterstock AI Metadata Generator v2.0", font=ctk.CTkFont(size=20, weight="bold")
             ).pack(side="left", padx=20, pady=10)
 
             # Status indicators
@@ -173,33 +169,17 @@ def main():
             exif_text = "ExifTool: OK" if self.api and self.api.exiftool_available else "ExifTool: NOT FOUND"
             exif_color = "#22c55e" if self.api and self.api.exiftool_available else "#ef4444"
 
-            ctk.CTkLabel(
-                status_frame,
-                text="●",
-                text_color=exif_color,
-                font=ctk.CTkFont(size=14)
-            ).pack(side="left", padx=2)
+            ctk.CTkLabel(status_frame, text="●", text_color=exif_color, font=ctk.CTkFont(size=14)).pack(
+                side="left", padx=2
+            )
 
-            ctk.CTkLabel(
-                status_frame,
-                text=exif_text,
-                text_color=exif_color
-            ).pack(side="left", padx=(0, 15))
+            ctk.CTkLabel(status_frame, text=exif_text, text_color=exif_color).pack(side="left", padx=(0, 15))
 
             # AI status indicator (will be updated by AI control page)
-            self.ai_indicator = ctk.CTkLabel(
-                status_frame,
-                text="●",
-                text_color="#6b7280",
-                font=ctk.CTkFont(size=14)
-            )
+            self.ai_indicator = ctk.CTkLabel(status_frame, text="●", text_color="#6b7280", font=ctk.CTkFont(size=14))
             self.ai_indicator.pack(side="left", padx=2)
 
-            self.ai_status_label = ctk.CTkLabel(
-                status_frame,
-                text="AI: Not checked",
-                text_color="#6b7280"
-            )
+            self.ai_status_label = ctk.CTkLabel(status_frame, text="AI: Not checked", text_color="#6b7280")
             self.ai_status_label.pack(side="left")
 
             # Tab view
@@ -232,18 +212,10 @@ def main():
             footer.grid(row=2, column=0, sticky="ew", padx=10, pady=(5, 10))
             footer.grid_propagate(False)
 
-            self.status_label = ctk.CTkLabel(
-                footer,
-                text="Ready",
-                text_color="gray"
-            )
+            self.status_label = ctk.CTkLabel(footer, text="Ready", text_color="gray")
             self.status_label.pack(side="left", padx=10)
 
-            self.progress_label = ctk.CTkLabel(
-                footer,
-                text="",
-                text_color="gray"
-            )
+            self.progress_label = ctk.CTkLabel(footer, text="", text_color="gray")
             self.progress_label.pack(side="right", padx=10)
 
         def _create_ai_control_tab(self):
@@ -255,11 +227,7 @@ def main():
                 settings = self.api.database.get_all_settings()
 
             try:
-                self.ai_control_page = AIControlPage(
-                    tab,
-                    settings=settings,
-                    on_status_change=self._on_ai_status_change
-                )
+                self.ai_control_page = AIControlPage(tab, settings=settings, on_status_change=self._on_ai_status_change)
                 self.ai_control_page.grid(row=0, column=0, sticky="nsew")
             except Exception as e:
                 logger.error(f"Failed to create AIControlPage: {e}")
@@ -275,7 +243,7 @@ def main():
                     tab,
                     metadata_reader=reader,
                     on_images_selected=self._on_images_selected,
-                    on_process_requested=self._on_process_requested
+                    on_process_requested=self._on_process_requested,
                 )
                 self.scan_page.grid(row=0, column=0, sticky="nsew")
             except Exception as e:
@@ -292,11 +260,7 @@ def main():
             frame.grid_rowconfigure(2, weight=1)
 
             # Header
-            ctk.CTkLabel(
-                frame,
-                text="AI Image Processing",
-                font=ctk.CTkFont(size=18, weight="bold")
-            ).pack(pady=10)
+            ctk.CTkLabel(frame, text="AI Image Processing", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=10)
 
             # Options frame
             options_frame = ctk.CTkFrame(frame)
@@ -305,24 +269,16 @@ def main():
             # Options
             self.skip_existing_var = ctk.BooleanVar(value=True)
             ctk.CTkCheckBox(
-                options_frame,
-                text="Skip images with existing metadata",
-                variable=self.skip_existing_var
+                options_frame, text="Skip images with existing metadata", variable=self.skip_existing_var
             ).pack(side="left", padx=10)
 
             self.write_results_var = ctk.BooleanVar(value=False)
-            ctk.CTkCheckBox(
-                options_frame,
-                text="Write AI results to files",
-                variable=self.write_results_var
-            ).pack(side="left", padx=10)
+            ctk.CTkCheckBox(options_frame, text="Write AI results to files", variable=self.write_results_var).pack(
+                side="left", padx=10
+            )
 
             # Selected count
-            self.selected_count_label = ctk.CTkLabel(
-                options_frame,
-                text="0 images selected",
-                text_color="gray"
-            )
+            self.selected_count_label = ctk.CTkLabel(options_frame, text="0 images selected", text_color="gray")
             self.selected_count_label.pack(side="right", padx=10)
 
             # Control buttons
@@ -336,7 +292,7 @@ def main():
                 height=40,
                 fg_color="green",
                 font=ctk.CTkFont(size=14, weight="bold"),
-                command=self._start_ai_processing
+                command=self._start_ai_processing,
             )
             self.start_process_btn.pack(side="left", padx=10)
 
@@ -347,7 +303,7 @@ def main():
                 height=40,
                 fg_color="red",
                 state="disabled",
-                command=self._stop_ai_processing
+                command=self._stop_ai_processing,
             )
             self.stop_process_btn.pack(side="left", padx=10)
 
@@ -357,9 +313,7 @@ def main():
             self.process_progress.set(0)
 
             self.process_status = ctk.CTkLabel(
-                frame,
-                text="Select images in Scan tab, then click Start",
-                text_color="gray"
+                frame, text="Select images in Scan tab, then click Start", text_color="gray"
             )
             self.process_status.pack(pady=5)
 
@@ -426,7 +380,7 @@ def main():
                 OllamaStatus.OFFLINE: ("#ef4444", "AI: Offline"),
                 OllamaStatus.BUSY: ("#f97316", "AI: Busy"),
                 OllamaStatus.ERROR: ("#ef4444", "AI: Error"),
-                OllamaStatus.UNKNOWN: ("#6b7280", "AI: Unknown")
+                OllamaStatus.UNKNOWN: ("#6b7280", "AI: Unknown"),
             }
 
             color, text = status_map.get(status, ("#6b7280", "AI: Unknown"))
@@ -448,13 +402,15 @@ def main():
 
         def _start_ai_processing(self):
             """Start AI processing"""
-            if not hasattr(self, '_selected_images') or not self._selected_images:
+            if not hasattr(self, "_selected_images") or not self._selected_images:
                 from tkinter import messagebox
+
                 messagebox.showwarning("Warning", "No images selected. Use the Scan tab to select images first.")
                 return
 
             if not self.ai_control_page or not self.ai_control_page.is_ready():
                 from tkinter import messagebox
+
                 messagebox.showwarning("Warning", "AI is not ready. Check the AI Control tab.")
                 return
 
@@ -464,13 +420,14 @@ def main():
             self.process_progress.set(0)
 
             # Initialize AI in API if not done
-            if self.api and not hasattr(self.api, 'vision_analyzer'):
+            if self.api and not hasattr(self.api, "vision_analyzer"):
                 self.api.init_ai()
 
             import threading
 
             def process():
                 try:
+
                     def on_progress(completed, total, current):
                         progress = completed / total if total > 0 else 0
                         self.after(0, lambda: self._update_process_progress(progress, completed, total, current))
@@ -483,7 +440,7 @@ def main():
                         skip_if_has_metadata=self.skip_existing_var.get(),
                         write_metadata=self.write_results_var.get(),
                         on_progress=on_progress,
-                        on_result=on_result
+                        on_result=on_result,
                     )
 
                     self.after(0, lambda: self._on_process_complete(result))
@@ -496,17 +453,14 @@ def main():
 
         def _stop_ai_processing(self):
             """Stop AI processing"""
-            if self.api and hasattr(self.api, 'vision_analyzer'):
+            if self.api and hasattr(self.api, "vision_analyzer"):
                 self.api.vision_analyzer.cancel()
             self.process_status.configure(text="Stopping...", text_color="orange")
 
         def _update_process_progress(self, progress, completed, total, current):
             """Update processing progress"""
             self.process_progress.set(progress)
-            self.process_status.configure(
-                text=f"Processing: {completed}/{total} - {current}",
-                text_color="orange"
-            )
+            self.process_status.configure(text=f"Processing: {completed}/{total} - {current}", text_color="orange")
 
         def _add_process_result(self, result):
             """Add result to display"""
@@ -531,12 +485,12 @@ def main():
             self.process_progress.set(1)
 
             summary = (
-                f"\n{'='*50}\n"
+                f"\n{'=' * 50}\n"
                 f"COMPLETE: {result['completed']}/{result['total']} successful\n"
                 f"Failed: {result['failed']} | Skipped: {result['skipped']}\n"
-                f"Duration: {result['duration_ms']/1000:.1f}s\n"
+                f"Duration: {result['duration_ms'] / 1000:.1f}s\n"
                 f"Success rate: {result['success_rate']:.1f}%\n"
-                f"{'='*50}\n"
+                f"{'=' * 50}\n"
             )
 
             self.process_results.insert("end", summary)

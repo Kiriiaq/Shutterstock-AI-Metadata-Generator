@@ -2,21 +2,22 @@
 SQLite database layer for audit logging and metadata history
 """
 
-import sqlite3
 import json
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
-from dataclasses import dataclass, asdict
-from enum import Enum
-import threading
 import logging
+import sqlite3
+import threading
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class ActionType(Enum):
     """Types of auditable actions"""
+
     METADATA_READ = "metadata_read"
     METADATA_WRITE = "metadata_write"
     AI_ANALYSIS = "ai_analysis"
@@ -33,6 +34,7 @@ class AuditLog:
     """
     Audit log entry for tracking all operations
     """
+
     id: Optional[int] = None
     timestamp: datetime = None
     action_type: ActionType = ActionType.METADATA_READ
@@ -54,6 +56,7 @@ class MetadataHistory:
     """
     Historical metadata record for tracking changes
     """
+
     id: Optional[int] = None
     file_path: str = ""
     file_hash: str = ""
@@ -194,10 +197,9 @@ class Database:
 
     def _get_connection(self) -> sqlite3.Connection:
         """Get thread-local database connection"""
-        if not hasattr(self._local, 'connection') or self._local.connection is None:
+        if not hasattr(self._local, "connection") or self._local.connection is None:
             self._local.connection = sqlite3.connect(
-                str(self.db_path),
-                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+                str(self.db_path), detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
             )
             self._local.connection.row_factory = sqlite3.Row
         return self._local.connection
@@ -239,7 +241,7 @@ class Database:
         success: bool = True,
         error_message: Optional[str] = None,
         duration_ms: Optional[int] = None,
-        batch_id: Optional[str] = None
+        batch_id: Optional[str] = None,
     ) -> int:
         """
         Log an action to the audit log
@@ -250,21 +252,24 @@ class Database:
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO audit_log
             (timestamp, action_type, file_path, file_hash, details, success, error_message, duration_ms, batch_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            datetime.now().isoformat(),
-            action_type.value,
-            file_path,
-            file_hash,
-            json.dumps(details) if details else None,
-            1 if success else 0,
-            error_message,
-            duration_ms,
-            batch_id
-        ))
+        """,
+            (
+                datetime.now().isoformat(),
+                action_type.value,
+                file_path,
+                file_hash,
+                json.dumps(details) if details else None,
+                1 if success else 0,
+                error_message,
+                duration_ms,
+                batch_id,
+            ),
+        )
 
         conn.commit()
         return cursor.lastrowid
@@ -277,7 +282,7 @@ class Database:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[AuditLog]:
         """
         Query audit logs with filters
@@ -318,30 +323,27 @@ class Database:
 
         logs = []
         for row in cursor.fetchall():
-            logs.append(AuditLog(
-                id=row['id'],
-                timestamp=datetime.fromisoformat(row['timestamp']),
-                action_type=ActionType(row['action_type']),
-                file_path=row['file_path'],
-                file_hash=row['file_hash'],
-                details=json.loads(row['details']) if row['details'] else None,
-                success=bool(row['success']),
-                error_message=row['error_message'],
-                duration_ms=row['duration_ms'],
-                batch_id=row['batch_id']
-            ))
+            logs.append(
+                AuditLog(
+                    id=row["id"],
+                    timestamp=datetime.fromisoformat(row["timestamp"]),
+                    action_type=ActionType(row["action_type"]),
+                    file_path=row["file_path"],
+                    file_hash=row["file_hash"],
+                    details=json.loads(row["details"]) if row["details"] else None,
+                    success=bool(row["success"]),
+                    error_message=row["error_message"],
+                    duration_ms=row["duration_ms"],
+                    batch_id=row["batch_id"],
+                )
+            )
 
         return logs
 
     # ==================== Metadata History Methods ====================
 
     def save_metadata_history(
-        self,
-        file_path: str,
-        file_hash: str,
-        metadata_type: str,
-        metadata: Dict[str, Any],
-        source: str = "ai_generated"
+        self, file_path: str, file_hash: str, metadata_type: str, metadata: Dict[str, Any], source: str = "ai_generated"
     ) -> int:
         """
         Save metadata to history
@@ -353,36 +355,38 @@ class Database:
         cursor = conn.cursor()
 
         # Get current version for this file
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT MAX(version) FROM metadata_history
             WHERE file_path = ? AND metadata_type = ?
-        """, (file_path, metadata_type))
+        """,
+            (file_path, metadata_type),
+        )
 
         row = cursor.fetchone()
         version = (row[0] or 0) + 1
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO metadata_history
             (file_path, file_hash, timestamp, metadata_type, metadata_json, source, version)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            file_path,
-            file_hash,
-            datetime.now().isoformat(),
-            metadata_type,
-            json.dumps(metadata, ensure_ascii=False),
-            source,
-            version
-        ))
+        """,
+            (
+                file_path,
+                file_hash,
+                datetime.now().isoformat(),
+                metadata_type,
+                json.dumps(metadata, ensure_ascii=False),
+                source,
+                version,
+            ),
+        )
 
         conn.commit()
         return cursor.lastrowid
 
-    def get_metadata_history(
-        self,
-        file_path: str,
-        metadata_type: Optional[str] = None
-    ) -> List[MetadataHistory]:
+    def get_metadata_history(self, file_path: str, metadata_type: Optional[str] = None) -> List[MetadataHistory]:
         """
         Get metadata history for a file
 
@@ -405,24 +409,22 @@ class Database:
 
         history = []
         for row in cursor.fetchall():
-            history.append(MetadataHistory(
-                id=row['id'],
-                file_path=row['file_path'],
-                file_hash=row['file_hash'],
-                timestamp=datetime.fromisoformat(row['timestamp']),
-                metadata_type=row['metadata_type'],
-                metadata_json=row['metadata_json'],
-                source=row['source'],
-                version=row['version']
-            ))
+            history.append(
+                MetadataHistory(
+                    id=row["id"],
+                    file_path=row["file_path"],
+                    file_hash=row["file_hash"],
+                    timestamp=datetime.fromisoformat(row["timestamp"]),
+                    metadata_type=row["metadata_type"],
+                    metadata_json=row["metadata_json"],
+                    source=row["source"],
+                    version=row["version"],
+                )
+            )
 
         return history
 
-    def get_latest_metadata(
-        self,
-        file_path: str,
-        metadata_type: str = "shutterstock"
-    ) -> Optional[Dict[str, Any]]:
+    def get_latest_metadata(self, file_path: str, metadata_type: str = "shutterstock") -> Optional[Dict[str, Any]]:
         """
         Get the most recent metadata for a file
 
@@ -432,15 +434,18 @@ class Database:
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT metadata_json FROM metadata_history
             WHERE file_path = ? AND metadata_type = ?
             ORDER BY version DESC LIMIT 1
-        """, (file_path, metadata_type))
+        """,
+            (file_path, metadata_type),
+        )
 
         row = cursor.fetchone()
         if row:
-            return json.loads(row['metadata_json'])
+            return json.loads(row["metadata_json"])
         return None
 
     # ==================== Settings Methods ====================
@@ -455,9 +460,9 @@ class Database:
 
         if row:
             try:
-                return json.loads(row['value'])
+                return json.loads(row["value"])
             except json.JSONDecodeError:
-                return row['value']
+                return row["value"]
         return default
 
     def set_setting(self, key: str, value: Any):
@@ -467,10 +472,13 @@ class Database:
 
         value_str = json.dumps(value) if not isinstance(value, str) else value
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO settings (key, value, updated_at)
             VALUES (?, ?, ?)
-        """, (key, value_str, datetime.now().isoformat()))
+        """,
+            (key, value_str, datetime.now().isoformat()),
+        )
 
         conn.commit()
 
@@ -484,9 +492,9 @@ class Database:
         settings = {}
         for row in cursor.fetchall():
             try:
-                settings[row['key']] = json.loads(row['value'])
+                settings[row["key"]] = json.loads(row["value"])
             except json.JSONDecodeError:
-                settings[row['key']] = row['value']
+                settings[row["key"]] = row["value"]
 
         return settings
 
@@ -499,52 +507,55 @@ class Database:
         total_files: int,
         name: Optional[str] = None,
         output_folder: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None
+        options: Optional[Dict[str, Any]] = None,
     ) -> int:
         """Create a new batch record"""
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO batches
             (batch_id, name, source_folder, output_folder, total_files, created_at, status, options)
             VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-        """, (
-            batch_id,
-            name or batch_id,
-            source_folder,
-            output_folder,
-            total_files,
-            datetime.now().isoformat(),
-            json.dumps(options) if options else None
-        ))
+        """,
+            (
+                batch_id,
+                name or batch_id,
+                source_folder,
+                output_folder,
+                total_files,
+                datetime.now().isoformat(),
+                json.dumps(options) if options else None,
+            ),
+        )
 
         conn.commit()
         return cursor.lastrowid
 
-    def update_batch_progress(
-        self,
-        batch_id: str,
-        processed: int,
-        failed: int = 0,
-        status: Optional[str] = None
-    ):
+    def update_batch_progress(self, batch_id: str, processed: int, failed: int = 0, status: Optional[str] = None):
         """Update batch progress"""
         conn = self._get_connection()
         cursor = conn.cursor()
 
         if status:
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE batches
                 SET processed_files = ?, failed_files = ?, status = ?
                 WHERE batch_id = ?
-            """, (processed, failed, status, batch_id))
+            """,
+                (processed, failed, status, batch_id),
+            )
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE batches
                 SET processed_files = ?, failed_files = ?
                 WHERE batch_id = ?
-            """, (processed, failed, batch_id))
+            """,
+                (processed, failed, batch_id),
+            )
 
         conn.commit()
 
@@ -553,11 +564,14 @@ class Database:
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE batches
             SET status = ?, completed_at = ?
             WHERE batch_id = ?
-        """, (status, datetime.now().isoformat(), batch_id))
+        """,
+            (status, datetime.now().isoformat(), batch_id),
+        )
 
         conn.commit()
 
@@ -618,27 +632,30 @@ class Database:
         status: str = "pending",
         has_metadata: bool = False,
         has_ai_analysis: bool = False,
-        batch_id: Optional[str] = None
+        batch_id: Optional[str] = None,
     ):
         """Update or create file status record"""
         conn = self._get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO file_status
             (file_path, file_hash, file_size, last_modified, status, has_metadata, has_ai_analysis, last_processed, batch_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            file_path,
-            file_hash,
-            file_size,
-            last_modified.isoformat(),
-            status,
-            1 if has_metadata else 0,
-            1 if has_ai_analysis else 0,
-            datetime.now().isoformat(),
-            batch_id
-        ))
+        """,
+            (
+                file_path,
+                file_hash,
+                file_size,
+                last_modified.isoformat(),
+                status,
+                1 if has_metadata else 0,
+                1 if has_ai_analysis else 0,
+                datetime.now().isoformat(),
+                batch_id,
+            ),
+        )
 
         conn.commit()
 
@@ -660,19 +677,25 @@ class Database:
         cursor = conn.cursor()
 
         if batch_id:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT file_path FROM file_status
                 WHERE status = 'pending' AND batch_id = ?
                 LIMIT ?
-            """, (batch_id, limit))
+            """,
+                (batch_id, limit),
+            )
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT file_path FROM file_status
                 WHERE status = 'pending'
                 LIMIT ?
-            """, (limit,))
+            """,
+                (limit,),
+            )
 
-        return [row['file_path'] for row in cursor.fetchall()]
+        return [row["file_path"] for row in cursor.fetchall()]
 
     # ==================== Statistics Methods ====================
 
@@ -685,35 +708,35 @@ class Database:
 
         # Total files processed
         cursor.execute("SELECT COUNT(*) FROM file_status WHERE status = 'completed'")
-        stats['total_processed'] = cursor.fetchone()[0]
+        stats["total_processed"] = cursor.fetchone()[0]
 
         # Total with AI analysis
         cursor.execute("SELECT COUNT(*) FROM file_status WHERE has_ai_analysis = 1")
-        stats['with_ai_analysis'] = cursor.fetchone()[0]
+        stats["with_ai_analysis"] = cursor.fetchone()[0]
 
         # Total with metadata
         cursor.execute("SELECT COUNT(*) FROM file_status WHERE has_metadata = 1")
-        stats['with_metadata'] = cursor.fetchone()[0]
+        stats["with_metadata"] = cursor.fetchone()[0]
 
         # Recent errors
         cursor.execute("""
             SELECT COUNT(*) FROM audit_log
             WHERE success = 0 AND timestamp >= datetime('now', '-24 hours')
         """)
-        stats['recent_errors'] = cursor.fetchone()[0]
+        stats["recent_errors"] = cursor.fetchone()[0]
 
         # Batches summary
         cursor.execute("SELECT COUNT(*), SUM(processed_files), SUM(failed_files) FROM batches")
         row = cursor.fetchone()
-        stats['total_batches'] = row[0]
-        stats['total_batch_processed'] = row[1] or 0
-        stats['total_batch_failed'] = row[2] or 0
+        stats["total_batches"] = row[0]
+        stats["total_batch_processed"] = row[1] or 0
+        stats["total_batch_failed"] = row[2] or 0
 
         return stats
 
     def close(self):
         """Close database connection"""
-        if hasattr(self._local, 'connection') and self._local.connection:
+        if hasattr(self._local, "connection") and self._local.connection:
             self._local.connection.close()
             self._local.connection = None
 
@@ -739,34 +762,43 @@ class Database:
         if format == "json":
             data = []
             for log in logs:
-                data.append({
-                    "id": log.id,
-                    "timestamp": log.timestamp.isoformat(),
-                    "action_type": log.action_type.value,
-                    "file_path": log.file_path,
-                    "success": log.success,
-                    "error_message": log.error_message,
-                    "duration_ms": log.duration_ms,
-                    "batch_id": log.batch_id,
-                    "details": log.details
-                })
+                data.append(
+                    {
+                        "id": log.id,
+                        "timestamp": log.timestamp.isoformat(),
+                        "action_type": log.action_type.value,
+                        "file_path": log.file_path,
+                        "success": log.success,
+                        "error_message": log.error_message,
+                        "duration_ms": log.duration_ms,
+                        "batch_id": log.batch_id,
+                        "details": log.details,
+                    }
+                )
 
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
         elif format == "csv":
             import csv
-            with open(output_path, 'w', newline='', encoding='utf-8') as f:
+
+            with open(output_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
-                writer.writerow([
-                    "ID", "Timestamp", "Action", "File Path", "Success",
-                    "Error", "Duration (ms)", "Batch ID"
-                ])
+                writer.writerow(
+                    ["ID", "Timestamp", "Action", "File Path", "Success", "Error", "Duration (ms)", "Batch ID"]
+                )
                 for log in logs:
-                    writer.writerow([
-                        log.id, log.timestamp.isoformat(), log.action_type.value,
-                        log.file_path, log.success, log.error_message,
-                        log.duration_ms, log.batch_id
-                    ])
+                    writer.writerow(
+                        [
+                            log.id,
+                            log.timestamp.isoformat(),
+                            log.action_type.value,
+                            log.file_path,
+                            log.success,
+                            log.error_message,
+                            log.duration_ms,
+                            log.batch_id,
+                        ]
+                    )
 
         return len(logs)

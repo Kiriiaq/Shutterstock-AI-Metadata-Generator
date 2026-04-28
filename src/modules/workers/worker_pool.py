@@ -2,25 +2,26 @@
 WorkerPool - Multithreaded/multiprocess image processing pipeline
 """
 
+import hashlib
+import logging
+import multiprocessing
 import queue
 import threading
-import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed, Future
+import time
+import uuid
+from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Callable, Tuple, Union
 from enum import Enum
-import logging
-import time
-import hashlib
-import uuid
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
 
 class TaskPriority(Enum):
     """Task priority levels"""
+
     CRITICAL = 1
     HIGH = 3
     NORMAL = 5
@@ -30,6 +31,7 @@ class TaskPriority(Enum):
 
 class TaskStatus(Enum):
     """Task execution status"""
+
     PENDING = "pending"
     QUEUED = "queued"
     RUNNING = "running"
@@ -43,6 +45,7 @@ class Task:
     """
     A processing task for the worker pool
     """
+
     task_id: str
     task_type: str  # 'read_metadata', 'ai_analyze', 'write_metadata', 'validate', 'export'
     file_path: Path
@@ -82,6 +85,7 @@ class BatchResult:
     """
     Results from a batch operation
     """
+
     batch_id: str
     total_tasks: int
     completed_tasks: int = 0
@@ -110,11 +114,7 @@ class WorkerPool:
     Thread pool for I/O-bound tasks (metadata reading/writing, file operations)
     """
 
-    def __init__(
-        self,
-        max_workers: Optional[int] = None,
-        use_processes: bool = False
-    ):
+    def __init__(self, max_workers: Optional[int] = None, use_processes: bool = False):
         """
         Initialize worker pool
 
@@ -225,7 +225,7 @@ class WorkerPool:
         file_paths: List[Path],
         task_type: str,
         params: Optional[Dict[str, Any]] = None,
-        priority: TaskPriority = TaskPriority.NORMAL
+        priority: TaskPriority = TaskPriority.NORMAL,
     ) -> str:
         """
         Submit a batch of files for processing
@@ -241,7 +241,7 @@ class WorkerPool:
         """
         batch_id = str(uuid.uuid4())
         params = params or {}
-        params['batch_id'] = batch_id
+        params["batch_id"] = batch_id
 
         for file_path in file_paths:
             task = Task(
@@ -249,7 +249,7 @@ class WorkerPool:
                 task_type=task_type,
                 file_path=file_path,
                 priority=priority,
-                params=params.copy()
+                params=params.copy(),
             )
             self.submit_task(task)
 
@@ -270,10 +270,7 @@ class WorkerPool:
             self.start()
 
         batch_id = str(uuid.uuid4())
-        batch_result = BatchResult(
-            batch_id=batch_id,
-            total_tasks=self._task_queue.qsize()
-        )
+        batch_result = BatchResult(batch_id=batch_id, total_tasks=self._task_queue.qsize())
 
         start_time = time.time()
         futures: Dict[Future, Task] = {}
@@ -299,12 +296,7 @@ class WorkerPool:
             task.status = TaskStatus.QUEUED
             handler = self._handlers[task.task_type]
 
-            future = self._executor.submit(
-                self._execute_task,
-                handler,
-                task.file_path,
-                task.params
-            )
+            future = self._executor.submit(self._execute_task, handler, task.file_path, task.params)
             futures[future] = task
 
         # Collect results
@@ -335,11 +327,7 @@ class WorkerPool:
             # Update progress
             if self._progress_callback:
                 completed = batch_result.completed_tasks + batch_result.failed_tasks
-                self._progress_callback(
-                    completed,
-                    batch_result.total_tasks,
-                    str(task.file_path)
-                )
+                self._progress_callback(completed, batch_result.total_tasks, str(task.file_path))
 
             # Move to completed
             with self._lock:
@@ -350,12 +338,7 @@ class WorkerPool:
         batch_result.end_time = datetime.now()
         return batch_result
 
-    def _execute_task(
-        self,
-        handler: Callable,
-        file_path: Path,
-        params: Dict[str, Any]
-    ) -> Any:
+    def _execute_task(self, handler: Callable, file_path: Path, params: Dict[str, Any]) -> Any:
         """Execute a single task (runs in worker thread/process)"""
         return handler(file_path, params)
 
@@ -404,8 +387,7 @@ class WorkerPool:
     def active_count(self) -> int:
         """Number of active/running tasks"""
         with self._lock:
-            return sum(1 for t in self._active_tasks.values()
-                      if t.status == TaskStatus.RUNNING)
+            return sum(1 for t in self._active_tasks.values() if t.status == TaskStatus.RUNNING)
 
 
 class ProcessingPipeline:
@@ -434,12 +416,7 @@ class ProcessingPipeline:
         self._current_stage: int = 0
         self._total_stages: int = 0
 
-    def add_stage(
-        self,
-        name: str,
-        handler: Callable[[Path, Dict[str, Any]], Any],
-        use_processes: bool = False
-    ):
+    def add_stage(self, name: str, handler: Callable[[Path, Dict[str, Any]], Any], use_processes: bool = False):
         """
         Add a processing stage
 
@@ -451,10 +428,7 @@ class ProcessingPipeline:
         self._stages.append((name, handler))
 
         # Create pool for this stage
-        pool = WorkerPool(
-            max_workers=self.max_workers,
-            use_processes=use_processes
-        )
+        pool = WorkerPool(max_workers=self.max_workers, use_processes=use_processes)
         pool.register_handler(name, handler)
         self._pools[name] = pool
 
@@ -470,9 +444,7 @@ class ProcessingPipeline:
         self._progress_callback = callback
 
     def process(
-        self,
-        file_paths: List[Path],
-        initial_params: Optional[Dict[str, Any]] = None
+        self, file_paths: List[Path], initial_params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, BatchResult]:
         """
         Process files through all pipeline stages
@@ -503,14 +475,10 @@ class ProcessingPipeline:
 
             # Setup progress callback for this stage
             if self._progress_callback:
+
                 def stage_progress(completed, total, current_file):
-                    self._progress_callback(
-                        stage_name,
-                        self._current_stage,
-                        self._total_stages,
-                        completed,
-                        total
-                    )
+                    self._progress_callback(stage_name, self._current_stage, self._total_stages, completed, total)
+
                 pool.set_progress_callback(stage_progress)
 
             # Submit all files
@@ -519,7 +487,7 @@ class ProcessingPipeline:
                     task_id=f"{stage_name}_{file_path.name}_{uuid.uuid4().hex[:8]}",
                     task_type=stage_name,
                     file_path=file_path,
-                    params=params.copy()
+                    params=params.copy(),
                 )
                 pool.submit_task(task)
 
@@ -528,22 +496,16 @@ class ProcessingPipeline:
             results[stage_name] = batch_result
 
             # Filter files for next stage (only successful ones)
-            current_files = [
-                Path(file_path)
-                for file_path, _ in batch_result.results
-            ]
+            current_files = [Path(file_path) for file_path, _ in batch_result.results]
 
             # Merge results into params for next stage
-            params['previous_stage'] = stage_name
-            params['previous_results'] = {
-                str(fp): result for fp, result in batch_result.results
-            }
+            params["previous_stage"] = stage_name
+            params["previous_results"] = {str(fp): result for fp, result in batch_result.results}
 
             pool.stop()
 
             logger.info(
-                f"Stage {stage_name} complete: "
-                f"{batch_result.completed_tasks}/{batch_result.total_tasks} succeeded"
+                f"Stage {stage_name} complete: {batch_result.completed_tasks}/{batch_result.total_tasks} succeeded"
             )
 
             # Stop pipeline if all files failed
@@ -572,7 +534,7 @@ def compute_file_hash(file_path: Path, chunk_size: int = 8192) -> str:
     """
     sha256 = hashlib.sha256()
 
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         while chunk := f.read(chunk_size):
             sha256.update(chunk)
 
@@ -585,7 +547,7 @@ def collect_image_files(
     extensions: Optional[List[str]] = None,
     exclude_extensions: Optional[List[str]] = None,
     exclude_folders: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None
+    exclude_patterns: Optional[List[str]] = None,
 ) -> List[Path]:
     """
     Collect all image files from a directory with filtering options
@@ -604,7 +566,7 @@ def collect_image_files(
     import fnmatch
 
     if extensions is None:
-        extensions = ['.jpg', '.jpeg', '.tif', '.tiff', '.png', '.eps']
+        extensions = [".jpg", ".jpeg", ".tif", ".tiff", ".png", ".eps"]
 
     if exclude_extensions is None:
         exclude_extensions = []
@@ -621,7 +583,7 @@ def collect_image_files(
     directory = Path(directory)
     files = []
 
-    pattern = '**/*' if recursive else '*'
+    pattern = "**/*" if recursive else "*"
 
     for ext in extensions:
         # Skip if in exclude list
@@ -669,16 +631,94 @@ def collect_image_files(
 
 # Default stopwords for keyword cleaning
 DEFAULT_STOPWORDS = {
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-    'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-    'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need',
-    'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it',
-    'we', 'they', 'what', 'which', 'who', 'whom', 'when', 'where', 'why',
-    'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other',
-    'some', 'such', 'no', 'not', 'only', 'same', 'so', 'than', 'too',
-    'very', 'just', 'also', 'now', 'here', 'there', 'then', 'once',
-    'image', 'photo', 'picture', 'stock', 'shutterstock', 'photography'
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "as",
+    "is",
+    "was",
+    "are",
+    "were",
+    "been",
+    "be",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "can",
+    "need",
+    "this",
+    "that",
+    "these",
+    "those",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "what",
+    "which",
+    "who",
+    "whom",
+    "when",
+    "where",
+    "why",
+    "how",
+    "all",
+    "each",
+    "every",
+    "both",
+    "few",
+    "more",
+    "most",
+    "other",
+    "some",
+    "such",
+    "no",
+    "not",
+    "only",
+    "same",
+    "so",
+    "than",
+    "too",
+    "very",
+    "just",
+    "also",
+    "now",
+    "here",
+    "there",
+    "then",
+    "once",
+    "image",
+    "photo",
+    "picture",
+    "stock",
+    "shutterstock",
+    "photography",
 }
 
 
@@ -690,7 +730,7 @@ def clean_keywords_advanced(
     max_length: int = 64,
     max_keywords: int = 50,
     remove_duplicates: bool = True,
-    lowercase: bool = True
+    lowercase: bool = True,
 ) -> List[str]:
     """
     Advanced keyword cleaning with stopwords and blacklist support
@@ -729,10 +769,10 @@ def clean_keywords_advanced(
         kw = kw.strip()
 
         # Remove special characters except hyphen and space
-        kw = re.sub(r'[^\w\s-]', '', kw)
+        kw = re.sub(r"[^\w\s-]", "", kw)
 
         # Normalize whitespace
-        kw = re.sub(r'\s+', ' ', kw).strip()
+        kw = re.sub(r"\s+", " ", kw).strip()
 
         # Skip if too short or too long
         if len(kw) < min_length or len(kw) > max_length:

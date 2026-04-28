@@ -2,19 +2,18 @@
 Write Page - Write metadata directly to image files
 """
 
-import customtkinter as ctk
-from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-import threading
-from PIL import Image, ImageTk
-import io
+from tkinter import filedialog, messagebox
+from typing import Optional
 
+import customtkinter as ctk
+from PIL import Image
+
+from ...modules.engines.iptc_engine import IPTCEngine
 from ...modules.engines.metadata_reader import MetadataReader
 from ...modules.engines.metadata_writer import MetadataWriter
-from ...modules.engines.iptc_engine import IPTCEngine, IPTCTemplate
-from ...modules.models.metadata_models import IPTCFields, ImageMetadata
-from ...modules.storage.database import Database, ActionType
+from ...modules.models.metadata_models import ImageMetadata, IPTCFields
+from ...modules.storage.database import ActionType, Database
 
 
 class WritePage(ctk.CTkFrame):
@@ -28,7 +27,7 @@ class WritePage(ctk.CTkFrame):
         database: Database,
         metadata_reader: Optional[MetadataReader] = None,
         metadata_writer: Optional[MetadataWriter] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(parent, **kwargs)
 
@@ -61,11 +60,7 @@ class WritePage(ctk.CTkFrame):
         folder_frame = ctk.CTkFrame(left_panel)
         folder_frame.pack(fill="x", padx=5, pady=5)
 
-        ctk.CTkButton(
-            folder_frame,
-            text="Select Folder",
-            command=self._select_folder
-        ).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(folder_frame, text="Select Folder", command=self._select_folder).pack(side="left", padx=5, pady=5)
 
         self.folder_label = ctk.CTkLabel(folder_frame, text="No folder selected")
         self.folder_label.pack(side="left", padx=5, fill="x", expand=True)
@@ -88,12 +83,7 @@ class WritePage(ctk.CTkFrame):
         middle_panel.grid_propagate(False)
 
         # Image preview
-        self.preview_label = ctk.CTkLabel(
-            middle_panel,
-            text="Select an image",
-            width=330,
-            height=330
-        )
+        self.preview_label = ctk.CTkLabel(middle_panel, text="Select an image", width=330, height=330)
         self.preview_label.pack(pady=10)
 
         # File info
@@ -129,17 +119,12 @@ class WritePage(ctk.CTkFrame):
             template_frame,
             values=["None"] + self.iptc_engine.list_templates(),
             width=150,
-            command=self._on_template_change
+            command=self._on_template_change,
         )
         self.template_combo.set("None")
         self.template_combo.pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            template_frame,
-            text="Apply",
-            width=60,
-            command=self._apply_template
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(template_frame, text="Apply", width=60, command=self._apply_template).pack(side="left", padx=5)
 
         # Metadata editor tabs
         self.editor_tabs = ctk.CTkTabview(right_panel)
@@ -161,25 +146,17 @@ class WritePage(ctk.CTkFrame):
         button_frame = ctk.CTkFrame(right_panel)
         button_frame.pack(fill="x", padx=5, pady=5)
 
-        ctk.CTkButton(
-            button_frame,
-            text="Read from File",
-            command=self._read_metadata
-        ).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(button_frame, text="Read from File", command=self._read_metadata).pack(
+            side="left", padx=5, pady=5
+        )
 
-        ctk.CTkButton(
-            button_frame,
-            text="Write to File",
-            fg_color="green",
-            command=self._write_metadata
-        ).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(button_frame, text="Write to File", fg_color="green", command=self._write_metadata).pack(
+            side="left", padx=5, pady=5
+        )
 
-        ctk.CTkButton(
-            button_frame,
-            text="Clear All",
-            fg_color="gray",
-            command=self._clear_metadata
-        ).pack(side="left", padx=5, pady=5)
+        ctk.CTkButton(button_frame, text="Clear All", fg_color="gray", command=self._clear_metadata).pack(
+            side="left", padx=5, pady=5
+        )
 
         # Batch operations
         batch_frame = ctk.CTkFrame(right_panel)
@@ -196,25 +173,14 @@ class WritePage(ctk.CTkFrame):
         ).pack(side="left", padx=5, pady=5)
 
         self.backup_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(
-            batch_frame,
-            text="Create Backup",
-            variable=self.backup_var
-        ).pack(side="left", padx=5)
+        ctk.CTkCheckBox(batch_frame, text="Create Backup", variable=self.backup_var).pack(side="left", padx=5)
 
     def _create_indicator(self, parent, label: str) -> ctk.CTkLabel:
         """Create a metadata status indicator"""
         frame = ctk.CTkFrame(parent)
         frame.pack(side="left", padx=10, pady=5)
 
-        indicator = ctk.CTkLabel(
-            frame,
-            text="",
-            width=15,
-            height=15,
-            corner_radius=7,
-            fg_color="gray"
-        )
+        indicator = ctk.CTkLabel(frame, text="", width=15, height=15, corner_radius=7, fg_color="gray")
         indicator.pack(side="left", padx=(0, 5))
 
         ctk.CTkLabel(frame, text=label).pack(side="left")
@@ -299,10 +265,7 @@ class WritePage(ctk.CTkFrame):
 
         # Label/Color
         ctk.CTkLabel(scroll, text="Label:").pack(anchor="w", padx=5, pady=(10, 0))
-        self.xmp_label = ctk.CTkComboBox(
-            scroll,
-            values=["None", "Red", "Yellow", "Green", "Blue", "Purple"]
-        )
+        self.xmp_label = ctk.CTkComboBox(scroll, values=["None", "Red", "Yellow", "Green", "Blue", "Purple"])
         self.xmp_label.set("None")
         self.xmp_label.pack(fill="x", padx=5, pady=2)
 
@@ -330,7 +293,7 @@ class WritePage(ctk.CTkFrame):
             widget.destroy()
 
         # Find image files
-        extensions = ['.jpg', '.jpeg', '.tif', '.tiff', '.png']
+        extensions = [".jpg", ".jpeg", ".tif", ".tiff", ".png"]
         files = []
         for ext in extensions:
             files.extend(folder_path.glob(f"*{ext}"))
@@ -342,10 +305,7 @@ class WritePage(ctk.CTkFrame):
         # Add file buttons
         for file_path in files:
             btn = ctk.CTkButton(
-                self.file_list,
-                text=file_path.name,
-                anchor="w",
-                command=lambda fp=file_path: self._select_file(fp)
+                self.file_list, text=file_path.name, anchor="w", command=lambda fp=file_path: self._select_file(fp)
             )
             btn.pack(fill="x", pady=2)
 
@@ -377,9 +337,7 @@ class WritePage(ctk.CTkFrame):
 
             width, height = Image.open(file_path).size
             size_mb = stat.st_size / (1024 * 1024)
-            self.file_info_label.configure(
-                text=f"{width}x{height} | {size_mb:.2f} MB"
-            )
+            self.file_info_label.configure(text=f"{width}x{height} | {size_mb:.2f} MB")
 
         except Exception as e:
             self.preview_label.configure(image=None, text=f"Preview error:\n{e}")
@@ -395,9 +353,9 @@ class WritePage(ctk.CTkFrame):
 
             # Update indicators
             has_meta = self.reader.has_metadata(self._current_file)
-            self._update_indicator(self.exif_indicator, has_meta.get('exif', False))
-            self._update_indicator(self.iptc_indicator, has_meta.get('iptc', False))
-            self._update_indicator(self.xmp_indicator, has_meta.get('xmp', False))
+            self._update_indicator(self.exif_indicator, has_meta.get("exif", False))
+            self._update_indicator(self.iptc_indicator, has_meta.get("iptc", False))
+            self._update_indicator(self.xmp_indicator, has_meta.get("xmp", False))
 
             # Populate IPTC fields
             iptc = self._current_metadata.iptc
@@ -445,19 +403,12 @@ class WritePage(ctk.CTkFrame):
             self._update_exif_viewer()
 
             # Log action
-            self.database.log_action(
-                ActionType.METADATA_READ,
-                file_path=str(self._current_file),
-                success=True
-            )
+            self.database.log_action(ActionType.METADATA_READ, file_path=str(self._current_file), success=True)
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to read metadata: {e}")
             self.database.log_action(
-                ActionType.METADATA_READ,
-                file_path=str(self._current_file),
-                success=False,
-                error_message=str(e)
+                ActionType.METADATA_READ, file_path=str(self._current_file), success=False, error_message=str(e)
             )
 
     def _update_indicator(self, indicator: ctk.CTkLabel, has_data: bool):
@@ -529,8 +480,7 @@ class WritePage(ctk.CTkFrame):
 
             if errors:
                 if not messagebox.askyesno(
-                    "Validation Errors",
-                    f"Found validation errors:\n\n" + "\n".join(errors) + "\n\nWrite anyway?"
+                    "Validation Errors", "Found validation errors:\n\n" + "\n".join(errors) + "\n\nWrite anyway?"
                 ):
                     return
 
@@ -557,7 +507,7 @@ class WritePage(ctk.CTkFrame):
                 ActionType.METADATA_WRITE,
                 file_path=str(self._current_file),
                 success=True,
-                details={"fields_written": list(iptc.to_dict().keys())}
+                details={"fields_written": list(iptc.to_dict().keys())},
             )
 
             # Save to history
@@ -566,7 +516,7 @@ class WritePage(ctk.CTkFrame):
                 file_hash="",  # TODO: compute hash
                 metadata_type="iptc",
                 metadata=iptc.to_dict(),
-                source="user_input"
+                source="user_input",
             )
 
             messagebox.showinfo("Success", f"Metadata written to:\n{self._current_file.name}")
@@ -577,10 +527,7 @@ class WritePage(ctk.CTkFrame):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to write metadata: {e}")
             self.database.log_action(
-                ActionType.METADATA_WRITE,
-                file_path=str(self._current_file),
-                success=False,
-                error_message=str(e)
+                ActionType.METADATA_WRITE, file_path=str(self._current_file), success=False, error_message=str(e)
             )
 
     def _clear_metadata(self):
@@ -646,7 +593,7 @@ class WritePage(ctk.CTkFrame):
         if not messagebox.askyesno(
             "Batch Write",
             "This will write the current metadata to ALL files in the selected folder.\n\n"
-            "Are you sure you want to continue?"
+            "Are you sure you want to continue?",
         ):
             return
 

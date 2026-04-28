@@ -2,16 +2,18 @@
 Pydantic models for metadata validation and data structures
 """
 
-from dataclasses import dataclass, field, fields as dataclass_fields
+import re
+from dataclasses import dataclass, field
+from dataclasses import fields as dataclass_fields
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
 from pathlib import Path
-import re
+from typing import Any, Dict, List, Optional
 
 
 class ContentType(Enum):
     """Image content type classification"""
+
     PHOTO = "photo"
     ILLUSTRATION = "illustration"
     VECTOR = "vector"
@@ -19,6 +21,7 @@ class ContentType(Enum):
 
 class ProcessingStatus(Enum):
     """Status of image processing"""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -28,6 +31,7 @@ class ProcessingStatus(Enum):
 
 class MetadataSource(Enum):
     """Source of metadata"""
+
     EXIF = "exif"
     IPTC = "iptc"
     XMP = "xmp"
@@ -38,13 +42,32 @@ class MetadataSource(Enum):
 
 # Shutterstock official categories
 SHUTTERSTOCK_CATEGORIES = [
-    "Abstract", "Animals/Wildlife", "Arts", "Backgrounds/Textures",
-    "Beauty/Fashion", "Buildings/Landmarks", "Business/Finance",
-    "Celebrities", "Education", "Food and drink", "Healthcare/Medical",
-    "Holidays", "Industrial", "Interiors", "Miscellaneous", "Nature",
-    "Objects", "Parks/Outdoor", "People", "Religion", "Science",
-    "Signs/Symbols", "Sports/Recreation", "Technology", "Transportation",
-    "Vintage"
+    "Abstract",
+    "Animals/Wildlife",
+    "Arts",
+    "Backgrounds/Textures",
+    "Beauty/Fashion",
+    "Buildings/Landmarks",
+    "Business/Finance",
+    "Celebrities",
+    "Education",
+    "Food and drink",
+    "Healthcare/Medical",
+    "Holidays",
+    "Industrial",
+    "Interiors",
+    "Miscellaneous",
+    "Nature",
+    "Objects",
+    "Parks/Outdoor",
+    "People",
+    "Religion",
+    "Science",
+    "Signs/Symbols",
+    "Sports/Recreation",
+    "Technology",
+    "Transportation",
+    "Vintage",
 ]
 
 
@@ -54,6 +77,7 @@ class IPTCFields:
     Complete IPTC metadata fields mapping
     Based on IPTC Photo Metadata Standard 2021.1
     """
+
     # Core descriptive fields
     object_name: Optional[str] = None  # 2:05 - Title
     headline: Optional[str] = None  # 2:105
@@ -139,6 +163,7 @@ class ImageMetadata:
     Complete metadata extracted from an image file
     Combines EXIF, IPTC, and XMP data
     """
+
     file_path: Path
     file_name: str
     file_size: int  # bytes
@@ -221,7 +246,7 @@ class ImageMetadata:
             "xmp_label": self.xmp_label,
             "xmp_subject": self.xmp_subject,
             "has_embedded_metadata": self.has_embedded_metadata,
-            "metadata_sources": [s.value for s in self.metadata_sources]
+            "metadata_sources": [s.value for s in self.metadata_sources],
         }
         return result
 
@@ -232,6 +257,7 @@ class ShutterstockMetadata:
     Shutterstock-specific metadata for submission
     Validated according to Shutterstock guidelines
     """
+
     filename: str
     title: str  # max 200 chars
     description: str  # max 200 chars
@@ -305,7 +331,7 @@ class ShutterstockMetadata:
             kw = kw.lower().strip()
 
             # Remove accents and special characters
-            kw = re.sub(r'[^\w\s-]', '', kw)
+            kw = re.sub(r"[^\w\s-]", "", kw)
 
             # Skip if too short or duplicate
             if len(kw) >= 2 and kw not in seen:
@@ -324,7 +350,7 @@ class ShutterstockMetadata:
             "Categories": ",".join(self.categories),
             "Editorial": "Yes" if self.editorial else "No",
             "Mature": "Yes" if self.mature_content else "No",
-            "Illustration": "Yes" if self.illustration else "No"
+            "Illustration": "Yes" if self.illustration else "No",
         }
 
 
@@ -333,6 +359,7 @@ class ProcessingJob:
     """
     A processing job for the worker pool
     """
+
     job_id: str
     file_path: Path
     operations: List[str]  # e.g., ["read_metadata", "ai_analyze", "write_metadata"]
@@ -364,6 +391,7 @@ class ProcessingResult:
     """
     Result of a processing operation
     """
+
     job_id: str
     success: bool
     file_path: Path
@@ -392,6 +420,7 @@ class ValidationResult:
     """
     Result of metadata validation
     """
+
     is_valid: bool
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)

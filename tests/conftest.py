@@ -2,10 +2,11 @@
 Pytest configuration and fixtures.
 """
 
-import pytest
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture
@@ -28,5 +29,6 @@ def sample_image_path(temp_dir):
 def mock_database(temp_dir):
     """Create a mock database for testing."""
     from src.modules.storage.database import Database
+
     db_path = temp_dir / "test.db"
     return Database(db_path)

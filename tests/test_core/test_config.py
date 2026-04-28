@@ -2,10 +2,7 @@
 Tests for configuration management.
 """
 
-import pytest
-from pathlib import Path
-from src.core.params import ShutterstockParams, ParamMeta, PARAMS_META
-from src.core.config_manager import ConfigManager
+from src.core.params import PARAMS_META, ShutterstockParams
 
 
 class TestShutterstockParams:

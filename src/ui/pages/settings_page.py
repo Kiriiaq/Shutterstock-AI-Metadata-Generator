@@ -2,16 +2,17 @@
 Settings Page - Application configuration and preferences
 """
 
-import customtkinter as ctk
-from tkinter import filedialog, messagebox
-from pathlib import Path
-from typing import Optional, Dict, Any, Callable
 import json
 import logging
+from pathlib import Path
+from tkinter import filedialog, messagebox
+from typing import Any, Callable, Dict, Optional
 
+import customtkinter as ctk
+
+from ...modules.engines.iptc_engine import IPTCEngine
 from ...modules.storage.database import Database
-from ...modules.engines.iptc_engine import IPTCEngine, IPTCTemplate
-from ..components.tooltips import add_tooltip, InfoButton, tooltip_manager
+from ..components.tooltips import add_tooltip
 
 logger = logging.getLogger(__name__)
 
@@ -26,38 +27,31 @@ class SettingsPage(ctk.CTkFrame):
         # General
         "theme": "dark",
         "language": "en",
-
         # Ollama
         "ollama_url": "http://localhost:11434",
         "ollama_model": "llama3.2-vision:11b",
         "ollama_timeout": 120,
-
         # Processing
         "max_workers": 4,
         "batch_size": 50,
         "min_resolution_mp": 4.0,
         "supported_formats": ["jpg", "jpeg", "tif", "tiff", "png", "eps"],
-
         # Metadata
         "default_copyright": "",
         "default_byline": "",
         "write_iptc": True,
         "write_xmp": True,
         "create_backup": True,
-
         # ExifTool
         "exiftool_path": "",
-
         # FTPS
         "ftps_host": "ftps.shutterstock.com",
         "ftps_port": 21,
         "ftps_username": "",
         "ftps_password": "",
-
         # Paths
         "default_source_folder": "",
         "default_output_folder": "",
-
         # Advanced
         "debug_mode": False,
         "log_level": "INFO",
@@ -68,7 +62,7 @@ class SettingsPage(ctk.CTkFrame):
         parent,
         database: Database,
         on_settings_changed: Optional[Callable[[Dict[str, Any]], None]] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(parent, **kwargs)
 
@@ -144,31 +138,21 @@ class SettingsPage(ctk.CTkFrame):
         button_frame = ctk.CTkFrame(self)
         button_frame.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="ew")
 
-        ctk.CTkButton(
-            button_frame,
-            text="Save Settings",
-            fg_color="green",
-            command=self._save_all
-        ).pack(side="left", padx=10, pady=10)
+        ctk.CTkButton(button_frame, text="Save Settings", fg_color="green", command=self._save_all).pack(
+            side="left", padx=10, pady=10
+        )
 
-        ctk.CTkButton(
-            button_frame,
-            text="Reset to Defaults",
-            fg_color="gray",
-            command=self._reset_defaults
-        ).pack(side="left", padx=10, pady=10)
+        ctk.CTkButton(button_frame, text="Reset to Defaults", fg_color="gray", command=self._reset_defaults).pack(
+            side="left", padx=10, pady=10
+        )
 
-        ctk.CTkButton(
-            button_frame,
-            text="Export Settings",
-            command=self._export_settings
-        ).pack(side="right", padx=10, pady=10)
+        ctk.CTkButton(button_frame, text="Export Settings", command=self._export_settings).pack(
+            side="right", padx=10, pady=10
+        )
 
-        ctk.CTkButton(
-            button_frame,
-            text="Import Settings",
-            command=self._import_settings
-        ).pack(side="right", padx=10, pady=10)
+        ctk.CTkButton(button_frame, text="Import Settings", command=self._import_settings).pack(
+            side="right", padx=10, pady=10
+        )
 
     def _create_section(self, parent, title: str, content_func: Callable):
         """Create a collapsible settings section"""
@@ -180,11 +164,7 @@ class SettingsPage(ctk.CTkFrame):
         header = ctk.CTkFrame(section)
         header.pack(fill="x")
 
-        ctk.CTkLabel(
-            header,
-            text=title,
-            font=ctk.CTkFont(size=14, weight="bold")
-        ).pack(side="left", padx=10, pady=5)
+        ctk.CTkLabel(header, text=title, font=ctk.CTkFont(size=14, weight="bold")).pack(side="left", padx=10, pady=5)
 
         # Content
         content = ctk.CTkFrame(section)
@@ -204,12 +184,7 @@ class SettingsPage(ctk.CTkFrame):
         self.ollama_url.pack(side="left", padx=5)
         add_tooltip(self.ollama_url, "ollama_url")
 
-        ctk.CTkButton(
-            row1,
-            text="Test",
-            width=60,
-            command=self._test_ollama
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(row1, text="Test", width=60, command=self._test_ollama).pack(side="left", padx=5)
 
         # Model
         row2 = ctk.CTkFrame(parent)
@@ -218,14 +193,8 @@ class SettingsPage(ctk.CTkFrame):
         ctk.CTkLabel(row2, text="Vision Model:", width=150).pack(side="left")
         self.ollama_model = ctk.CTkComboBox(
             row2,
-            values=[
-                "llama3.2-vision:11b",
-                "llama3.2-vision:90b",
-                "llava:7b",
-                "llava:13b",
-                "moondream:1.8b"
-            ],
-            width=250
+            values=["llama3.2-vision:11b", "llama3.2-vision:90b", "llava:7b", "llava:13b", "moondream:1.8b"],
+            width=250,
         )
         self.ollama_model.set(self._settings.get("ollama_model", "llama3.2-vision:11b"))
         self.ollama_model.pack(side="left", padx=5)
@@ -248,13 +217,7 @@ class SettingsPage(ctk.CTkFrame):
         row1.pack(fill="x", pady=2)
 
         ctk.CTkLabel(row1, text="Max Workers:", width=150).pack(side="left")
-        self.max_workers = ctk.CTkSlider(
-            row1,
-            from_=1,
-            to=16,
-            number_of_steps=15,
-            width=200
-        )
+        self.max_workers = ctk.CTkSlider(row1, from_=1, to=16, number_of_steps=15, width=200)
         self.max_workers.set(self._settings.get("max_workers", 4))
         self.max_workers.pack(side="left", padx=5)
         add_tooltip(self.max_workers, "max_workers")
@@ -311,29 +274,17 @@ class SettingsPage(ctk.CTkFrame):
         row3.pack(fill="x", pady=2)
 
         self.write_iptc_var = ctk.BooleanVar(value=self._settings.get("write_iptc", True))
-        write_iptc_cb = ctk.CTkCheckBox(
-            row3,
-            text="Write IPTC",
-            variable=self.write_iptc_var
-        )
+        write_iptc_cb = ctk.CTkCheckBox(row3, text="Write IPTC", variable=self.write_iptc_var)
         write_iptc_cb.pack(side="left", padx=10)
         add_tooltip(write_iptc_cb, "write_iptc")
 
         self.write_xmp_var = ctk.BooleanVar(value=self._settings.get("write_xmp", True))
-        write_xmp_cb = ctk.CTkCheckBox(
-            row3,
-            text="Write XMP",
-            variable=self.write_xmp_var
-        )
+        write_xmp_cb = ctk.CTkCheckBox(row3, text="Write XMP", variable=self.write_xmp_var)
         write_xmp_cb.pack(side="left", padx=10)
         add_tooltip(write_xmp_cb, "write_xmp")
 
         self.create_backup_var = ctk.BooleanVar(value=self._settings.get("create_backup", True))
-        create_backup_cb = ctk.CTkCheckBox(
-            row3,
-            text="Create Backup (_original)",
-            variable=self.create_backup_var
-        )
+        create_backup_cb = ctk.CTkCheckBox(row3, text="Create Backup (_original)", variable=self.create_backup_var)
         create_backup_cb.pack(side="left", padx=10)
         add_tooltip(create_backup_cb, "create_backup")
 
@@ -351,7 +302,7 @@ class SettingsPage(ctk.CTkFrame):
             row4,
             text="Browse",
             width=60,
-            command=lambda: self._browse_file(self.exiftool_path, [("Executable", "*.exe")])
+            command=lambda: self._browse_file(self.exiftool_path, [("Executable", "*.exe")]),
         ).pack(side="left", padx=5)
 
     def _create_ftps_settings(self, parent):
@@ -413,12 +364,9 @@ class SettingsPage(ctk.CTkFrame):
         self.default_source.insert(0, self._settings.get("default_source_folder", ""))
         self.default_source.pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            row1,
-            text="Browse",
-            width=60,
-            command=lambda: self._browse_folder(self.default_source)
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(row1, text="Browse", width=60, command=lambda: self._browse_folder(self.default_source)).pack(
+            side="left", padx=5
+        )
 
         # Output folder
         row2 = ctk.CTkFrame(parent)
@@ -429,12 +377,9 @@ class SettingsPage(ctk.CTkFrame):
         self.default_output.insert(0, self._settings.get("default_output_folder", ""))
         self.default_output.pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            row2,
-            text="Browse",
-            width=60,
-            command=lambda: self._browse_folder(self.default_output)
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(row2, text="Browse", width=60, command=lambda: self._browse_folder(self.default_output)).pack(
+            side="left", padx=5
+        )
 
     def _create_templates_settings(self, parent):
         """Create IPTC templates settings"""
@@ -464,17 +409,9 @@ class SettingsPage(ctk.CTkFrame):
             command=self._create_template,
         ).pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            row2,
-            text="Import Templates",
-            command=self._import_templates
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(row2, text="Import Templates", command=self._import_templates).pack(side="left", padx=5)
 
-        ctk.CTkButton(
-            row2,
-            text="Export Templates",
-            command=self._export_templates
-        ).pack(side="left", padx=5)
+        ctk.CTkButton(row2, text="Export Templates", command=self._export_templates).pack(side="left", padx=5)
 
     def _create_advanced_settings(self, parent):
         """Create advanced settings"""
@@ -483,21 +420,13 @@ class SettingsPage(ctk.CTkFrame):
         row1.pack(fill="x", pady=2)
 
         self.debug_mode_var = ctk.BooleanVar(value=self._settings.get("debug_mode", False))
-        debug_cb = ctk.CTkCheckBox(
-            row1,
-            text="Enable Debug Mode",
-            variable=self.debug_mode_var
-        )
+        debug_cb = ctk.CTkCheckBox(row1, text="Enable Debug Mode", variable=self.debug_mode_var)
         debug_cb.pack(side="left", padx=10)
         add_tooltip(debug_cb, "debug_mode")
 
         # Log level
         ctk.CTkLabel(row1, text="Log Level:").pack(side="left", padx=(20, 5))
-        self.log_level = ctk.CTkComboBox(
-            row1,
-            values=["DEBUG", "INFO", "WARNING", "ERROR"],
-            width=100
-        )
+        self.log_level = ctk.CTkComboBox(row1, values=["DEBUG", "INFO", "WARNING", "ERROR"], width=100)
         self.log_level.set(self._settings.get("log_level", "INFO"))
         self.log_level.pack(side="left", padx=5)
         add_tooltip(self.log_level, "log_level")
@@ -506,18 +435,9 @@ class SettingsPage(ctk.CTkFrame):
         row2 = ctk.CTkFrame(parent)
         row2.pack(fill="x", pady=2)
 
-        ctk.CTkLabel(
-            row2,
-            text=f"Database: {self.database.db_path}",
-            text_color="gray"
-        ).pack(anchor="w")
+        ctk.CTkLabel(row2, text=f"Database: {self.database.db_path}", text_color="gray").pack(anchor="w")
 
-        ctk.CTkButton(
-            row2,
-            text="Vacuum Database",
-            width=120,
-            command=self._vacuum_database
-        ).pack(anchor="w", pady=5)
+        ctk.CTkButton(row2, text="Vacuum Database", width=120, command=self._vacuum_database).pack(anchor="w", pady=5)
 
     def _browse_file(self, entry: ctk.CTkEntry, filetypes: list):
         """Browse for a file"""
@@ -548,8 +468,7 @@ class SettingsPage(ctk.CTkFrame):
                 models = response.json().get("models", [])
                 model_names = [m.get("name", "") for m in models]
                 messagebox.showinfo(
-                    "Ollama Connected",
-                    f"Connected successfully!\n\nAvailable models:\n" + "\n".join(model_names[:10])
+                    "Ollama Connected", "Connected successfully!\n\nAvailable models:\n" + "\n".join(model_names[:10])
                 )
             else:
                 messagebox.showerror("Error", f"Ollama returned status: {response.status_code}")
@@ -580,9 +499,7 @@ class SettingsPage(ctk.CTkFrame):
 
     def _import_templates(self):
         """Import templates from file"""
-        path = filedialog.askopenfilename(
-            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
-        )
+        path = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
         if path:
             try:
                 self.iptc_engine.load_templates(Path(path))
@@ -593,10 +510,7 @@ class SettingsPage(ctk.CTkFrame):
 
     def _export_templates(self):
         """Export templates to file"""
-        path = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON Files", "*.json")]
-        )
+        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
         if path:
             try:
                 self.iptc_engine.save_templates(Path(path))
@@ -656,17 +570,13 @@ class SettingsPage(ctk.CTkFrame):
 
     def _export_settings(self):
         """Export settings to JSON file"""
-        path = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON Files", "*.json")]
-        )
+        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
         if path:
             try:
                 # Don't export sensitive data
-                export_settings = {k: v for k, v in self._settings.items()
-                                   if k not in ["ftps_password"]}
+                export_settings = {k: v for k, v in self._settings.items() if k not in ["ftps_password"]}
 
-                with open(path, 'w', encoding='utf-8') as f:
+                with open(path, "w", encoding="utf-8") as f:
                     json.dump(export_settings, f, indent=2)
 
                 messagebox.showinfo("Export", f"Settings exported to:\n{path}")
@@ -675,12 +585,10 @@ class SettingsPage(ctk.CTkFrame):
 
     def _import_settings(self):
         """Import settings from JSON file"""
-        path = filedialog.askopenfilename(
-            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
-        )
+        path = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")])
         if path:
             try:
-                with open(path, 'r', encoding='utf-8') as f:
+                with open(path, "r", encoding="utf-8") as f:
                     imported = json.load(f)
 
                 self._settings.update(imported)
