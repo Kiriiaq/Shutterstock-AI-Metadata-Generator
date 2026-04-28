@@ -1,14 +1,10 @@
-"""
-UI Components - Reusable UI elements.
-"""
+"""UI Components — Reusable UI elements used by the active pages."""
 
 from .tooltips import add_tooltip, ToolTip, tooltip_manager, InfoButton
-from .sidebar import Sidebar
 
 __all__ = [
     "add_tooltip",
     "ToolTip",
     "tooltip_manager",
     "InfoButton",
-    "Sidebar",
 ]
