@@ -27,6 +27,6 @@ def sample_image_path(temp_dir):
 @pytest.fixture
 def mock_database(temp_dir):
     """Create a mock database for testing."""
-    from src.core.database import Database
+    from src.modules.storage.database import Database
     db_path = temp_dir / "test.db"
     return Database(db_path)
