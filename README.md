@@ -77,8 +77,14 @@ Stock photographers spend **hours manually writing descriptions, keywords, and c
 git clone https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator.git
 cd Shutterstock-AI-Metadata-Generator
 pip install -r requirements.txt
-python shutterstock_analyzer_unified.py
+python main.py            # launcher (root entry point)
+# ou de manière équivalente :
+python -m app.main        # entrée explicite dans la couche UI v3
 ```
+
+> Le code est organisé en deux couches : le backend (`src/modules/`) reste
+> stable, l'UI v3 vit dans `app/` avec CustomTkinter uniquement. Voir
+> `docs/architecture.md` pour la cartographie complète.
 
 ### First Run
 1. **Start Ollama** - Click "Start" or let auto-repair handle it

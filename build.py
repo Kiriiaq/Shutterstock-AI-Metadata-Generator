@@ -138,7 +138,7 @@ def _common_args(output_name: str) -> list[str]:
 
     # Bundle assets and src/ alongside the EXE (resolved at runtime via
     # main.resource_path which honours sys._MEIPASS).
-    for data_dir in ["assets", "src"]:
+    for data_dir in ["assets", "src", "app"]:
         src_path = PROJECT_DIR / data_dir
         if src_path.exists():
             args.extend(["--add-data", f"{src_path}{os.pathsep}{data_dir}"])
