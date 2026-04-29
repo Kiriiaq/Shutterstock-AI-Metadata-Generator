@@ -93,6 +93,12 @@ class Router:
 
     def _destroy_current(self) -> None:
         if self._current_view is not None:
+            on_leave = getattr(self._current_view, "on_leave", None)
+            if callable(on_leave):
+                try:
+                    on_leave()
+                except Exception:
+                    logger.exception("View on_leave failed")
             try:
                 self._current_view.destroy()
             except Exception:
