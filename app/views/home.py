@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
@@ -33,6 +34,7 @@ class HomeView(BaseView):
         super().__init__(master)
         self.app = app
         self._stat_labels: dict[str, ctk.CTkLabel] = {}
+        self._ai_value_label: ctk.CTkLabel | None = None
         self._build()
 
     def _build(self) -> None:
@@ -62,10 +64,12 @@ class HomeView(BaseView):
         bar.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_LG))
 
         api = self.app.api
-        ai_ok = bool(api) and api.exiftool_available  # rough heuristic; refined in on_enter
         exif_ok = bool(api) and api.exiftool_available
         self._add_status_chip(
-            bar, "ExifTool", "OK" if exif_ok else "Absent", get_color("success") if exif_ok else get_color("warning")
+            bar,
+            "ExifTool",
+            "OK" if exif_ok else "Absent",
+            get_color("success") if exif_ok else get_color("warning"),
         )
         self._add_status_chip(
             bar,
@@ -73,16 +77,16 @@ class HomeView(BaseView):
             "Disponible" if api else "Indisponible",
             get_color("success") if api else get_color("warning"),
         )
-        self._add_status_chip(bar, "IA", "À vérifier", get_color("fg_muted"))
-        self._ai_chip = bar.winfo_children()[-1]
+        # AI chip — value refreshed by ``on_enter`` via api.check_ai_status().
+        self._ai_value_label = self._add_status_chip(bar, "IA", "À vérifier…", get_color("fg_muted"))
 
-        _ = ai_ok
-
-    def _add_status_chip(self, parent: ctk.CTkFrame, label: str, value: str, color: str) -> None:
+    def _add_status_chip(self, parent: ctk.CTkFrame, label: str, value: str, color: str) -> ctk.CTkLabel:
         chip = ctk.CTkFrame(parent, fg_color="transparent")
         chip.pack(side="left", padx=SPACE_LG, pady=SPACE_MD)
         ctk.CTkLabel(chip, text=label, font=get_font("small"), text_color=get_color("fg_muted")).pack(anchor="w")
-        ctk.CTkLabel(chip, text=value, font=get_font("body_strong"), text_color=color).pack(anchor="w")
+        value_label = ctk.CTkLabel(chip, text=value, font=get_font("body_strong"), text_color=color)
+        value_label.pack(anchor="w")
+        return value_label
 
     def _build_stats_grid(self, parent: ctk.CTkFrame, row: int) -> None:
         grid = ctk.CTkFrame(parent, fg_color="transparent")
@@ -145,6 +149,7 @@ class HomeView(BaseView):
         if api is None:
             for label in self._stat_labels.values():
                 label.configure(text="—")
+            self._update_ai_chip("Backend absent", get_color("warning"))
             return
         try:
             stats = api.get_statistics()
@@ -153,3 +158,30 @@ class HomeView(BaseView):
             return
         for key, label in self._stat_labels.items():
             label.configure(text=fmt_int(int(stats.get(key, 0))))
+
+        # AI status check is HTTP-bound; do it off the mainloop.
+        threading.Thread(target=self._refresh_ai_status, args=(api,), daemon=True).start()
+
+    def _refresh_ai_status(self, api: Any) -> None:
+        try:
+            status = api.check_ai_status()
+        except Exception:
+            logger.exception("AI status probe failed")
+            self.after(0, lambda: self._update_ai_chip("Erreur", get_color("error")))
+            return
+        available = status.get("available")
+        message = status.get("message", "—")
+        if available:
+            color = get_color("success")
+            text = f"En ligne — {message}"
+        elif status.get("status") == "not_initialized":
+            color = get_color("fg_muted")
+            text = "Non initialisé"
+        else:
+            color = get_color("warning")
+            text = message or "Hors ligne"
+        self.after(0, lambda c=color, x=text: self._update_ai_chip(x, c))
+
+    def _update_ai_chip(self, text: str, color: str) -> None:
+        if self._ai_value_label is not None and self._ai_value_label.winfo_exists():
+            self._ai_value_label.configure(text=text, text_color=color)

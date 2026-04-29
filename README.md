@@ -197,21 +197,118 @@ MIT License - see [LICENSE](LICENSE) for details.
 ```bash
 pip install -e ".[dev]"
 
-# Release (no console window)
-pyinstaller --onefile --noconsole --name "shutterstock-ai-release" --icon "ico/icone.ico" --add-data "ico;ico" shutterstock_analyzer_unified.py
-
-# Debug (with console)
-set SHUTTERSTOCK_DEBUG=1
-pyinstaller --onefile --console --debug=all --name "shutterstock-ai-debug" --icon "ico/icone.ico" --add-data "ico;ico" shutterstock_analyzer_unified.py
+python build.py debug     # debug profile (console + import trace)
+python build.py release   # release profile (windowed, no console)
+python build.py all       # both
+python build.py clean     # purge build/, dist/, *.spec
 ```
+
+Output: `dist/ShutterstockAnalyzer.exe` (release) and
+`dist/ShutterstockAnalyzer-debug.exe` (debug).
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-ruff check .
-pytest --tb=short -q
+ruff check app/ src/ main.py build.py tests/
+ruff format app/ src/ main.py build.py tests/
+pytest tests/ -q
 ```
+
+---
+
+## Project structure
+
+```
+ShutterstockAnalyzer/
+├── main.py                 # 5-line wrapper -> app.main:main
+├── build.py                # PyInstaller (debug | release | all | clean)
+├── pyproject.toml
+├── docs/
+│   └── architecture.md     # full UI v3 cartography
+├── app/                    # UI v3 — CustomTkinter + stdlib only
+│   ├── main.py             # bootstrap (logging, theme, backend, mainloop)
+│   ├── app.py              # App(CTk) shell + Router + shortcuts wiring
+│   ├── config/             # theme.py + shortcuts.py
+│   ├── core/               # events.py + state.py + navigation.py
+│   ├── components/         # 10 reusable widgets (sidebar, topbar, palette,
+│   │                       #   data_table, form_field, empty_state, toast,
+│   │                       #   tooltip, confirm_dialog, context_panel)
+│   ├── views/              # 9 business views (home, sources, analyze,
+│   │                       #   editor, audit, ai_control, settings,
+│   │                       #   validate, upload)
+│   ├── i18n/fr.py          # every visible string keyed here
+│   └── utils/formatters.py # FR number / date / size / duration
+├── src/                    # Backend (untouched by UI work)
+│   ├── core/               # ShutterstockParams, ConfigManager, logger
+│   ├── modules/            # AI client, engines, models, storage, workers
+│   │                       # All accessed via the ShutterstockAIv2 facade.
+│   └── utils/              # validators, file helpers, splash
+├── tests/
+│   ├── test_core/          # backend unit tests
+│   ├── test_utils/         # backend unit tests
+│   ├── smoke/              # baseline: 13 backend smokes (audit safety net)
+│   └── ui/                 # 1 consolidated end-to-end UI smoke
+└── _archive/               # legacy code preserved (ALLOW_DELETE=false)
+    ├── legacy_ui_v1/       # ShutterstockApp + 6 page_*.py from v1
+    └── legacy_ui_v2/ui/    # 5 active pages from the audit campaign
+```
+
+The UI layer (`app/`) and the backend (`src/`) talk through one facade
+(`src.modules.integration.ShutterstockAIv2`). Vues never import from
+`src.modules.storage.database`, `src.modules.engines.*`, etc. directly —
+this is what made the v2 → v3 swap surgical.
+
+## Coding conventions
+
+- Python 3.11+. Type hints everywhere on public APIs; docstrings on
+  classes and public methods.
+- Functions ≤ 50 lines, classes ≤ 300 lines (App shell justified).
+- `logging` stdlib (`logger = logging.getLogger(__name__)`); never
+  `print()` in production code.
+- Every visible string passes through `app.i18n.fr.t(key)` — no
+  literal user-facing strings inside views/components.
+- French-locale formatting via `app.utils.formatters` (NBSP separator,
+  decimal comma, JJ/MM/AAAA dates).
+- All widgets accessible by keyboard (Tab/Enter/Esc); no info conveyed
+  by colour alone (always paired with icon or text).
+- Every operation > 300 ms runs in a `threading.Thread(daemon=True)`
+  with results posted to the UI via `widget.after(0, callback)`.
+- Use `grid()` everywhere for layout. Mixing `pack` and `grid` inside
+  the same parent will raise — the App root is grid, so child
+  containers in tests must also be grid'd.
+
+## Adding a new view
+
+1. **Pick a slug** (e.g. `reports`) and an icon glyph.
+2. **Add an `i18n` entry** in `app/i18n/fr.py`:
+   `"nav.reports": "Rapports"`.
+3. **Append to** `app/components/sidebar.py::NAV_ENTRIES`:
+   `("reports", "📊", "nav.reports", "system")`.
+4. **Create the view** in `app/views/reports.py`, subclass `BaseView`:
+   ```python
+   class ReportsView(BaseView):
+       view_id = "reports"
+       def __init__(self, master, *, app):
+           super().__init__(master)
+           self.app = app
+           self._build()
+       def _build(self): ...
+       def on_enter(self, **kwargs): ...   # optional, called by Router
+       def on_leave(self): ...             # optional, called by Router
+   ```
+5. **Register the factory** in `app/app.py::App._register_views`:
+   ```python
+   factories = {
+       ...,
+       "reports": lambda parent: ReportsView(parent, app=self),
+   }
+   ```
+6. **(Optional) Add a smoke check** in
+   `tests/ui/test_app_v3_shell.py` — the existing navigation loop
+   already exercises any newly-registered view automatically; only
+   add explicit assertions if the view exposes new public API worth
+   guarding against regression.
 
 ---
 
