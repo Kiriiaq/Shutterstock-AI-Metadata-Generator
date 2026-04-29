@@ -27,6 +27,7 @@ from app.config.theme import (
     RADIUS_LG,
     SPACE_LG,
     SPACE_MD,
+    SPACE_SM,
     get_color,
     get_font,
     toggle_theme,
@@ -262,18 +263,83 @@ class App(ctk.CTk):
         return cmds
 
     def _open_help(self) -> None:
-        # Phase 4 will plug in a real help modal generated from GLOBAL_SHORTCUTS.
-        lines = [f"{display_label(b):<14}  {t(label_key)}" for b, label_key, _action in GLOBAL_SHORTCUTS]
-        # Quick stub: deduplicate alpha-case duplicates by skipping odd-letter dups
+        """Render GLOBAL_SHORTCUTS as a 2-column dialog (binding · description).
+
+        Duplicates that differ only in letter-case (Ctrl+k vs Ctrl+K) are
+        collapsed in the display.
+        """
         seen: set[str] = set()
-        cleaned: list[str] = []
-        for line in lines:
-            disp = line.split("  ", 1)[0].strip()
-            if disp.upper() in seen:
+        rows: list[tuple[str, str]] = []
+        for binding, label_key, _action in GLOBAL_SHORTCUTS:
+            disp = display_label(binding)
+            key = disp.upper()
+            if key in seen:
                 continue
-            seen.add(disp.upper())
-            cleaned.append(line)
-        self._show_text_modal(t("help.title"), "\n".join(cleaned))
+            seen.add(key)
+            rows.append((disp, t(label_key)))
+
+        modal = ctk.CTkToplevel(self)
+        modal.title(t("help.title"))
+        modal.transient(self)
+        modal.configure(fg_color=get_color("bg"))
+        modal.geometry("520x460")
+
+        outer = ctk.CTkFrame(
+            modal,
+            fg_color=get_color("bg_elevated"),
+            corner_radius=RADIUS_LG,
+            border_color=get_color("border"),
+            border_width=1,
+        )
+        outer.pack(fill="both", expand=True, padx=SPACE_LG, pady=SPACE_LG)
+
+        ctk.CTkLabel(
+            outer,
+            text=t("help.title"),
+            font=get_font("h2"),
+            text_color=get_color("fg"),
+            anchor="w",
+        ).pack(fill="x", padx=SPACE_LG, pady=(SPACE_LG, SPACE_SM))
+
+        scroll = ctk.CTkScrollableFrame(outer, fg_color="transparent", corner_radius=0)
+        scroll.pack(fill="both", expand=True, padx=SPACE_LG, pady=(0, SPACE_MD))
+        scroll.grid_columnconfigure(1, weight=1)
+
+        for idx, (binding, label) in enumerate(rows):
+            ctk.CTkLabel(
+                scroll,
+                text=binding,
+                font=get_font("code"),
+                text_color=get_color("accent"),
+                anchor="w",
+                width=140,
+            ).grid(row=idx, column=0, sticky="w", padx=(0, SPACE_MD), pady=2)
+            ctk.CTkLabel(
+                scroll,
+                text=label,
+                font=get_font("body"),
+                text_color=get_color("fg"),
+                anchor="w",
+                justify="left",
+            ).grid(row=idx, column=1, sticky="w", pady=2)
+
+        ctk.CTkButton(
+            outer,
+            text=t("common.close"),
+            command=modal.destroy,
+            fg_color=get_color("accent"),
+            hover_color=get_color("accent_hover"),
+            text_color=get_color("accent_fg"),
+            font=get_font("body_strong"),
+            height=36,
+        ).pack(side="right", padx=SPACE_LG, pady=(0, SPACE_LG))
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        try:
+            modal.grab_set()
+        except Exception:
+            pass
+        self._open_modals.append(modal)
 
     def _focus_view_search(self) -> None:
         # Each view will eventually expose a focus_search() hook. Stub for now.
@@ -290,53 +356,6 @@ class App(ctk.CTk):
                     return
             except Exception:
                 continue
-
-    def _show_text_modal(self, title: str, body: str) -> None:
-        modal = ctk.CTkToplevel(self)
-        modal.title(title)
-        modal.transient(self)
-        modal.configure(fg_color=get_color("bg"))
-        frame = ctk.CTkFrame(
-            modal,
-            fg_color=get_color("bg_elevated"),
-            corner_radius=RADIUS_LG,
-            border_color=get_color("border"),
-            border_width=1,
-        )
-        frame.pack(fill="both", expand=True, padx=SPACE_LG, pady=SPACE_LG)
-        ctk.CTkLabel(
-            frame,
-            text=title,
-            font=get_font("h3"),
-            text_color=get_color("fg"),
-        ).pack(anchor="w", padx=SPACE_LG, pady=(SPACE_LG, SPACE_MD))
-        textbox = ctk.CTkTextbox(
-            frame,
-            font=get_font("code"),
-            text_color=get_color("fg"),
-            fg_color=get_color("bg"),
-            border_color=get_color("border"),
-            border_width=1,
-            width=420,
-            height=320,
-        )
-        textbox.pack(padx=SPACE_LG, pady=(0, SPACE_LG))
-        textbox.insert("1.0", body)
-        textbox.configure(state="disabled")
-        ctk.CTkButton(
-            frame,
-            text=t("common.close"),
-            command=modal.destroy,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
-        ).pack(side="right", padx=SPACE_LG, pady=(0, SPACE_LG))
-        modal.bind("<Escape>", lambda _e: modal.destroy())
-        try:
-            modal.grab_set()
-        except Exception:
-            pass
-        self._open_modals.append(modal)
 
     # ------------------------------------------------------------------
     # Lifecycle
