@@ -177,5 +177,4 @@ class ValidateView(BaseView):
                         justify="left",
                     ).pack(anchor="w")
 
-        self.app.context_panel.set_content("Détails de validation", builder)
-        self.app.context_panel.open()
+        self.app.show_details("Détails de validation", builder)

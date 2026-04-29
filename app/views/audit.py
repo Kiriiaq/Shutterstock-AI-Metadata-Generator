@@ -192,8 +192,7 @@ class AuditView(BaseView):
             tb.insert("1.0", details)
             tb.configure(state="disabled")
 
-        self.app.context_panel.set_content("Détails de l'opération", builder)
-        self.app.context_panel.open()
+        self.app.show_details("Détails de l'opération", builder)
 
     def _export(self) -> None:
         api = self.app.api

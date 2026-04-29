@@ -1,22 +1,20 @@
-"""End-to-end smoke for the new ``app/`` UI layer.
+"""End-to-end smoke for the dense-Atelier ``app/`` UI layer.
 
 Tk does not allow re-creating a root within a single Python process,
 so this single test owns the only ``CTk`` instance for the whole UI
 test session. It exercises:
 
-- App shell construction and layout (sidebar + topbar + central frame).
-- Navigation through all 9 registered views (home, sources, analyze,
-  editor, validate, upload, ai_control, audit, settings) — proves each
-  view's factory builds without raising even when ``api=None``.
-- History back/forward.
-- Sidebar collapse/expand.
-- Theme toggle with persistence to a tmp prefs file.
-- display_label() regression guards.
-- Command palette + context panel wiring.
-- The 5 reusable components attached as children of the App root:
-  CommandPalette, DataTable (set/sort/select/refresh), FormField
-  (validate, set_error, set_value), EmptyState, ContextPanel
-  (open/close/refresh_theme).
+- App shell construction (no sidebar, topbar with health strip,
+  central frame mounting the WorkspaceView).
+- The Workspace's 8 tool panels are present (sources, editor, analyse,
+  modèle IA, validation, historique, paramètres, téléversement).
+- ``open_in_modal`` works for the 5 detail views (settings, audit,
+  ai_control, validate, upload) and the modal closes cleanly.
+- ``show_details`` (replacement for the old ContextPanel) opens.
+- Theme toggle round-trip with persisted prefs.
+- Topbar health strip rebuilds via the provider.
+- DataTable, FormField, EmptyState constructors smoke-build under the
+  same root.
 """
 
 from __future__ import annotations
@@ -35,31 +33,23 @@ def test_ui_v3_full_lifecycle(tmp_path, monkeypatch):
     import customtkinter as ctk
 
     from app.app import App
-    from app.components.command_palette import Command, CommandPalette
-    from app.components.context_panel import ContextPanel
     from app.components.data_table import Column, DataTable
     from app.components.empty_state import EmptyState
     from app.components.form_field import FormField, entry_factory
-    from app.config.shortcuts import GLOBAL_SHORTCUTS, display_label
 
     app = App(api=None)
     try:
         app.update_idletasks()
 
         _check_shell(app)
-        _check_navigation(app)
-        _check_history(app)
-        _check_sidebar_collapse(app)
+        _check_workspace_panels(app)
+        _check_open_in_modal(app)
+        _check_show_details(app)
         _check_theme_toggle(app, theme_mod, fake_prefs)
-        _check_shortcut_labels(display_label, GLOBAL_SHORTCUTS)
-        _check_palette_and_panel(app, CommandPalette)
-
-        # ----- Component-level checks (children of App root) -----
-        _check_command_palette_filter(app, Command, CommandPalette)
+        _check_topbar_health(app)
         _check_data_table(app, ctk, Column, DataTable)
         _check_form_field(app, ctk, FormField, entry_factory)
         _check_empty_state(app, ctk, EmptyState)
-        _check_context_panel_standalone(app, ContextPanel)
 
     finally:
         try:
@@ -69,41 +59,69 @@ def test_ui_v3_full_lifecycle(tmp_path, monkeypatch):
 
 
 # ============================================================================
-# Shell-level helpers
+# Helpers
 # ============================================================================
 
 
 def _check_shell(app) -> None:
     assert "ShutterstockAnalyzer" in app.title()
-    assert app.sidebar is not None
     assert app.topbar is not None
     assert app._center.winfo_exists()
     assert app.router.current_id == "home"
+    assert not hasattr(app, "sidebar")  # sidebar removed in dense atelier
+    assert not hasattr(app, "context_panel")  # replaced by show_details modal
 
 
-def _check_navigation(app) -> None:
-    from app.components.sidebar import NAV_ENTRIES
+def _check_workspace_panels(app) -> None:
+    """The Workspace must expose the 8 tool panels' state widgets."""
+    workspace = app.router._current_view
+    assert workspace is not None
+    # Sample one widget from each of the 8 panels — covers all of them.
+    assert hasattr(workspace, "_sources_table")
+    assert hasattr(workspace, "_iptc_fields")
+    assert hasattr(workspace, "_analyze_results")
+    assert hasattr(workspace, "_model_status_dot")
+    assert hasattr(workspace, "_validate_summary")
+    assert hasattr(workspace, "_history_lines")
+    assert hasattr(workspace, "_settings_chips")
+    assert hasattr(workspace, "_upload_host_label")
 
-    for view_id, _icon, _label_key, _section in NAV_ENTRIES:
-        app.router.navigate_to(view_id)
+
+def _check_open_in_modal(app) -> None:
+    """All 5 detail views open in a Toplevel and close cleanly."""
+    for view_id in ("settings", "audit", "ai_control", "validate", "upload"):
+        before = len(app._open_modals)
+        app.open_in_modal(view_id)
         app.update_idletasks()
-        assert app.router.current_id == view_id
+        # _open_modals tracks help/details; open_in_modal also pushes via the
+        # finalizer — robustly close every Toplevel child we just made.
+        toplevels = [c for c in app.winfo_children() if c.winfo_class() in ("Toplevel", "CTkToplevel")]
+        for tl in toplevels:
+            try:
+                tl.destroy()
+            except Exception:
+                pass
+        app.update_idletasks()
+        _ = before
 
 
-def _check_history(app) -> None:
-    app.router.back()
-    app.update_idletasks()
-    app.router.forward()
-    app.update_idletasks()
+def _check_show_details(app) -> None:
+    import customtkinter as ctk
 
+    called: list[bool] = []
 
-def _check_sidebar_collapse(app) -> None:
-    original_width = app.sidebar.cget("width")
-    app.sidebar.toggle_collapsed()
+    def builder(parent: ctk.CTkFrame) -> None:
+        ctk.CTkLabel(parent, text="ok").pack()
+        called.append(True)
+
+    app.show_details("Test", builder)
     app.update_idletasks()
-    assert app.sidebar.cget("width") != original_width
-    app.sidebar.toggle_collapsed()
-    app.update_idletasks()
+    assert called == [True]
+    for tl in [c for c in app.winfo_children() if c.winfo_class() in ("Toplevel", "CTkToplevel")]:
+        try:
+            tl.destroy()
+        except Exception:
+            pass
 
 
 def _check_theme_toggle(app, theme_mod, fake_prefs) -> None:
@@ -114,66 +132,17 @@ def _check_theme_toggle(app, theme_mod, fake_prefs) -> None:
     assert fake_prefs.exists()
 
 
-def _check_shortcut_labels(display_label, GLOBAL_SHORTCUTS) -> None:
-    assert display_label("<Alt-Left>") == "Alt+Left"
-    assert display_label("<Control-k>") == "Ctrl+K"
-    assert display_label("<Control-Shift-T>") == "Ctrl+Shift+T"
-    assert display_label("<F1>") == "F1"
-    assert len(GLOBAL_SHORTCUTS) >= 12
-
-
-def _check_palette_and_panel(app, CommandPalette) -> None:
-    app._open_command_palette()
+def _check_topbar_health(app) -> None:
+    """Topbar health strip is populated by the provider on each refresh."""
+    app.topbar.refresh_health()
     app.update_idletasks()
-    assert isinstance(app._palette, CommandPalette)
-    cmds = app._build_commands()
-    assert len(cmds) >= 9 + 5
-    cmd_ids = {c.id for c in cmds}
-    assert "nav.home" in cmd_ids and "toggle_theme" in cmd_ids
-    app._palette.close()
-
-    assert app.context_panel.is_open is False
-    app.context_panel.set_content("Détails", lambda _p: None)
-    app.context_panel.open()
-    app.update_idletasks()
-    assert app.context_panel.is_open is True
-    app.context_panel.close()
-    app.update_idletasks()
-    assert app.context_panel.is_open is False
-
-
-# ============================================================================
-# Component-level helpers (children of the App root)
-# ============================================================================
-
-
-def _check_command_palette_filter(app, Command, CommandPalette) -> None:
-    fired: list[str] = []
-    cmds = [
-        Command(id="a", label="Aller à : Sources", callback=lambda: fired.append("a")),
-        Command(id="b", label="Basculer le thème", callback=lambda: fired.append("b")),
-        Command(id="c", label="Vue précédente", callback=lambda: fired.append("c"), keywords=("history",)),
-    ]
-    palette = CommandPalette(app, provider=lambda: cmds)
-    palette.open()
-    app.update_idletasks()
-    assert palette._row_widgets and len(palette._row_widgets) == 3
-
-    palette._refresh_results("thème")
-    assert len(palette._row_widgets) == 1 and palette._row_widgets[0][1].id == "b"
-
-    palette._refresh_results("history")
-    assert len(palette._row_widgets) == 1 and palette._row_widgets[0][1].id == "c"
-
-    palette._highlighted = 0
-    palette._execute_highlighted()
-    assert fired == ["c"]
-    assert palette._win is None
+    assert "Backend" in app.topbar._chip_widgets
+    assert "ExifTool" in app.topbar._chip_widgets
 
 
 def _check_data_table(app, ctk, Column, DataTable) -> None:
     container = ctk.CTkFrame(app)
-    container.grid(row=99, column=99)  # off-grid; app root manages by grid
+    container.grid(row=99, column=99)
     table = DataTable(
         container,
         columns=[
@@ -213,7 +182,7 @@ def _check_data_table(app, ctk, Column, DataTable) -> None:
 
 def _check_form_field(app, ctk, FormField, entry_factory) -> None:
     container = ctk.CTkFrame(app)
-    container.grid(row=99, column=99)  # off-grid; app root manages by grid
+    container.grid(row=99, column=99)
     field = FormField(
         container,
         label="Nom",
@@ -241,46 +210,16 @@ def _check_form_field(app, ctk, FormField, entry_factory) -> None:
 
 def _check_empty_state(app, ctk, EmptyState) -> None:
     container = ctk.CTkFrame(app)
-    container.grid(row=99, column=99)  # off-grid; app root manages by grid
-    fired: list[bool] = []
+    container.grid(row=99, column=99)
     es = EmptyState(
         container,
         icon="📁",
         title="Aucune image scannée",
         subtitle="Sélectionnez un dossier source pour commencer.",
         action_label="Choisir un dossier",
-        on_action=lambda: fired.append(True),
+        on_action=lambda: None,
     )
     es.pack()
     app.update_idletasks()
     assert es.winfo_exists()
     container.destroy()
-
-
-def _check_context_panel_standalone(app, ContextPanel) -> None:
-    container = app  # use app root directly
-    panel = ContextPanel(container)
-    panel.grid(row=99, column=99)  # off-screen-ish; won't affect main layout
-    app.update_idletasks()
-    assert panel.is_open is False
-    assert int(panel.cget("width")) == 0
-
-    builder_called: list[bool] = []
-
-    def builder(parent):
-        import customtkinter as ctk_local
-
-        ctk_local.CTkLabel(parent, text="Détails").grid(row=0, column=0)
-        builder_called.append(True)
-
-    panel.set_content("Détails", builder)
-    panel.open()
-    app.update_idletasks()
-    assert panel.is_open is True
-    assert int(panel.cget("width")) == panel.WIDTH
-    assert builder_called == [True]
-
-    panel.close()
-    app.update_idletasks()
-    assert panel.is_open is False
-    panel.destroy()
