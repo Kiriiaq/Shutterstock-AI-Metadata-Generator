@@ -58,7 +58,10 @@ class App(ctk.CTk):
         super().__init__()
         self.api = api  # ShutterstockAIv2 | None
         self.bus = EventBus()
-        self.state = AppState(self.bus)
+        # NOTE: must NOT be named `state` — that shadows tkinter.Wm.state(),
+        # which CustomTkinter's DPI scaling tracker calls periodically and
+        # would crash with "'AppState' object is not callable".
+        self.app_state = AppState(self.bus)
         self.toasts = ToastManager(self)
         self._open_modals: list[ctk.CTkToplevel] = []
         self._palette: CommandPalette | None = None
@@ -122,13 +125,30 @@ class App(ctk.CTk):
     # Routing
 
     def _register_views(self) -> None:
-        """All sidebar entries are registered as placeholders for now.
+        """Wire each sidebar entry to its concrete view factory."""
+        from app.views.ai_control import AIControlView
+        from app.views.analyze import AnalyzeView
+        from app.views.audit import AuditView
+        from app.views.editor import EditorView
+        from app.views.home import HomeView
+        from app.views.settings import SettingsView
+        from app.views.sources import SourcesView
+        from app.views.upload import UploadView
+        from app.views.validate import ValidateView
 
-        Vues will be plugged in via ``router.register(view_id, label, factory)``
-        in Phase 5 once each one is implemented.
-        """
+        factories: dict[str, Any] = {
+            "home": lambda parent: HomeView(parent, app=self),
+            "sources": lambda parent: SourcesView(parent, app=self),
+            "analyze": lambda parent: AnalyzeView(parent, app=self),
+            "editor": lambda parent: EditorView(parent, app=self),
+            "validate": lambda parent: ValidateView(parent, app=self),
+            "upload": lambda parent: UploadView(parent, app=self),
+            "ai_control": lambda parent: AIControlView(parent, app=self),
+            "audit": lambda parent: AuditView(parent, app=self),
+            "settings": lambda parent: SettingsView(parent, app=self),
+        }
         for view_id, _icon, label_key, _section in NAV_ENTRIES:
-            self.router.register(view_id, t(label_key), factory=None)
+            self.router.register(view_id, t(label_key), factory=factories.get(view_id))
 
     def _wire_navigation(self) -> None:
         self.bus.on("router.navigated", self._on_router_navigated)
