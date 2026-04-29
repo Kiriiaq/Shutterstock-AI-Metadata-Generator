@@ -126,19 +126,26 @@ class App(ctk.CTk):
     # Routing
 
     def _register_views(self) -> None:
-        """Wire each sidebar entry to its concrete view factory."""
+        """Wire each sidebar entry to its concrete view factory.
+
+        The default ``home`` is now the dense WorkspaceView — a single
+        screen that surfaces sources, editor, analyse, system status
+        and live audit at once. The other views remain registered so
+        the SystemPanel quick-action buttons and the sidebar can still
+        deep-link into them when the user wants details.
+        """
         from app.views.ai_control import AIControlView
         from app.views.analyze import AnalyzeView
         from app.views.audit import AuditView
         from app.views.editor import EditorView
-        from app.views.home import HomeView
         from app.views.settings import SettingsView
         from app.views.sources import SourcesView
         from app.views.upload import UploadView
         from app.views.validate import ValidateView
+        from app.views.workspace import WorkspaceView
 
         factories: dict[str, Any] = {
-            "home": lambda parent: HomeView(parent, app=self),
+            "home": lambda parent: WorkspaceView(parent, app=self),
             "sources": lambda parent: SourcesView(parent, app=self),
             "analyze": lambda parent: AnalyzeView(parent, app=self),
             "editor": lambda parent: EditorView(parent, app=self),

@@ -15,7 +15,7 @@ T: dict[str, str] = {
     # ============================== Sidebar ==========================
     "nav.section.production": "Production",
     "nav.section.system": "Pilotage et système",
-    "nav.home": "Tableau de bord",
+    "nav.home": "Atelier",
     "nav.sources": "Sources et tri",
     "nav.analyze": "Analyse IA",
     "nav.editor": "Édition métadonnées",
