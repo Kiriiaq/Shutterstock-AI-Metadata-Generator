@@ -400,7 +400,7 @@ class WorkspaceView(BaseView):
             width=80,
             height=28,
             fg_color=get_color("error"),
-            text_color="#FFFFFF",
+            text_color=get_color("error_fg"),
             state="disabled",
             command=self._analyze_stop,
         )

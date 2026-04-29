@@ -37,35 +37,38 @@ ThemeMode = Literal["light", "dark", "system"]
 # ============================================================================
 
 LIGHT: Final[dict[str, str]] = {
-    # Surfaces
+    # Surfaces — pure white canvas, slate-cool elevation. The whole point
+    # of a real light mode is that the bg reads as white at a glance, with
+    # only the elevated surfaces hinting at hierarchy.
     "bg": "#FFFFFF",
-    "bg_elevated": "#F8F9FA",
-    "bg_hover": "#F1F3F5",
-    "bg_active": "#E9ECEF",
-    # Text
-    "fg": "#212529",
-    "fg_muted": "#6C757D",
-    "fg_subtle": "#ADB5BD",
-    # Borders
-    "border": "#DEE2E6",
-    "border_strong": "#CED4DA",
+    "bg_elevated": "#F8FAFC",  # slate-50
+    "bg_hover": "#F1F5F9",  # slate-100
+    "bg_active": "#E2E8F0",  # slate-200
+    # Text — near-black for the strongest contrast on white. Body text
+    # vs bg is 17.6:1 here (was 14.6:1 with #212529).
+    "fg": "#0F172A",  # slate-900
+    "fg_muted": "#475569",  # slate-600 — secondary text, still 7.5:1
+    "fg_subtle": "#94A3B8",  # slate-400 — placeholder / disabled
+    # Borders — light enough to feel airy, defined enough to read as edges.
+    "border": "#E2E8F0",  # slate-200
+    "border_strong": "#CBD5E1",  # slate-300
     # Accent (primary action)
-    "accent": "#2563EB",
-    "accent_hover": "#1D4ED8",
+    "accent": "#2563EB",  # blue-600
+    "accent_hover": "#1D4ED8",  # blue-700
     "accent_fg": "#FFFFFF",
     # Semantics
-    "success": "#15803D",
+    "success": "#15803D",  # green-700
     "success_fg": "#FFFFFF",
-    "success_bg": "#DCFCE7",
-    "warning": "#C2410C",
+    "success_bg": "#DCFCE7",  # green-100
+    "warning": "#B45309",  # amber-700 — warmer, more legible on white than orange-700
     "warning_fg": "#FFFFFF",
-    "warning_bg": "#FFEDD5",
-    "error": "#B91C1C",
+    "warning_bg": "#FEF3C7",  # amber-100
+    "error": "#B91C1C",  # red-700
     "error_fg": "#FFFFFF",
-    "error_bg": "#FEE2E2",
-    "info": "#0E7490",
+    "error_bg": "#FEE2E2",  # red-100
+    "info": "#0E7490",  # cyan-700
     "info_fg": "#FFFFFF",
-    "info_bg": "#CFFAFE",
+    "info_bg": "#CFFAFE",  # cyan-100
     # Focus
     "focus_ring": "#3B82F6",
 }
@@ -208,7 +211,12 @@ def get_font(role: str = "body") -> ctk.CTkFont:
 # ----------------------------------------------------------------------------
 
 _VALID_THEMES: Final[frozenset[str]] = frozenset({"light", "dark", "system"})
-_DEFAULT_PREFS: Final[dict[str, str]] = {"theme": "system"}
+# Default to "light" rather than "system": on Windows "System" resolves to
+# whatever the OS-level personalization setting says, which is dark on most
+# machines by default. A document-editing tool reads better in light mode at
+# rest, so we make that the explicit out-of-the-box choice. Users who flip
+# to dark or system have their preference persisted to ui_prefs.json.
+_DEFAULT_PREFS: Final[dict[str, str]] = {"theme": "light"}
 
 
 def get_prefs_path() -> Path:
