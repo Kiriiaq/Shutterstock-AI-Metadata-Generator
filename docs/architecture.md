@@ -1,8 +1,10 @@
 # Architecture IHM — ShutterstockAnalyzer v3
 
-**Statut** : proposition, en attente de validation.
+**Statut** : implémenté et actif (commit `386741c` + Phase 6).
 **Stack** : Python 3.11+, customtkinter, tkinter/ttk, Pillow (icônes seulement), stdlib.
 **Langue interface** : 100 % français, vouvoiement / impersonnel.
+**Entrée** : `python main.py` ou `python -m app.main`. EXE produit par
+`python build.py release` (`dist/ShutterstockAnalyzer.exe`).
 
 ## 1. Philosophie
 
