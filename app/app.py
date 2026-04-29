@@ -16,7 +16,9 @@ from typing import Any
 
 import customtkinter as ctk
 
+from app.components.command_palette import Command, CommandPalette
 from app.components.confirm_dialog import confirm
+from app.components.context_panel import ContextPanel
 from app.components.sidebar import NAV_ENTRIES, Sidebar
 from app.components.toast import ToastManager
 from app.components.topbar import Topbar
@@ -59,6 +61,7 @@ class App(ctk.CTk):
         self.state = AppState(self.bus)
         self.toasts = ToastManager(self)
         self._open_modals: list[ctk.CTkToplevel] = []
+        self._palette: CommandPalette | None = None
 
         self._configure_window()
         self._build_layout()
@@ -96,20 +99,24 @@ class App(ctk.CTk):
         self.sidebar = Sidebar(self, on_navigate=self._navigate)
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="ns")
 
-        # Topbar (col 1, row 0)
+        # Topbar (col 1-2, row 0)
         self.topbar = Topbar(
             self,
             on_search_trigger=self._open_command_palette,
             on_theme_toggle=self._toggle_theme,
             on_help=self._open_help,
         )
-        self.topbar.grid(row=0, column=1, sticky="new")
+        self.topbar.grid(row=0, column=1, columnspan=2, sticky="new")
 
         # Central container (col 1, row 1)
         self._center = ctk.CTkFrame(self, fg_color=get_color("bg"), corner_radius=0)
         self._center.grid(row=1, column=1, sticky="nsew")
         self._center.grid_columnconfigure(0, weight=1)
         self._center.grid_rowconfigure(0, weight=1)
+
+        # Context panel (col 2, row 1) — hidden by default (width 0).
+        self.context_panel = ContextPanel(self)
+        self.context_panel.grid(row=1, column=2, sticky="ns")
 
     # ------------------------------------------------------------------
     # Routing
@@ -172,13 +179,67 @@ class App(ctk.CTk):
         new = toggle_theme()
         self.sidebar.refresh_theme()
         self.topbar.refresh_theme()
+        self.context_panel.refresh_theme()
         self.configure(fg_color=get_color("bg"))
         self._center.configure(fg_color=get_color("bg"))
         logger.info("Theme switched to: %s", new)
 
     def _open_command_palette(self) -> None:
-        # Phase 4 will plug in components/command_palette.py.
-        self.toasts.show("Palette de commandes — bientôt disponible.", kind="info")
+        if self._palette is None:
+            self._palette = CommandPalette(self, provider=self._build_commands)
+        self._palette.open()
+
+    def _build_commands(self) -> list[Command]:
+        """Source of truth for the command palette.
+
+        Combines navigation commands (one per registered view) with the
+        global actions that have a meaningful display label.
+        """
+        cmds: list[Command] = []
+        for view_id, _icon, label_key, _section in NAV_ENTRIES:
+            cmds.append(
+                Command(
+                    id=f"nav.{view_id}",
+                    label=f"Aller à : {t(label_key)}",
+                    callback=lambda vid=view_id: self.router.navigate_to(vid),
+                    keywords=("naviguer", "ouvrir"),
+                )
+            )
+        cmds.extend(
+            [
+                Command(
+                    id="toggle_theme",
+                    label="Basculer le thème clair / sombre",
+                    callback=self._toggle_theme,
+                    shortcut="Ctrl+Shift+T",
+                ),
+                Command(
+                    id="toggle_sidebar",
+                    label="Replier / déplier la barre latérale",
+                    callback=self.sidebar.toggle_collapsed,
+                    shortcut="Ctrl+B",
+                ),
+                Command(
+                    id="history_back",
+                    label="Vue précédente",
+                    callback=self.router.back,
+                    shortcut="Alt+←",
+                ),
+                Command(
+                    id="history_forward",
+                    label="Vue suivante",
+                    callback=self.router.forward,
+                    shortcut="Alt+→",
+                ),
+                Command(
+                    id="open_help",
+                    label="Afficher l'aide des raccourcis",
+                    callback=self._open_help,
+                    shortcut="F1",
+                ),
+            ]
+        )
+        return cmds
 
     def _open_help(self) -> None:
         # Phase 4 will plug in a real help modal generated from GLOBAL_SHORTCUTS.
