@@ -107,7 +107,7 @@ class AnalyzeView(BaseView):
             bar,
             text="Arrêter",
             fg_color=get_color("error"),
-            text_color="#FFFFFF",
+            text_color=get_color("error_fg"),
             state="disabled",
             command=self._stop,
         )
