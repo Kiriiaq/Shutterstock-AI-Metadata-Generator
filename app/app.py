@@ -16,10 +16,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-from app.components.command_palette import Command, CommandPalette
 from app.components.confirm_dialog import confirm
-from app.components.context_panel import ContextPanel
-from app.components.sidebar import NAV_ENTRIES, Sidebar
 from app.components.toast import ToastManager
 from app.components.topbar import Topbar
 from app.config.shortcuts import GLOBAL_SHORTCUTS, display_label
@@ -65,16 +62,19 @@ class App(ctk.CTk):
         self.app_state = AppState(self.bus)
         self.toasts = ToastManager(self)
         self._open_modals: list[ctk.CTkToplevel] = []
-        self._palette: CommandPalette | None = None
+        # Detail-view factories used by ``open_in_modal`` — populated in
+        # ``_register_views``. Each tool's detail view is reachable from
+        # exactly one place: a button in its workspace panel.
+        self._modal_factories: dict[str, Any] = {}
+        self._modal_titles: dict[str, str] = {}
 
         self._configure_window()
         self._build_layout()
         self.router = Router(self._center, self.bus)
         self._register_views()
         self._register_shortcuts()
-        self._wire_navigation()
 
-        # Initial view
+        # The workspace is the only navigable view — no sidebar, no nav.
         self.router.navigate_to("home")
 
     # ------------------------------------------------------------------
@@ -96,77 +96,167 @@ class App(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_layout(self) -> None:
-        self.grid_columnconfigure(1, weight=1)
+        # No sidebar — every tool has its own panel inside the workspace.
+        self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        # Sidebar (col 0, spans both rows)
-        self.sidebar = Sidebar(self, on_navigate=self._navigate)
-        self.sidebar.grid(row=0, column=0, rowspan=2, sticky="ns")
-
-        # Topbar (col 1-2, row 0)
         self.topbar = Topbar(
             self,
-            on_search_trigger=self._open_command_palette,
             on_theme_toggle=self._toggle_theme,
             on_help=self._open_help,
+            health_provider=self._global_health,
         )
-        self.topbar.grid(row=0, column=1, columnspan=2, sticky="new")
+        self.topbar.grid(row=0, column=0, sticky="new")
 
-        # Central container (col 1, row 1)
         self._center = ctk.CTkFrame(self, fg_color=get_color("bg"), corner_radius=0)
-        self._center.grid(row=1, column=1, sticky="nsew")
+        self._center.grid(row=1, column=0, sticky="nsew")
         self._center.grid_columnconfigure(0, weight=1)
         self._center.grid_rowconfigure(0, weight=1)
-
-        # Context panel (col 2, row 1) — hidden by default (width 0).
-        self.context_panel = ContextPanel(self)
-        self.context_panel.grid(row=1, column=2, sticky="ns")
 
     # ------------------------------------------------------------------
     # Routing
 
     def _register_views(self) -> None:
-        """Wire each sidebar entry to its concrete view factory.
-
-        The default ``home`` is now the dense WorkspaceView — a single
-        screen that surfaces sources, editor, analyse, system status
-        and live audit at once. The other views remain registered so
-        the SystemPanel quick-action buttons and the sidebar can still
-        deep-link into them when the user wants details.
+        """Register the workspace as the only navigable view, and store
+        modal factories for the 5 detail views (settings, audit,
+        ai_control, validate, upload) so each tool's panel can open
+        its full surface in a Toplevel from exactly one button.
         """
         from app.views.ai_control import AIControlView
-        from app.views.analyze import AnalyzeView
         from app.views.audit import AuditView
-        from app.views.editor import EditorView
         from app.views.settings import SettingsView
-        from app.views.sources import SourcesView
         from app.views.upload import UploadView
         from app.views.validate import ValidateView
         from app.views.workspace import WorkspaceView
 
-        factories: dict[str, Any] = {
-            "home": lambda parent: WorkspaceView(parent, app=self),
-            "sources": lambda parent: SourcesView(parent, app=self),
-            "analyze": lambda parent: AnalyzeView(parent, app=self),
-            "editor": lambda parent: EditorView(parent, app=self),
+        self.router.register("home", "Atelier", factory=lambda parent: WorkspaceView(parent, app=self))
+
+        # Detail views — opened only from the corresponding workspace panel.
+        self._modal_factories = {
+            "settings": lambda parent: SettingsView(parent, app=self),
+            "audit": lambda parent: AuditView(parent, app=self),
+            "ai_control": lambda parent: AIControlView(parent, app=self),
             "validate": lambda parent: ValidateView(parent, app=self),
             "upload": lambda parent: UploadView(parent, app=self),
-            "ai_control": lambda parent: AIControlView(parent, app=self),
-            "audit": lambda parent: AuditView(parent, app=self),
-            "settings": lambda parent: SettingsView(parent, app=self),
         }
-        for view_id, _icon, label_key, _section in NAV_ENTRIES:
-            self.router.register(view_id, t(label_key), factory=factories.get(view_id))
+        self._modal_titles = {
+            "settings": "Paramètres",
+            "audit": "Historique",
+            "ai_control": "Modèle IA",
+            "validate": "Validation",
+            "upload": "Téléversement FTPS",
+        }
 
-    def _wire_navigation(self) -> None:
-        self.bus.on("router.navigated", self._on_router_navigated)
+    def show_details(self, title: str, builder: Callable[[ctk.CTkFrame], None]) -> None:
+        """Open a small Toplevel filled by *builder* — replaces the old
+        right-side ContextPanel for one-shot detail panes (audit row,
+        validation issues, etc.). Closed via Esc / window-close.
+        """
+        modal = ctk.CTkToplevel(self)
+        modal.title(title)
+        modal.geometry("420x520")
+        modal.transient(self)
+        modal.configure(fg_color=get_color("bg"))
 
-    def _on_router_navigated(self, view_id: str, _kwargs: dict[str, Any]) -> None:
-        self.sidebar.set_active(view_id)
-        self.topbar.set_breadcrumb(self.router.label_for(view_id))
+        inner = ctk.CTkFrame(
+            modal,
+            fg_color=get_color("bg_elevated"),
+            border_color=get_color("border"),
+            border_width=1,
+            corner_radius=RADIUS_LG,
+        )
+        inner.pack(fill="both", expand=True, padx=SPACE_LG, pady=SPACE_LG)
 
-    def _navigate(self, view_id: str) -> None:
-        self.router.navigate_to(view_id)
+        ctk.CTkLabel(
+            inner,
+            text=title,
+            font=get_font("h3"),
+            text_color=get_color("fg"),
+            anchor="w",
+        ).pack(fill="x", padx=SPACE_LG, pady=(SPACE_LG, SPACE_SM))
+
+        body = ctk.CTkFrame(inner, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=SPACE_LG, pady=(0, SPACE_LG))
+        try:
+            builder(body)
+        except Exception:
+            logger.exception("show_details builder failed")
+            ctk.CTkLabel(
+                body,
+                text="Erreur de chargement.",
+                text_color=get_color("error"),
+                font=get_font("body"),
+            ).pack()
+
+        ctk.CTkButton(
+            inner,
+            text=t("common.close"),
+            command=modal.destroy,
+            fg_color=get_color("accent"),
+            hover_color=get_color("accent_hover"),
+            text_color=get_color("accent_fg"),
+            font=get_font("body_strong"),
+            height=32,
+        ).pack(side="right", padx=SPACE_LG, pady=(0, SPACE_LG))
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        try:
+            modal.grab_set()
+        except Exception:
+            pass
+        self._open_modals.append(modal)
+
+    def open_in_modal(self, view_id: str) -> None:
+        """Open the detail view registered under *view_id* as a modal Toplevel.
+
+        Called from the workspace panels' "Détail…" / "Modifier…" / "Tout
+        voir…" buttons. Exactly one entry-point per tool — no sidebar
+        duplication.
+        """
+        factory = self._modal_factories.get(view_id)
+        if factory is None:
+            self.toasts.show(f"Vue inconnue : {view_id}", kind="error")
+            return
+        modal = ctk.CTkToplevel(self)
+        modal.title(self._modal_titles.get(view_id, view_id))
+        modal.geometry("1100x780")
+        modal.transient(self)
+        modal.configure(fg_color=get_color("bg"))
+
+        container = ctk.CTkFrame(modal, fg_color=get_color("bg"))
+        container.pack(fill="both", expand=True)
+        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(0, weight=1)
+        try:
+            view = factory(container)
+            on_enter = getattr(view, "on_enter", None)
+            if callable(on_enter):
+                on_enter()
+            view.grid(row=0, column=0, sticky="nsew")
+        except Exception:
+            logger.exception("Failed to open modal view %s", view_id)
+            ctk.CTkLabel(container, text=f"Erreur : impossible d'ouvrir « {view_id} ».").grid(row=0, column=0)
+
+        modal.bind("<Escape>", lambda _e: modal.destroy())
+        try:
+            modal.grab_set()
+        except Exception:
+            pass
+        self._open_modals.append(modal)
+
+    def _global_health(self) -> dict[str, tuple[str, str]]:
+        """Return (label, color_kind) tuples for the topbar health strip.
+
+        color_kind ∈ {success, warning, error, muted}. Topbar resolves
+        to a real palette colour at draw time.
+        """
+        api = self.api
+        return {
+            "Backend": ("Disponible", "success") if api else ("Absent", "warning"),
+            "ExifTool": (("OK", "success") if (api and api.exiftool_available) else ("Absent", "warning"))
+            if api
+            else ("—", "muted"),
+        }
 
     # ------------------------------------------------------------------
     # Shortcut wiring
@@ -181,17 +271,20 @@ class App(ctk.CTk):
             self.bind_all(binding, lambda _e, h=handler: self._safe_call(h))
 
     def _build_action_map(self) -> dict[str, Callable[[], None]]:
+        # No sidebar / nav router → most shortcut actions are now no-ops or
+        # mapped to modal-opening. Kept declarative so help dialog still
+        # mirrors the keys.
         return {
-            "open_command_palette": self._open_command_palette,
-            "toggle_sidebar": self.sidebar.toggle_collapsed,
+            "open_command_palette": lambda: None,  # no global nav anymore
+            "toggle_sidebar": lambda: None,
             "toggle_theme": self._toggle_theme,
-            "navigate_settings": lambda: self.router.navigate_to("settings"),
-            "focus_view_search": self._focus_view_search,
-            "save_current_view": self._save_current_view,
+            "navigate_settings": lambda: self.open_in_modal("settings"),
+            "focus_view_search": lambda: None,
+            "save_current_view": lambda: None,
             "open_help": self._open_help,
             "close_modal": self._close_top_modal,
-            "history_back": self.router.back,
-            "history_forward": self.router.forward,
+            "history_back": lambda: None,
+            "history_forward": lambda: None,
         }
 
     def _safe_call(self, fn: Callable[[], None]) -> None:
@@ -205,69 +298,13 @@ class App(ctk.CTk):
 
     def _toggle_theme(self) -> None:
         new = toggle_theme()
-        self.sidebar.refresh_theme()
         self.topbar.refresh_theme()
-        self.context_panel.refresh_theme()
         self.configure(fg_color=get_color("bg"))
         self._center.configure(fg_color=get_color("bg"))
+        # Re-render the workspace to pick up new colours throughout.
+        if self.router.current_id == "home":
+            self.router.navigate_to("home")
         logger.info("Theme switched to: %s", new)
-
-    def _open_command_palette(self) -> None:
-        if self._palette is None:
-            self._palette = CommandPalette(self, provider=self._build_commands)
-        self._palette.open()
-
-    def _build_commands(self) -> list[Command]:
-        """Source of truth for the command palette.
-
-        Combines navigation commands (one per registered view) with the
-        global actions that have a meaningful display label.
-        """
-        cmds: list[Command] = []
-        for view_id, _icon, label_key, _section in NAV_ENTRIES:
-            cmds.append(
-                Command(
-                    id=f"nav.{view_id}",
-                    label=f"Aller à : {t(label_key)}",
-                    callback=lambda vid=view_id: self.router.navigate_to(vid),
-                    keywords=("naviguer", "ouvrir"),
-                )
-            )
-        cmds.extend(
-            [
-                Command(
-                    id="toggle_theme",
-                    label="Basculer le thème clair / sombre",
-                    callback=self._toggle_theme,
-                    shortcut="Ctrl+Shift+T",
-                ),
-                Command(
-                    id="toggle_sidebar",
-                    label="Replier / déplier la barre latérale",
-                    callback=self.sidebar.toggle_collapsed,
-                    shortcut="Ctrl+B",
-                ),
-                Command(
-                    id="history_back",
-                    label="Vue précédente",
-                    callback=self.router.back,
-                    shortcut="Alt+←",
-                ),
-                Command(
-                    id="history_forward",
-                    label="Vue suivante",
-                    callback=self.router.forward,
-                    shortcut="Alt+→",
-                ),
-                Command(
-                    id="open_help",
-                    label="Afficher l'aide des raccourcis",
-                    callback=self._open_help,
-                    shortcut="F1",
-                ),
-            ]
-        )
-        return cmds
 
     def _open_help(self) -> None:
         """Render GLOBAL_SHORTCUTS as a 2-column dialog (binding · description).
@@ -347,13 +384,6 @@ class App(ctk.CTk):
         except Exception:
             pass
         self._open_modals.append(modal)
-
-    def _focus_view_search(self) -> None:
-        # Each view will eventually expose a focus_search() hook. Stub for now.
-        self.toasts.show("Recherche par vue — à connecter par chaque vue.", kind="info")
-
-    def _save_current_view(self) -> None:
-        self.toasts.show("Enregistrement contextuel à connecter par chaque vue.", kind="info")
 
     def _close_top_modal(self) -> None:
         for modal in reversed(self._open_modals):
