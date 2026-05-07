@@ -20,7 +20,6 @@ T: dict[str, str] = {
     "nav.analyze": "Analyse IA",
     "nav.editor": "Édition métadonnées",
     "nav.validate": "Validation",
-    "nav.upload": "Téléversement FTPS",
     "nav.ai_control": "Modèle IA",
     "nav.audit": "Historique",
     "nav.settings": "Paramètres",

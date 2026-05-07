@@ -37,21 +37,22 @@ ThemeMode = Literal["light", "dark", "system"]
 # ============================================================================
 
 LIGHT: Final[dict[str, str]] = {
-    # Surfaces — pure white canvas, slate-cool elevation. The whole point
-    # of a real light mode is that the bg reads as white at a glance, with
-    # only the elevated surfaces hinting at hierarchy.
-    "bg": "#FFFFFF",
-    "bg_elevated": "#F8FAFC",  # slate-50
-    "bg_hover": "#F1F5F9",  # slate-100
-    "bg_active": "#E2E8F0",  # slate-200
-    # Text — near-black for the strongest contrast on white. Body text
-    # vs bg is 17.6:1 here (was 14.6:1 with #212529).
+    # Surfaces — gray canvas + white cards, à la macOS / Notion / Linear.
+    # Less stark than pure white, easier on the eyes, and the cards on
+    # top stand out as crisp white rectangles instead of disappearing
+    # into a uniform field.
+    "bg": "#F1F5F9",  # slate-100 — clearly gray, the canvas
+    "bg_elevated": "#FFFFFF",  # white — panels / cards stand out
+    "bg_hover": "#E2E8F0",  # slate-200
+    "bg_active": "#CBD5E1",  # slate-300
+    # Text — near-black for the strongest contrast on slate-100 (~16:1).
     "fg": "#0F172A",  # slate-900
-    "fg_muted": "#475569",  # slate-600 — secondary text, still 7.5:1
-    "fg_subtle": "#94A3B8",  # slate-400 — placeholder / disabled
-    # Borders — light enough to feel airy, defined enough to read as edges.
-    "border": "#E2E8F0",  # slate-200
-    "border_strong": "#CBD5E1",  # slate-300
+    "fg_muted": "#475569",  # slate-600
+    "fg_subtle": "#94A3B8",  # slate-400
+    # Borders — slightly stronger than before so cards register clearly
+    # against the gray canvas.
+    "border": "#CBD5E1",  # slate-300
+    "border_strong": "#94A3B8",  # slate-400
     # Accent (primary action)
     "accent": "#2563EB",  # blue-600
     "accent_hover": "#1D4ED8",  # blue-700

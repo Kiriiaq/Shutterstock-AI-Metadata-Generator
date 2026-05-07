@@ -1,18 +1,18 @@
-"""WorkspaceView — single-screen Atelier with 8 tool panels.
+"""WorkspaceView — single-screen Atelier with 7 tool panels.
 
 Design rule: per tool, one panel with its indicators and its actions
 visible at all times. No duplicated entry-point. Deep editing surfaces
 (full settings form, full audit table, etc.) open as modals from the
 corresponding panel's "Détail…" button — exactly one path per tool.
 
-Layout (1400×900 fits comfortably; resizes well):
+Layout (1400×900 fits comfortably; both columns are CTkScrollableFrames
+so the panels stay reachable when the user shrinks the window):
     LEFT col (≈ 60 %)               RIGHT col (≈ 40 %)
     ─────────────────────           ─────────────────────
     SOURCES & TRI         (big)     MODÈLE IA            (compact)
     ÉDITION IPTC          (med)     VALIDATION           (compact)
     ANALYSE IA            (med)     HISTORIQUE           (compact)
                                     PARAMÈTRES           (compact)
-                                    TÉLÉVERSEMENT        (compact stub)
 """
 
 from __future__ import annotations
@@ -68,21 +68,23 @@ class WorkspaceView(BaseView):
     # Layout
 
     def _build(self) -> None:
+        # Two-column layout. Each column is a CTkScrollableFrame so the
+        # panels remain reachable when the user shrinks the window: the
+        # column scrolls vertically instead of clipping content. Row
+        # weights are dropped because a scrollable canvas takes natural
+        # heights — the 5 s auto-refresh and the panel internals still
+        # work the same way.
         self.grid_columnconfigure(0, weight=3)
-        self.grid_columnconfigure(1, weight=2, minsize=420)
+        self.grid_columnconfigure(1, weight=2, minsize=320)
         self.grid_rowconfigure(0, weight=1)
 
-        left = ctk.CTkFrame(self, fg_color="transparent")
+        left = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0)
         left.grid(row=0, column=0, sticky="nsew", padx=(SPACE_MD, SPACE_SM), pady=SPACE_MD)
         left.grid_columnconfigure(0, weight=1)
-        for r, w in enumerate([3, 2, 3]):
-            left.grid_rowconfigure(r, weight=w)
 
-        right = ctk.CTkFrame(self, fg_color="transparent")
+        right = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0)
         right.grid(row=0, column=1, sticky="nsew", padx=(SPACE_SM, SPACE_MD), pady=SPACE_MD)
         right.grid_columnconfigure(0, weight=1)
-        for r in range(5):
-            right.grid_rowconfigure(r, weight=1)
 
         self._build_sources_panel(left, row=0)
         self._build_editor_panel(left, row=1)
@@ -92,7 +94,6 @@ class WorkspaceView(BaseView):
         self._build_validate_panel(right, row=1)
         self._build_history_panel(right, row=2)
         self._build_settings_panel(right, row=3)
-        self._build_upload_panel(right, row=4)
 
     # ==================================================================
     # LEFT COLUMN — production loop
@@ -805,37 +806,6 @@ class WorkspaceView(BaseView):
             command=lambda: self.app.open_in_modal("settings"),
         ).pack(side="left")
 
-    # ----- Panel: Téléversement ---------------------------------------
-
-    def _build_upload_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "TÉLÉVERSEMENT FTPS")
-        section.grid_columnconfigure(0, weight=1)
-
-        ctk.CTkLabel(
-            section,
-            text="⚠ Non implémenté — utilisez un client FTPS externe.",
-            font=get_font("small"),
-            text_color=palette_pair("warning"),
-            anchor="w",
-            wraplength=380,
-            justify="left",
-        ).grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-
-        self._upload_host_label = ctk.CTkLabel(
-            section, text="Host : —", font=get_font("code"), text_color=palette_pair("fg_muted"), anchor="w"
-        )
-        self._upload_host_label.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-
-        actions = ctk.CTkFrame(section, fg_color="transparent")
-        actions.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
-        ctk.CTkButton(
-            actions,
-            text="Détail…",
-            width=120,
-            height=26,
-            command=lambda: self.app.open_in_modal("upload"),
-        ).pack(side="left")
-
     # ==================================================================
     # Auto-refresh of the right-column live indicators
     # ==================================================================
@@ -853,7 +823,6 @@ class WorkspaceView(BaseView):
 
     def _refresh(self) -> None:
         self._refresh_settings_chips()
-        self._refresh_upload_host()
         self._refresh_dynamic_async()
         self._refresh_after_id = self.after(REFRESH_INTERVAL_MS, self._refresh)
 
@@ -880,11 +849,6 @@ class WorkspaceView(BaseView):
         self._settings_chips["write_xmp"].configure(
             text="Oui" if bool(getter("write_xmp", defaults["write_xmp"])) else "Non"
         )
-
-    def _refresh_upload_host(self) -> None:
-        api = self.app.api
-        host = api.get_setting("ftps_host", "—") if api else "—"
-        self._upload_host_label.configure(text=f"Host : {host}")
 
     def _refresh_dynamic_async(self) -> None:
         api = self.app.api
