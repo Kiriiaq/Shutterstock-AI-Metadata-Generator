@@ -43,6 +43,7 @@ LIGHT: Final[dict[str, str]] = {
     # into a uniform field.
     "bg": "#F1F5F9",  # slate-100 — clearly gray, the canvas
     "bg_elevated": "#FFFFFF",  # white — panels / cards stand out
+    "bg_deep": "#FFFFFF",  # = bg_elevated in light mode (no visible change)
     "bg_hover": "#E2E8F0",  # slate-200
     "bg_active": "#CBD5E1",  # slate-300
     # Text — near-black for the strongest contrast on slate-100 (~16:1).
@@ -75,8 +76,9 @@ LIGHT: Final[dict[str, str]] = {
 }
 
 DARK: Final[dict[str, str]] = {
-    "bg": "#0F172A",
-    "bg_elevated": "#1E293B",
+    "bg": "#0F172A",  # slate-900 — canvas
+    "bg_elevated": "#1E293B",  # slate-800 — cards/panels (slightly lighter than canvas)
+    "bg_deep": "#020617",  # slate-950 — for the Sources panel: deeper than canvas, "workspace floor"
     "bg_hover": "#334155",
     "bg_active": "#475569",
     "fg": "#F1F5F9",
