@@ -38,9 +38,6 @@ DEFAULTS: dict[str, Any] = {
     "write_xmp": True,
     "create_backup": True,
     "exiftool_path": "",
-    "ftps_host": "ftps.shutterstock.com",
-    "ftps_port": 21,
-    "ftps_username": "",
     "debug_mode": False,
     "log_level": "INFO",
 }
@@ -120,16 +117,6 @@ class SettingsView(BaseView):
         row = self._build_section(
             wrapper,
             row,
-            "FTPS",
-            [
-                ("ftps_host", "Hôte", entry_factory),
-                ("ftps_port", "Port", entry_factory),
-                ("ftps_username", "Identifiant", entry_factory),
-            ],
-        )
-        row = self._build_section(
-            wrapper,
-            row,
             "Avancé",
             [
                 ("debug_mode", "Mode debug", switch_factory("Activer")),
@@ -194,7 +181,7 @@ class SettingsView(BaseView):
         try:
             for key, field in self._fields.items():
                 value = field.value
-                if key in ("ollama_timeout", "max_workers", "batch_size", "ftps_port"):
+                if key in ("ollama_timeout", "max_workers", "batch_size"):
                     value = int(value or 0)
                 elif key == "min_resolution_mp":
                     value = float(value or 0)

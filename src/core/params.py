@@ -43,10 +43,6 @@ class ShutterstockParams:
     cooldown: float = 2.0
     workers: int = 2
 
-    # === Avancé: FTPS ===
-    ftps_username: str = ""
-    ftps_password: str = ""
-
     # === Avancé: Debug ===
     debug_mode: bool = False
 

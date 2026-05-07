@@ -50,7 +50,7 @@ class App(ctk.CTk):
     """Main application window."""
 
     INITIAL_GEOMETRY = "1400x900"
-    MIN_SIZE = (1200, 800)
+    MIN_SIZE = (900, 600)  # workspace columns are CTkScrollableFrames so panels stay reachable when reduced
 
     def __init__(self, *, api: Any | None = None) -> None:
         super().__init__()
@@ -125,7 +125,6 @@ class App(ctk.CTk):
         from app.views.ai_control import AIControlView
         from app.views.audit import AuditView
         from app.views.settings import SettingsView
-        from app.views.upload import UploadView
         from app.views.validate import ValidateView
         from app.views.workspace import WorkspaceView
 
@@ -137,14 +136,12 @@ class App(ctk.CTk):
             "audit": lambda parent: AuditView(parent, app=self),
             "ai_control": lambda parent: AIControlView(parent, app=self),
             "validate": lambda parent: ValidateView(parent, app=self),
-            "upload": lambda parent: UploadView(parent, app=self),
         }
         self._modal_titles = {
             "settings": "Paramètres",
             "audit": "Historique",
             "ai_control": "Modèle IA",
             "validate": "Validation",
-            "upload": "Téléversement FTPS",
         }
 
     def show_details(self, title: str, builder: Callable[[ctk.CTkFrame], None]) -> None:
