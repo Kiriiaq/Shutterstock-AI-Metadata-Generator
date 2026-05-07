@@ -16,8 +16,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_int
 from app.views.base_view import BaseView
@@ -66,12 +66,12 @@ class ValidateView(BaseView):
         wrapper.grid_columnconfigure(0, weight=1)
         wrapper.grid_rowconfigure(2, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Validation", font=get_font("h1"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(wrapper, text="Validation", font=get_font("h1"), text_color=palette_pair("fg")).grid(
             row=0, column=0, sticky="w", pady=(0, SPACE_LG)
         )
 
         self._summary = ctk.CTkLabel(
-            wrapper, text="Lancement…", font=get_font("body"), text_color=get_color("fg_muted")
+            wrapper, text="Lancement…", font=get_font("body"), text_color=palette_pair("fg_muted")
         )
         self._summary.grid(row=1, column=0, sticky="w", pady=(0, SPACE_MD))
 
@@ -133,7 +133,7 @@ class ValidateView(BaseView):
         ko = total - ok
         self._summary.configure(
             text=f"{fmt_int(total)} image(s) — {fmt_int(ok)} conformes, {fmt_int(ko)} à corriger.",
-            text_color=get_color("success") if ko == 0 else get_color("warning"),
+            text_color=palette_pair("success") if ko == 0 else palette_pair("warning"),
         )
 
     def _show_details(self, row: dict[str, Any]) -> None:
@@ -146,33 +146,33 @@ class ValidateView(BaseView):
                 parent,
                 text=str(path),
                 font=get_font("body_strong"),
-                text_color=get_color("fg"),
+                text_color=palette_pair("fg"),
                 wraplength=280,
                 justify="left",
             ).pack(fill="x", pady=(0, SPACE_SM))
             if errs:
                 ctk.CTkLabel(
-                    parent, text="Anomalies", font=get_font("body_strong"), text_color=get_color("error")
+                    parent, text="Anomalies", font=get_font("body_strong"), text_color=palette_pair("error")
                 ).pack(anchor="w")
                 for e in errs:
                     ctk.CTkLabel(
                         parent,
                         text=f"• {e}",
                         font=get_font("body"),
-                        text_color=get_color("fg"),
+                        text_color=palette_pair("fg"),
                         wraplength=280,
                         justify="left",
                     ).pack(anchor="w")
             if warns:
                 ctk.CTkLabel(
-                    parent, text="Alertes", font=get_font("body_strong"), text_color=get_color("warning")
+                    parent, text="Alertes", font=get_font("body_strong"), text_color=palette_pair("warning")
                 ).pack(anchor="w", pady=(SPACE_SM, 0))
                 for w in warns:
                     ctk.CTkLabel(
                         parent,
                         text=f"• {w}",
                         font=get_font("body"),
-                        text_color=get_color("fg"),
+                        text_color=palette_pair("fg"),
                         wraplength=280,
                         justify="left",
                     ).pack(anchor="w")

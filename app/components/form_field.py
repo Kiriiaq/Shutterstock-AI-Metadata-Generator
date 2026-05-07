@@ -16,8 +16,8 @@ import customtkinter as ctk
 
 from app.config.theme import (
     SPACE_XS,
-    get_color,
     get_font,
+    palette_pair,
 )
 
 WidgetFactory = Callable[[ctk.CTkFrame], ctk.CTkBaseClass]
@@ -28,9 +28,9 @@ def entry_factory(master: ctk.CTkFrame) -> ctk.CTkEntry:
     return ctk.CTkEntry(
         master,
         font=get_font("body"),
-        fg_color=get_color("bg"),
-        text_color=get_color("fg"),
-        border_color=get_color("border"),
+        fg_color=palette_pair("bg"),
+        text_color=palette_pair("fg"),
+        border_color=palette_pair("border"),
         height=32,
     )
 
@@ -41,11 +41,11 @@ def combo_factory(values: list[str]) -> WidgetFactory:
             master,
             values=values,
             font=get_font("body"),
-            fg_color=get_color("bg"),
-            text_color=get_color("fg"),
-            border_color=get_color("border"),
-            button_color=get_color("border"),
-            button_hover_color=get_color("border_strong"),
+            fg_color=palette_pair("bg"),
+            text_color=palette_pair("fg"),
+            border_color=palette_pair("border"),
+            button_color=palette_pair("border"),
+            button_hover_color=palette_pair("border_strong"),
             height=32,
         )
 
@@ -57,9 +57,9 @@ def textbox_factory(height: int = 80) -> WidgetFactory:
         return ctk.CTkTextbox(
             master,
             font=get_font("body"),
-            fg_color=get_color("bg"),
-            text_color=get_color("fg"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg"),
+            text_color=palette_pair("fg"),
+            border_color=palette_pair("border"),
             border_width=1,
             height=height,
         )
@@ -104,7 +104,7 @@ class FormField(ctk.CTkFrame):
             self,
             text=helper or "",
             font=get_font("small"),
-            text_color=get_color("fg_subtle") if helper else get_color("error"),
+            text_color=palette_pair("fg_subtle") if helper else palette_pair("error"),
             anchor="w",
             justify="left",
         )
@@ -132,18 +132,18 @@ class FormField(ctk.CTkFrame):
     def set_error(self, message: str | None) -> None:
         self._error_message = message
         if message:
-            self._error_label.configure(text=message, text_color=get_color("error"))
+            self._error_label.configure(text=message, text_color=palette_pair("error"))
             try:
-                self._widget.configure(border_color=get_color("error"))
+                self._widget.configure(border_color=palette_pair("error"))
             except Exception:
                 pass
         else:
             self._error_label.configure(
                 text=self._helper or "",
-                text_color=get_color("fg_subtle") if self._helper else get_color("error"),
+                text_color=palette_pair("fg_subtle") if self._helper else palette_pair("error"),
             )
             try:
-                self._widget.configure(border_color=get_color("border"))
+                self._widget.configure(border_color=palette_pair("border"))
             except Exception:
                 pass
 
@@ -165,7 +165,7 @@ class FormField(ctk.CTkFrame):
             row,
             text=self._label_text,
             font=get_font("body_strong"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             anchor="w",
         ).pack(side="left")
         if self._required:
@@ -173,7 +173,7 @@ class FormField(ctk.CTkFrame):
                 row,
                 text=" *",
                 font=get_font("body_strong"),
-                text_color=get_color("error"),
+                text_color=palette_pair("error"),
             ).pack(side="left")
 
     def _read_value(self) -> Any:

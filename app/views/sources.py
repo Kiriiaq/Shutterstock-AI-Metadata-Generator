@@ -18,8 +18,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_int, fmt_size
 from app.views.base_view import BaseView
@@ -55,7 +55,7 @@ class SourcesView(BaseView):
             wrapper,
             text="Sources et tri",
             font=get_font("h1"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         ).grid(row=0, column=0, sticky="w", pady=(0, SPACE_LG))
 
         self._build_picker(wrapper, row=1)
@@ -63,11 +63,11 @@ class SourcesView(BaseView):
         self._build_footer(wrapper, row=3)
 
     def _build_picker(self, parent: ctk.CTkFrame, row: int) -> None:
-        bar = ctk.CTkFrame(parent, fg_color=get_color("bg_elevated"), corner_radius=RADIUS_MD)
+        bar = ctk.CTkFrame(parent, fg_color=palette_pair("bg_elevated"), corner_radius=RADIUS_MD)
         bar.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_MD))
         bar.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(bar, text="Dossier :", font=get_font("body_strong"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(bar, text="Dossier :", font=get_font("body_strong"), text_color=palette_pair("fg")).grid(
             row=0, column=0, padx=(SPACE_LG, SPACE_SM), pady=SPACE_MD
         )
         self._folder_entry = ctk.CTkEntry(bar, font=get_font("body"))
@@ -80,9 +80,9 @@ class SourcesView(BaseView):
             bar,
             text="Scanner",
             width=110,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             command=self._scan,
         )
         self._scan_btn.grid(row=0, column=3, padx=(SPACE_SM, SPACE_LG), pady=SPACE_MD)
@@ -91,7 +91,7 @@ class SourcesView(BaseView):
         ctk.CTkCheckBox(bar, text="Inclure les sous-dossiers", variable=self._recursive_var).grid(
             row=1, column=1, sticky="w", padx=0, pady=(0, SPACE_MD)
         )
-        self._status = ctk.CTkLabel(bar, text="", font=get_font("small"), text_color=get_color("fg_muted"))
+        self._status = ctk.CTkLabel(bar, text="", font=get_font("small"), text_color=palette_pair("fg_muted"))
         self._status.grid(row=1, column=2, columnspan=2, sticky="e", padx=SPACE_LG, pady=(0, SPACE_MD))
 
     def _build_table(self, parent: ctk.CTkFrame, row: int) -> None:
@@ -145,7 +145,7 @@ class SourcesView(BaseView):
         bar.grid(row=row, column=0, sticky="ew")
 
         self._count_label = ctk.CTkLabel(
-            bar, text="Aucune sélection", font=get_font("body"), text_color=get_color("fg_muted")
+            bar, text="Aucune sélection", font=get_font("body"), text_color=palette_pair("fg_muted")
         )
         self._count_label.pack(side="left")
 
@@ -153,9 +153,9 @@ class SourcesView(BaseView):
             bar,
             text="Étape suivante",
             font=get_font("body_strong"),
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             state="disabled",
             command=self._goto_analyze,
         )
@@ -178,7 +178,7 @@ class SourcesView(BaseView):
             return
         self._scanning = True
         self._scan_btn.configure(state="disabled", text="Scan en cours…")
-        self._status.configure(text="Recherche des images…", text_color=get_color("warning"))
+        self._status.configure(text="Recherche des images…", text_color=palette_pair("warning"))
         threading.Thread(target=self._scan_worker, args=(Path(folder),), daemon=True).start()
 
     def _scan_worker(self, folder: Path) -> None:
@@ -218,20 +218,20 @@ class SourcesView(BaseView):
         if rows:
             self._status.configure(
                 text=f"{fmt_int(len(rows))} images détectées dans {folder.name}",
-                text_color=get_color("success"),
+                text_color=palette_pair("success"),
             )
             self._render_table()
             self.app.app_state.set("source_folder", folder)
             self.app.app_state.set("scanned_images", [r["path"] for r in rows])
         else:
             self._render_empty()
-            self._status.configure(text="Aucune image trouvée.", text_color=get_color("warning"))
+            self._status.configure(text="Aucune image trouvée.", text_color=palette_pair("warning"))
         self._update_count()
 
     def _on_scan_failed(self, error: str) -> None:
         self._scanning = False
         self._scan_btn.configure(state="normal", text="Scanner")
-        self._status.configure(text=f"Erreur : {error}", text_color=get_color("error"))
+        self._status.configure(text=f"Erreur : {error}", text_color=palette_pair("error"))
         self.app.toasts.show(f"Échec du scan : {error}", kind="error")
 
     def _on_table_selection(self, _selected: list[dict[str, Any]]) -> None:

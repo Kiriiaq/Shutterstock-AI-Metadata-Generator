@@ -15,8 +15,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_int
 from app.views.base_view import BaseView
@@ -60,7 +60,7 @@ class AnalyzeView(BaseView):
             wrapper,
             text="Analyse IA",
             font=get_font("h1"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         ).grid(row=0, column=0, sticky="w", pady=(0, SPACE_LG))
 
         self._build_options(wrapper, row=1, selected_count=len(selected))
@@ -68,14 +68,14 @@ class AnalyzeView(BaseView):
         self._build_results(wrapper, row=3)
 
     def _build_options(self, parent: ctk.CTkFrame, row: int, selected_count: int) -> None:
-        bar = ctk.CTkFrame(parent, fg_color=get_color("bg_elevated"), corner_radius=RADIUS_MD)
+        bar = ctk.CTkFrame(parent, fg_color=palette_pair("bg_elevated"), corner_radius=RADIUS_MD)
         bar.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_MD))
 
         ctk.CTkLabel(
             bar,
             text=f"{fmt_int(selected_count)} image(s) sélectionnée(s)",
             font=get_font("body_strong"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         ).pack(side="left", padx=SPACE_LG, pady=SPACE_MD)
 
         self._skip_var = ctk.BooleanVar(value=True)
@@ -95,9 +95,9 @@ class AnalyzeView(BaseView):
         self._start_btn = ctk.CTkButton(
             bar,
             text="Démarrer l'analyse",
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             command=self._start,
         )
@@ -106,8 +106,8 @@ class AnalyzeView(BaseView):
         self._stop_btn = ctk.CTkButton(
             bar,
             text="Arrêter",
-            fg_color=get_color("error"),
-            text_color=get_color("error_fg"),
+            fg_color=palette_pair("error"),
+            text_color=palette_pair("error_fg"),
             state="disabled",
             command=self._stop,
         )
@@ -117,16 +117,16 @@ class AnalyzeView(BaseView):
         self._progress.set(0)
         self._progress.grid(row=0, column=2, sticky="ew", padx=SPACE_LG)
 
-        self._status = ctk.CTkLabel(bar, text="Prêt", font=get_font("small"), text_color=get_color("fg_muted"))
+        self._status = ctk.CTkLabel(bar, text="Prêt", font=get_font("small"), text_color=palette_pair("fg_muted"))
         self._status.grid(row=0, column=3, sticky="e")
 
     def _build_results(self, parent: ctk.CTkFrame, row: int) -> None:
         self._results = ctk.CTkTextbox(
             parent,
             font=get_font("code"),
-            fg_color=get_color("bg"),
-            text_color=get_color("fg"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg"),
+            text_color=palette_pair("fg"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,
         )
@@ -181,12 +181,12 @@ class AnalyzeView(BaseView):
         cancel = getattr(analyzer, "cancel", None)
         if callable(cancel):
             cancel()
-        self._status.configure(text="Arrêt en cours…", text_color=get_color("warning"))
+        self._status.configure(text="Arrêt en cours…", text_color=palette_pair("warning"))
 
     def _on_progress(self, done: int, total: int, current: str) -> None:
         if total > 0:
             self._progress.set(done / total)
-        self._status.configure(text=f"{fmt_int(done)} / {fmt_int(total)} — {current}", text_color=get_color("fg"))
+        self._status.configure(text=f"{fmt_int(done)} / {fmt_int(total)} — {current}", text_color=palette_pair("fg"))
 
     def _on_result(self, res: dict[str, Any]) -> None:
         ok = res.get("success") if isinstance(res, dict) else getattr(res, "success", True)
@@ -209,14 +209,14 @@ class AnalyzeView(BaseView):
             f"{fmt_int(skipped)} ignorés ({rate:.1f}%).\n"
         )
         self._append_results(summary)
-        self._status.configure(text="Analyse terminée", text_color=get_color("success"))
+        self._status.configure(text="Analyse terminée", text_color=palette_pair("success"))
         self.app.toasts.show(f"Analyse terminée : {fmt_int(completed)} succès.", kind="success")
 
     def _on_failed(self, err: str) -> None:
         self._processing = False
         self._start_btn.configure(state="normal")
         self._stop_btn.configure(state="disabled")
-        self._status.configure(text="Erreur", text_color=get_color("error"))
+        self._status.configure(text="Erreur", text_color=palette_pair("error"))
         self._append_results(f"\nERREUR : {err}\n")
         self.app.toasts.show(f"Échec de l'analyse : {err}", kind="error")
 

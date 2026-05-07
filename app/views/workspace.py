@@ -33,8 +33,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XS,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_int, fmt_size
 from app.views.base_view import BaseView
@@ -115,9 +115,9 @@ class WorkspaceView(BaseView):
             bar,
             text="Scanner",
             width=90,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             command=self._scan,
         )
         self._scan_btn.grid(row=0, column=2, padx=(2, 0))
@@ -127,7 +127,7 @@ class WorkspaceView(BaseView):
         self._recursive_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(opts, text="Récursif", variable=self._recursive_var, font=get_font("body")).pack(side="left")
         self._sources_status = ctk.CTkLabel(
-            opts, text="Aucun scan", font=get_font("small"), text_color=get_color("fg_muted")
+            opts, text="Aucun scan", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._sources_status.pack(side="right")
 
@@ -158,7 +158,7 @@ class WorkspaceView(BaseView):
             self.app.toasts.show("Dossier introuvable.", kind="error")
             return
         self._scan_btn.configure(state="disabled", text="Scan…")
-        self._sources_status.configure(text="Recherche…", text_color=get_color("warning"))
+        self._sources_status.configure(text="Recherche…", text_color=palette_pair("warning"))
         threading.Thread(target=self._scan_worker, args=(Path(folder),), daemon=True).start()
 
     def _scan_worker(self, folder: Path) -> None:
@@ -201,7 +201,7 @@ class WorkspaceView(BaseView):
         self._sources_table.set_rows(rows)
         self._sources_status.configure(
             text=f"{fmt_int(len(rows))} images · {folder.name}",
-            text_color=get_color("success") if rows else get_color("warning"),
+            text_color=palette_pair("success") if rows else palette_pair("warning"),
         )
         self.app.app_state.set("source_folder", folder)
         self.app.app_state.set("scanned_images", [r["_path"] for r in rows])
@@ -210,7 +210,7 @@ class WorkspaceView(BaseView):
 
     def _on_scan_failed(self, err: str) -> None:
         self._scan_btn.configure(state="normal", text="Scanner")
-        self._sources_status.configure(text=f"Erreur : {err}", text_color=get_color("error"))
+        self._sources_status.configure(text=f"Erreur : {err}", text_color=palette_pair("error"))
 
     def _on_sources_select(self, selected: list[dict[str, Any]]) -> None:
         self._update_selection_summary()
@@ -241,7 +241,7 @@ class WorkspaceView(BaseView):
             head,
             text="(double-cliquez sur une image dans Sources)",
             font=get_font("small"),
-            text_color=get_color("fg_muted"),
+            text_color=palette_pair("fg_muted"),
             anchor="w",
         )
         self._editor_path_label.grid(row=0, column=0, sticky="ew")
@@ -259,7 +259,7 @@ class WorkspaceView(BaseView):
             ]
         ):
             ctk.CTkLabel(
-                form, text=label, font=get_font("small"), text_color=get_color("fg_muted"), width=80, anchor="w"
+                form, text=label, font=get_font("small"), text_color=palette_pair("fg_muted"), width=80, anchor="w"
             ).grid(row=r, column=0, sticky="w", padx=(0, SPACE_XS), pady=1)
             entry = ctk.CTkEntry(form, font=get_font("body"), height=24)
             entry.grid(row=r, column=1, sticky="ew", pady=1)
@@ -275,20 +275,22 @@ class WorkspaceView(BaseView):
             text="Écrire",
             width=80,
             height=26,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             command=self._editor_write,
         ).pack(side="left", padx=SPACE_XS)
         ctk.CTkButton(actions, text="Effacer", width=70, height=26, command=self._editor_clear).pack(
             side="left", padx=SPACE_XS
         )
-        self._editor_status = ctk.CTkLabel(actions, text="", font=get_font("small"), text_color=get_color("fg_muted"))
+        self._editor_status = ctk.CTkLabel(
+            actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
+        )
         self._editor_status.pack(side="right")
 
     def _select_for_edit(self, path: Path) -> None:
         self._current_path = path
-        self._editor_path_label.configure(text=path.name, text_color=get_color("fg"))
+        self._editor_path_label.configure(text=path.name, text_color=palette_pair("fg"))
         self._editor_read()
 
     def _editor_read(self) -> None:
@@ -297,13 +299,13 @@ class WorkspaceView(BaseView):
             return
         api = self.app.api
         if api is None or api.metadata_reader is None:
-            self._editor_status.configure(text="ExifTool absent", text_color=get_color("warning"))
+            self._editor_status.configure(text="ExifTool absent", text_color=palette_pair("warning"))
             return
         try:
             metadata = api.read_metadata(self._current_path)
         except Exception:
             logger.exception("read_metadata failed")
-            self._editor_status.configure(text="Lecture échouée", text_color=get_color("error"))
+            self._editor_status.configure(text="Lecture échouée", text_color=palette_pair("error"))
             return
         if metadata is None:
             self._editor_clear()
@@ -314,7 +316,7 @@ class WorkspaceView(BaseView):
         self._iptc_set("keywords", ", ".join(iptc.keywords or []))
         self._iptc_set("byline", iptc.byline or "")
         self._iptc_set("copyright_notice", iptc.copyright_notice or "")
-        self._editor_status.configure(text="Lu", text_color=get_color("success"))
+        self._editor_status.configure(text="Lu", text_color=palette_pair("success"))
 
     def _editor_write(self) -> None:
         if self._current_path is None:
@@ -322,7 +324,7 @@ class WorkspaceView(BaseView):
             return
         api = self.app.api
         if api is None or api.metadata_writer is None:
-            self._editor_status.configure(text="ExifTool absent", text_color=get_color("warning"))
+            self._editor_status.configure(text="ExifTool absent", text_color=palette_pair("warning"))
             return
         from src.modules.models.metadata_models import IPTCFields
 
@@ -338,18 +340,18 @@ class WorkspaceView(BaseView):
             ok = api.write_metadata(self._current_path, iptc=iptc)
         except Exception:
             logger.exception("write_metadata failed")
-            self._editor_status.configure(text="Écriture échouée", text_color=get_color("error"))
+            self._editor_status.configure(text="Écriture échouée", text_color=palette_pair("error"))
             return
         if ok:
-            self._editor_status.configure(text="Écrit", text_color=get_color("success"))
+            self._editor_status.configure(text="Écrit", text_color=palette_pair("success"))
             self.app.toasts.show(f"Métadonnées écrites : {self._current_path.name}", kind="success")
         else:
-            self._editor_status.configure(text="Échec", text_color=get_color("error"))
+            self._editor_status.configure(text="Échec", text_color=palette_pair("error"))
 
     def _editor_clear(self) -> None:
         for key in self._iptc_fields:
             self._iptc_set(key, "")
-        self._editor_status.configure(text="Effacé", text_color=get_color("fg_muted"))
+        self._editor_status.configure(text="Effacé", text_color=palette_pair("fg_muted"))
 
     def _iptc_set(self, key: str, value: str) -> None:
         widget = self._iptc_fields[key]
@@ -375,7 +377,7 @@ class WorkspaceView(BaseView):
             side="left", padx=SPACE_MD
         )
         self._analyze_summary = ctk.CTkLabel(
-            opts, text="Aucune image", font=get_font("small"), text_color=get_color("fg_muted")
+            opts, text="Aucune image", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._analyze_summary.pack(side="right")
 
@@ -387,9 +389,9 @@ class WorkspaceView(BaseView):
             text="Démarrer",
             width=110,
             height=28,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             command=self._analyze_start,
         )
@@ -399,8 +401,8 @@ class WorkspaceView(BaseView):
             text="Arrêter",
             width=80,
             height=28,
-            fg_color=get_color("error"),
-            text_color=get_color("error_fg"),
+            fg_color=palette_pair("error"),
+            text_color=palette_pair("error_fg"),
             state="disabled",
             command=self._analyze_stop,
         )
@@ -409,16 +411,16 @@ class WorkspaceView(BaseView):
         self._analyze_progress.set(0)
         self._analyze_progress.grid(row=0, column=2, sticky="ew", padx=SPACE_MD)
         self._analyze_status = ctk.CTkLabel(
-            controls, text="Prêt", font=get_font("small"), text_color=get_color("fg_muted")
+            controls, text="Prêt", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._analyze_status.grid(row=0, column=3, padx=(SPACE_XS, 0), sticky="e")
 
         self._analyze_results = ctk.CTkTextbox(
             section,
             font=get_font("code"),
-            fg_color=get_color("bg"),
-            text_color=get_color("fg"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg"),
+            text_color=palette_pair("fg"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,
         )
@@ -469,14 +471,14 @@ class WorkspaceView(BaseView):
         cancel = getattr(analyzer, "cancel", None)
         if callable(cancel):
             cancel()
-        self._analyze_status.configure(text="Arrêt…", text_color=get_color("warning"))
+        self._analyze_status.configure(text="Arrêt…", text_color=palette_pair("warning"))
 
     def _analyze_on_progress(self, done: int, total: int, current: str) -> None:
         if total > 0:
             self._analyze_progress.set(done / total)
         self._analyze_status.configure(
             text=f"{fmt_int(done)} / {fmt_int(total)} — {Path(current).name if current else ''}",
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         )
 
     def _analyze_on_result(self, res: Any) -> None:
@@ -500,14 +502,14 @@ class WorkspaceView(BaseView):
         self._append_analyze_results(
             f"\n— Terminé : {fmt_int(completed)} succès · {fmt_int(failed)} échecs · {fmt_int(skipped)} ignorés.\n"
         )
-        self._analyze_status.configure(text="Terminé", text_color=get_color("success"))
+        self._analyze_status.configure(text="Terminé", text_color=palette_pair("success"))
         self.app.toasts.show(f"Analyse terminée — {fmt_int(completed)} succès.", kind="success")
 
     def _analyze_on_failed(self, err: str) -> None:
         self._processing = False
         self._start_btn.configure(state="normal")
         self._stop_btn.configure(state="disabled")
-        self._analyze_status.configure(text="Erreur", text_color=get_color("error"))
+        self._analyze_status.configure(text="Erreur", text_color=palette_pair("error"))
         self._append_analyze_results(f"\nERREUR : {err}\n")
 
     def _set_analyze_results(self, text: str) -> None:
@@ -536,31 +538,31 @@ class WorkspaceView(BaseView):
         body.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
         body.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(body, text="Statut :", font=get_font("small"), text_color=get_color("fg_muted"), width=70).grid(
+        ctk.CTkLabel(body, text="Statut :", font=get_font("small"), text_color=palette_pair("fg_muted"), width=70).grid(
             row=0, column=0, sticky="w", pady=1
         )
         self._model_status_dot = ctk.CTkLabel(
-            body, text="●", font=get_font("body_strong"), text_color=get_color("fg_subtle"), width=14
+            body, text="●", font=get_font("body_strong"), text_color=palette_pair("fg_subtle"), width=14
         )
         self._model_status_dot.grid(row=0, column=1, sticky="w")
         self._model_status_text = ctk.CTkLabel(
-            body, text="—", font=get_font("body"), text_color=get_color("fg"), anchor="w"
+            body, text="—", font=get_font("body"), text_color=palette_pair("fg"), anchor="w"
         )
         self._model_status_text.grid(row=0, column=2, sticky="ew", padx=(SPACE_XS, 0))
 
-        ctk.CTkLabel(body, text="URL :", font=get_font("small"), text_color=get_color("fg_muted"), width=70).grid(
+        ctk.CTkLabel(body, text="URL :", font=get_font("small"), text_color=palette_pair("fg_muted"), width=70).grid(
             row=1, column=0, sticky="w", pady=1
         )
         self._model_url_label = ctk.CTkLabel(
-            body, text="—", font=get_font("code"), text_color=get_color("fg"), anchor="w"
+            body, text="—", font=get_font("code"), text_color=palette_pair("fg"), anchor="w"
         )
         self._model_url_label.grid(row=1, column=1, columnspan=2, sticky="ew", pady=1)
 
-        ctk.CTkLabel(body, text="Modèle :", font=get_font("small"), text_color=get_color("fg_muted"), width=70).grid(
+        ctk.CTkLabel(body, text="Modèle :", font=get_font("small"), text_color=palette_pair("fg_muted"), width=70).grid(
             row=2, column=0, sticky="w", pady=1
         )
         self._model_name_label = ctk.CTkLabel(
-            body, text="—", font=get_font("body_strong"), text_color=get_color("fg"), anchor="w"
+            body, text="—", font=get_font("body_strong"), text_color=palette_pair("fg"), anchor="w"
         )
         self._model_name_label.grid(row=2, column=1, columnspan=2, sticky="ew", pady=1)
 
@@ -576,15 +578,17 @@ class WorkspaceView(BaseView):
             height=26,
             command=lambda: self.app.open_in_modal("ai_control"),
         ).pack(side="left", padx=SPACE_XS)
-        self._model_test_msg = ctk.CTkLabel(actions, text="", font=get_font("small"), text_color=get_color("fg_muted"))
+        self._model_test_msg = ctk.CTkLabel(
+            actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
+        )
         self._model_test_msg.pack(side="right")
 
     def _model_test(self) -> None:
         api = self.app.api
         if api is None:
-            self._model_test_msg.configure(text="Backend absent", text_color=get_color("warning"))
+            self._model_test_msg.configure(text="Backend absent", text_color=palette_pair("warning"))
             return
-        self._model_test_msg.configure(text="Test…", text_color=get_color("warning"))
+        self._model_test_msg.configure(text="Test…", text_color=palette_pair("warning"))
         threading.Thread(target=self._model_test_worker, args=(api,), daemon=True).start()
 
     def _model_test_worker(self, api: Any) -> None:
@@ -597,20 +601,20 @@ class WorkspaceView(BaseView):
             self.after(
                 0,
                 lambda err=str(e): self._model_test_msg.configure(
-                    text=f"Échec : {err[:30]}", text_color=get_color("error")
+                    text=f"Échec : {err[:30]}", text_color=palette_pair("error")
                 ),
             )
             return
         if result.get("success"):
             ms = result.get("response_time_ms", 0)
             self.after(
-                0, lambda m=ms: self._model_test_msg.configure(text=f"OK · {m} ms", text_color=get_color("success"))
+                0, lambda m=ms: self._model_test_msg.configure(text=f"OK · {m} ms", text_color=palette_pair("success"))
             )
         else:
             self.after(
                 0,
                 lambda r=result: self._model_test_msg.configure(
-                    text=f"Échec : {r.get('message', '')[:30]}", text_color=get_color("error")
+                    text=f"Échec : {r.get('message', '')[:30]}", text_color=palette_pair("error")
                 ),
             )
 
@@ -624,7 +628,7 @@ class WorkspaceView(BaseView):
             section,
             text="Aucun scan",
             font=get_font("body"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             anchor="w",
         )
         self._validate_summary.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
@@ -633,7 +637,7 @@ class WorkspaceView(BaseView):
             section,
             text="—",
             font=get_font("small"),
-            text_color=get_color("fg_muted"),
+            text_color=palette_pair("fg_muted"),
             anchor="w",
             wraplength=380,
             justify="left",
@@ -647,9 +651,9 @@ class WorkspaceView(BaseView):
             text="Lancer",
             width=90,
             height=26,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             command=self._validate_run,
         ).pack(side="left", padx=(0, SPACE_XS))
         ctk.CTkButton(
@@ -663,14 +667,14 @@ class WorkspaceView(BaseView):
     def _validate_run(self) -> None:
         api = self.app.api
         if api is None:
-            self._validate_summary.configure(text="Backend indisponible", text_color=get_color("warning"))
+            self._validate_summary.configure(text="Backend indisponible", text_color=palette_pair("warning"))
             return
         files = list(self.app.app_state.get("scanned_images") or [])
         if not files:
-            self._validate_summary.configure(text="Scannez d'abord un dossier", text_color=get_color("warning"))
+            self._validate_summary.configure(text="Scannez d'abord un dossier", text_color=palette_pair("warning"))
             return
         self._validate_summary.configure(
-            text=f"Validation de {fmt_int(len(files))} images…", text_color=get_color("warning")
+            text=f"Validation de {fmt_int(len(files))} images…", text_color=palette_pair("warning")
         )
         threading.Thread(target=self._validate_worker, args=(api, files), daemon=True).start()
 
@@ -695,12 +699,12 @@ class WorkspaceView(BaseView):
         total = ok + ko
         if ko == 0 and total > 0:
             self._validate_summary.configure(
-                text=f"{fmt_int(total)} images · toutes conformes ✓", text_color=get_color("success")
+                text=f"{fmt_int(total)} images · toutes conformes ✓", text_color=palette_pair("success")
             )
         else:
             self._validate_summary.configure(
                 text=f"{fmt_int(total)} images · {fmt_int(ok)} OK · {fmt_int(ko)} à corriger",
-                text_color=get_color("warning") if ko else get_color("success"),
+                text_color=palette_pair("warning") if ko else palette_pair("success"),
             )
         self._validate_detail.configure(text=first_issue or "Aucune anomalie")
 
@@ -712,16 +716,16 @@ class WorkspaceView(BaseView):
         section.grid_rowconfigure(2, weight=1)
 
         self._history_summary = ctk.CTkLabel(
-            section, text="—", font=get_font("body"), text_color=get_color("fg"), anchor="w"
+            section, text="—", font=get_font("body"), text_color=palette_pair("fg"), anchor="w"
         )
         self._history_summary.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
 
-        tail = ctk.CTkFrame(section, fg_color=get_color("bg"), corner_radius=RADIUS_MD)
+        tail = ctk.CTkFrame(section, fg_color=palette_pair("bg"), corner_radius=RADIUS_MD)
         tail.grid(row=2, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_XS))
         tail.grid_columnconfigure(0, weight=1)
         self._history_lines: list[ctk.CTkLabel] = []
         for i in range(HISTORY_TAIL):
-            label = ctk.CTkLabel(tail, text="", font=get_font("code"), text_color=get_color("fg_muted"), anchor="w")
+            label = ctk.CTkLabel(tail, text="", font=get_font("code"), text_color=palette_pair("fg_muted"), anchor="w")
             label.grid(row=i, column=0, sticky="ew", padx=SPACE_SM, pady=0)
             self._history_lines.append(label)
 
@@ -782,10 +786,12 @@ class WorkspaceView(BaseView):
         for i, (key, label) in enumerate(items):
             row_f = ctk.CTkFrame(body, fg_color="transparent")
             row_f.grid(row=i // 2, column=i % 2, sticky="ew", padx=2, pady=1)
-            ctk.CTkLabel(row_f, text=label, font=get_font("small"), text_color=get_color("fg_muted"), anchor="w").pack(
-                side="left", padx=(0, SPACE_XS)
+            ctk.CTkLabel(
+                row_f, text=label, font=get_font("small"), text_color=palette_pair("fg_muted"), anchor="w"
+            ).pack(side="left", padx=(0, SPACE_XS))
+            value = ctk.CTkLabel(
+                row_f, text="—", font=get_font("body_strong"), text_color=palette_pair("fg"), anchor="w"
             )
-            value = ctk.CTkLabel(row_f, text="—", font=get_font("body_strong"), text_color=get_color("fg"), anchor="w")
             value.pack(side="left")
             self._settings_chips[key] = value
 
@@ -809,14 +815,14 @@ class WorkspaceView(BaseView):
             section,
             text="⚠ Non implémenté — utilisez un client FTPS externe.",
             font=get_font("small"),
-            text_color=get_color("warning"),
+            text_color=palette_pair("warning"),
             anchor="w",
             wraplength=380,
             justify="left",
         ).grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
 
         self._upload_host_label = ctk.CTkLabel(
-            section, text="Host : —", font=get_font("code"), text_color=get_color("fg_muted"), anchor="w"
+            section, text="Host : —", font=get_font("code"), text_color=palette_pair("fg_muted"), anchor="w"
         )
         self._upload_host_label.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
 
@@ -925,10 +931,10 @@ class WorkspaceView(BaseView):
 
     def _set_model_status(self, kind: str, status_text: str, url: str, model: str) -> None:
         color = {
-            "success": get_color("success"),
-            "warning": get_color("warning"),
-            "error": get_color("error"),
-            "muted": get_color("fg_muted"),
+            "success": palette_pair("success"),
+            "warning": palette_pair("warning"),
+            "error": palette_pair("error"),
+            "muted": palette_pair("fg_muted"),
         }[kind]
         self._model_status_dot.configure(text_color=color)
         self._model_status_text.configure(text=status_text, text_color=color)
@@ -939,7 +945,7 @@ class WorkspaceView(BaseView):
         text = f"{fmt_int(n_ops)} opérations / 24 h · {fmt_int(n_err)} erreur(s)"
         self._history_summary.configure(
             text=text,
-            text_color=get_color("warning") if n_err else get_color("fg"),
+            text_color=palette_pair("warning") if n_err else palette_pair("fg"),
         )
         for i, label in enumerate(self._history_lines):
             if i < len(logs):
@@ -950,10 +956,10 @@ class WorkspaceView(BaseView):
                 if len(fname) > 22:
                     fname = fname[:19] + "…"
                 ok = "✓" if log.success else "✗"
-                color = get_color("success") if log.success else get_color("error")
+                color = palette_pair("success") if log.success else palette_pair("error")
                 label.configure(text=f"{ts}  {ok} {action:<14} {fname}", text_color=color)
             else:
-                label.configure(text="", text_color=get_color("fg_muted"))
+                label.configure(text="", text_color=palette_pair("fg_muted"))
 
     # ==================================================================
     # Helpers
@@ -961,8 +967,8 @@ class WorkspaceView(BaseView):
     def _panel(self, parent: ctk.CTkFrame, row: int, title: str) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(
             parent,
-            fg_color=get_color("bg_elevated"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,
         )
@@ -972,7 +978,7 @@ class WorkspaceView(BaseView):
             frame,
             text=title,
             font=get_font("small"),
-            text_color=get_color("fg_subtle"),
+            text_color=palette_pair("fg_subtle"),
             anchor="w",
         ).grid(row=0, column=0, sticky="w", padx=SPACE_SM, pady=(SPACE_SM, SPACE_XS))
         return frame

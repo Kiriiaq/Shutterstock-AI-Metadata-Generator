@@ -15,8 +15,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_int
 from app.views.base_view import BaseView
@@ -46,13 +46,13 @@ class HomeView(BaseView):
             scroll,
             text="Tableau de bord",
             font=get_font("h1"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         ).grid(row=0, column=0, sticky="w", pady=(0, SPACE_SM))
         ctk.CTkLabel(
             scroll,
             text="Aperçu de l'activité et accès rapide aux étapes de production.",
             font=get_font("body"),
-            text_color=get_color("fg_muted"),
+            text_color=palette_pair("fg_muted"),
         ).grid(row=1, column=0, sticky="w", pady=(0, SPACE_LG))
 
         self._build_status_row(scroll, row=2)
@@ -60,7 +60,7 @@ class HomeView(BaseView):
         self._build_quick_actions(scroll, row=4)
 
     def _build_status_row(self, parent: ctk.CTkFrame, row: int) -> None:
-        bar = ctk.CTkFrame(parent, fg_color=get_color("bg_elevated"), corner_radius=RADIUS_LG)
+        bar = ctk.CTkFrame(parent, fg_color=palette_pair("bg_elevated"), corner_radius=RADIUS_LG)
         bar.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_LG))
 
         api = self.app.api
@@ -69,21 +69,21 @@ class HomeView(BaseView):
             bar,
             "ExifTool",
             "OK" if exif_ok else "Absent",
-            get_color("success") if exif_ok else get_color("warning"),
+            palette_pair("success") if exif_ok else palette_pair("warning"),
         )
         self._add_status_chip(
             bar,
             "Backend",
             "Disponible" if api else "Indisponible",
-            get_color("success") if api else get_color("warning"),
+            palette_pair("success") if api else palette_pair("warning"),
         )
         # AI chip — value refreshed by ``on_enter`` via api.check_ai_status().
-        self._ai_value_label = self._add_status_chip(bar, "IA", "À vérifier…", get_color("fg_muted"))
+        self._ai_value_label = self._add_status_chip(bar, "IA", "À vérifier…", palette_pair("fg_muted"))
 
     def _add_status_chip(self, parent: ctk.CTkFrame, label: str, value: str, color: str) -> ctk.CTkLabel:
         chip = ctk.CTkFrame(parent, fg_color="transparent")
         chip.pack(side="left", padx=SPACE_LG, pady=SPACE_MD)
-        ctk.CTkLabel(chip, text=label, font=get_font("small"), text_color=get_color("fg_muted")).pack(anchor="w")
+        ctk.CTkLabel(chip, text=label, font=get_font("small"), text_color=palette_pair("fg_muted")).pack(anchor="w")
         value_label = ctk.CTkLabel(chip, text=value, font=get_font("body_strong"), text_color=color)
         value_label.pack(anchor="w")
         return value_label
@@ -107,16 +107,16 @@ class HomeView(BaseView):
     def _stat_card(self, parent: ctk.CTkFrame, key: str, label: str, col: int) -> None:
         card = ctk.CTkFrame(
             parent,
-            fg_color=get_color("bg_elevated"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_LG,
         )
         card.grid(row=0, column=col, sticky="ew", padx=SPACE_SM)
-        ctk.CTkLabel(card, text=label, font=get_font("small"), text_color=get_color("fg_muted"), anchor="w").pack(
+        ctk.CTkLabel(card, text=label, font=get_font("small"), text_color=palette_pair("fg_muted"), anchor="w").pack(
             fill="x", padx=SPACE_LG, pady=(SPACE_MD, 0)
         )
-        value_label = ctk.CTkLabel(card, text="—", font=get_font("h1"), text_color=get_color("fg"), anchor="w")
+        value_label = ctk.CTkLabel(card, text="—", font=get_font("h1"), text_color=palette_pair("fg"), anchor="w")
         value_label.pack(fill="x", padx=SPACE_LG, pady=(0, SPACE_MD))
         self._stat_labels[key] = value_label
 
@@ -136,9 +136,9 @@ class HomeView(BaseView):
                 actions,
                 text=label,
                 font=get_font("body_strong"),
-                fg_color=get_color("accent"),
-                hover_color=get_color("accent_hover"),
-                text_color=get_color("accent_fg"),
+                fg_color=palette_pair("accent"),
+                hover_color=palette_pair("accent_hover"),
+                text_color=palette_pair("accent_fg"),
                 corner_radius=RADIUS_MD,
                 height=48,
                 command=lambda t=target: self.app.router.navigate_to(t),
@@ -149,7 +149,7 @@ class HomeView(BaseView):
         if api is None:
             for label in self._stat_labels.values():
                 label.configure(text="—")
-            self._update_ai_chip("Backend absent", get_color("warning"))
+            self._update_ai_chip("Backend absent", palette_pair("warning"))
             return
         try:
             stats = api.get_statistics()
@@ -167,18 +167,18 @@ class HomeView(BaseView):
             status = api.check_ai_status()
         except Exception:
             logger.exception("AI status probe failed")
-            self.after(0, lambda: self._update_ai_chip("Erreur", get_color("error")))
+            self.after(0, lambda: self._update_ai_chip("Erreur", palette_pair("error")))
             return
         available = status.get("available")
         message = status.get("message", "—")
         if available:
-            color = get_color("success")
+            color = palette_pair("success")
             text = f"En ligne — {message}"
         elif status.get("status") == "not_initialized":
-            color = get_color("fg_muted")
+            color = palette_pair("fg_muted")
             text = "Non initialisé"
         else:
-            color = get_color("warning")
+            color = palette_pair("warning")
             text = message or "Hors ligne"
         self.after(0, lambda c=color, x=text: self._update_ai_chip(x, c))
 

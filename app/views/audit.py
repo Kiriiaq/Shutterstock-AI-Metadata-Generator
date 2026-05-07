@@ -19,8 +19,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.utils.formatters import fmt_datetime, fmt_duration_ms
 from app.views.base_view import BaseView
@@ -63,7 +63,7 @@ class AuditView(BaseView):
         wrapper.grid_columnconfigure(0, weight=1)
         wrapper.grid_rowconfigure(2, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Historique", font=get_font("h1"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(wrapper, text="Historique", font=get_font("h1"), text_color=palette_pair("fg")).grid(
             row=0, column=0, sticky="w", pady=(0, SPACE_LG)
         )
 
@@ -72,10 +72,10 @@ class AuditView(BaseView):
         self.after(50, self.on_enter)
 
     def _build_filters(self, parent: ctk.CTkFrame, row: int) -> None:
-        bar = ctk.CTkFrame(parent, fg_color=get_color("bg_elevated"), corner_radius=RADIUS_MD)
+        bar = ctk.CTkFrame(parent, fg_color=palette_pair("bg_elevated"), corner_radius=RADIUS_MD)
         bar.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_MD))
 
-        ctk.CTkLabel(bar, text="Période :", font=get_font("body"), text_color=get_color("fg")).pack(
+        ctk.CTkLabel(bar, text="Période :", font=get_font("body"), text_color=palette_pair("fg")).pack(
             side="left", padx=(SPACE_LG, SPACE_SM), pady=SPACE_MD
         )
         self._period_var = ctk.StringVar(value="7 derniers jours")
@@ -87,7 +87,7 @@ class AuditView(BaseView):
             width=200,
         ).pack(side="left", padx=(0, SPACE_LG), pady=SPACE_MD)
 
-        ctk.CTkLabel(bar, text="Statut :", font=get_font("body"), text_color=get_color("fg")).pack(
+        ctk.CTkLabel(bar, text="Statut :", font=get_font("body"), text_color=palette_pair("fg")).pack(
             side="left", padx=(0, SPACE_SM), pady=SPACE_MD
         )
         self._status_var = ctk.StringVar(value="Tous")
@@ -172,8 +172,8 @@ class AuditView(BaseView):
             tb = ctk.CTkTextbox(
                 parent,
                 font=get_font("code"),
-                fg_color=get_color("bg"),
-                text_color=get_color("fg"),
+                fg_color=palette_pair("bg"),
+                text_color=palette_pair("fg"),
                 border_width=0,
             )
             tb.grid(row=0, column=0, sticky="nsew")

@@ -14,8 +14,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.views.base_view import BaseView
 
@@ -43,7 +43,7 @@ class AIControlView(BaseView):
         wrapper.grid(row=0, column=0, sticky="nsew", padx=SPACE_XL, pady=SPACE_XL)
         wrapper.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Modèle IA", font=get_font("h1"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(wrapper, text="Modèle IA", font=get_font("h1"), text_color=palette_pair("fg")).grid(
             row=0, column=0, sticky="w", pady=(0, SPACE_LG)
         )
 
@@ -53,7 +53,7 @@ class AIControlView(BaseView):
 
     def _build_connection(self, parent: ctk.CTkFrame, row: int) -> None:
         section = self._section(parent, row, "Connexion au serveur Ollama")
-        ctk.CTkLabel(section, text="URL :", font=get_font("body"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(section, text="URL :", font=get_font("body"), text_color=palette_pair("fg")).grid(
             row=0, column=0, padx=SPACE_LG, pady=SPACE_MD, sticky="w"
         )
         self._url = ctk.CTkEntry(section, width=320, font=get_font("body"))
@@ -67,13 +67,13 @@ class AIControlView(BaseView):
         )
 
         self._status_label = ctk.CTkLabel(
-            section, text="Statut inconnu", font=get_font("body_strong"), text_color=get_color("fg_muted")
+            section, text="Statut inconnu", font=get_font("body_strong"), text_color=palette_pair("fg_muted")
         )
         self._status_label.grid(row=1, column=0, columnspan=3, sticky="w", padx=SPACE_LG, pady=(0, SPACE_MD))
 
     def _build_model(self, parent: ctk.CTkFrame, row: int) -> None:
         section = self._section(parent, row, "Modèle vision")
-        ctk.CTkLabel(section, text="Modèle :", font=get_font("body"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(section, text="Modèle :", font=get_font("body"), text_color=palette_pair("fg")).grid(
             row=0, column=0, padx=SPACE_LG, pady=SPACE_MD, sticky="w"
         )
         self._model_combo = ctk.CTkComboBox(section, values=["—"], width=320, font=get_font("body"))
@@ -83,7 +83,7 @@ class AIControlView(BaseView):
             row=0, column=2, padx=SPACE_LG, pady=SPACE_MD
         )
 
-        self._model_info = ctk.CTkLabel(section, text="—", font=get_font("small"), text_color=get_color("fg_muted"))
+        self._model_info = ctk.CTkLabel(section, text="—", font=get_font("small"), text_color=palette_pair("fg_muted"))
         self._model_info.grid(row=1, column=0, columnspan=3, sticky="w", padx=SPACE_LG, pady=(0, SPACE_MD))
 
     def _build_test(self, parent: ctk.CTkFrame, row: int) -> None:
@@ -91,9 +91,9 @@ class AIControlView(BaseView):
         ctk.CTkButton(
             section,
             text="Lancer un test",
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             command=self._test,
         ).grid(row=0, column=0, padx=SPACE_LG, pady=SPACE_MD, sticky="w")
@@ -102,9 +102,9 @@ class AIControlView(BaseView):
             section,
             height=120,
             font=get_font("code"),
-            fg_color=get_color("bg"),
-            text_color=get_color("fg"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg"),
+            text_color=palette_pair("fg"),
+            border_color=palette_pair("border"),
             border_width=1,
         )
         self._test_result.grid(row=1, column=0, columnspan=3, sticky="ew", padx=SPACE_LG, pady=(0, SPACE_MD))
@@ -114,14 +114,14 @@ class AIControlView(BaseView):
     def _section(self, parent: ctk.CTkFrame, row: int, title: str) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(
             parent,
-            fg_color=get_color("bg_elevated"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,
         )
         frame.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_LG))
         frame.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(frame, text=title, font=get_font("body_strong"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(frame, text=title, font=get_font("body_strong"), text_color=palette_pair("fg")).grid(
             row=0, column=0, columnspan=3, sticky="w", padx=SPACE_LG, pady=(SPACE_MD, SPACE_SM)
         )
         # offset content by one row using add() helpers
@@ -149,10 +149,10 @@ class AIControlView(BaseView):
     def _check(self) -> None:
         client = self._ensure_client()
         if client is None:
-            self._status_label.configure(text="Client indisponible.", text_color=get_color("error"))
+            self._status_label.configure(text="Client indisponible.", text_color=palette_pair("error"))
             return
         client.base_url = self._url.get().strip() or self.DEFAULT_URL
-        self._status_label.configure(text="Vérification…", text_color=get_color("warning"))
+        self._status_label.configure(text="Vérification…", text_color=palette_pair("warning"))
         threading.Thread(target=self._check_worker, args=(client,), daemon=True).start()
 
     def _check_worker(self, client) -> None:
@@ -164,11 +164,11 @@ class AIControlView(BaseView):
         if ok:
             self._status_label.configure(
                 text=f"Connecté — Ollama {info.get('version', 'inconnu')}",
-                text_color=get_color("success"),
+                text_color=palette_pair("success"),
             )
             self._refresh_models()
         else:
-            self._status_label.configure(text="Hors ligne ou erreur.", text_color=get_color("error"))
+            self._status_label.configure(text="Hors ligne ou erreur.", text_color=palette_pair("error"))
 
     def _refresh_models(self) -> None:
         client = self._ensure_client()
