@@ -29,6 +29,7 @@ import customtkinter as ctk
 from app.components.data_table import Column, DataTable
 from app.config.theme import (
     RADIUS_MD,
+    RADIUS_SM,
     SPACE_LG,
     SPACE_MD,
     SPACE_SM,
@@ -62,6 +63,7 @@ class WorkspaceView(BaseView):
         self._refresh_after_id: str | None = None
         # Widgets
         self._iptc_fields: dict[str, ctk.CTkEntry] = {}
+        self._editor_collapsed: bool = False
         self._build()
 
     # ------------------------------------------------------------------
@@ -102,7 +104,10 @@ class WorkspaceView(BaseView):
     # ----- Panel: Sources & tri ---------------------------------------
 
     def _build_sources_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "SOURCES & TRI")
+        # bg_key="bg_deep" → unchanged white in light mode, slate-950
+        # (deeper than canvas) in dark mode: gives the file-table area
+        # a "workspace floor" feel instead of an elevated card.
+        section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep")
         section.grid_rowconfigure(3, weight=1)
 
         bar = ctk.CTkFrame(section, fg_color="transparent")
@@ -232,11 +237,53 @@ class WorkspaceView(BaseView):
     # ----- Panel: Édition IPTC ----------------------------------------
 
     def _build_editor_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "ÉDITION IPTC")
+        # Custom build (skips _panel helper) so the title bar can host a
+        # collapse chevron. Body widgets live in ``self._editor_body``;
+        # ``_toggle_editor_collapsed`` grids/un-grids that wrapper. The
+        # title row stays visible when collapsed so the panel never
+        # disappears entirely.
+        section = ctk.CTkFrame(
+            parent,
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
+            border_width=1,
+            corner_radius=RADIUS_MD,
+        )
+        section.grid(row=row, column=0, sticky="nsew", pady=(0, SPACE_SM))
         section.grid_columnconfigure(0, weight=1)
 
-        head = ctk.CTkFrame(section, fg_color="transparent")
-        head.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        # Header: title + chevron toggle
+        header = ctk.CTkFrame(section, fg_color="transparent")
+        header.grid(row=0, column=0, sticky="ew", padx=SPACE_SM, pady=(SPACE_SM, SPACE_XS))
+        header.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(
+            header,
+            text="ÉDITION IPTC",
+            font=get_font("small"),
+            text_color=palette_pair("fg_subtle"),
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w")
+        self._editor_toggle_btn = ctk.CTkButton(
+            header,
+            text="▼",
+            width=24,
+            height=20,
+            corner_radius=RADIUS_SM,
+            fg_color="transparent",
+            hover_color=palette_pair("bg_hover"),
+            text_color=palette_pair("fg_muted"),
+            font=get_font("small"),
+            command=self._toggle_editor_collapsed,
+        )
+        self._editor_toggle_btn.grid(row=0, column=1, sticky="e")
+
+        # Body wrapper — grid_remove'd when collapsed.
+        self._editor_body = ctk.CTkFrame(section, fg_color="transparent")
+        self._editor_body.grid(row=1, column=0, sticky="ew")
+        self._editor_body.grid_columnconfigure(0, weight=1)
+
+        head = ctk.CTkFrame(self._editor_body, fg_color="transparent")
+        head.grid(row=0, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         head.grid_columnconfigure(0, weight=1)
         self._editor_path_label = ctk.CTkLabel(
             head,
@@ -247,8 +294,8 @@ class WorkspaceView(BaseView):
         )
         self._editor_path_label.grid(row=0, column=0, sticky="ew")
 
-        form = ctk.CTkFrame(section, fg_color="transparent")
-        form.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        form = ctk.CTkFrame(self._editor_body, fg_color="transparent")
+        form.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         form.grid_columnconfigure(1, weight=1)
         for r, (key, label) in enumerate(
             [
@@ -266,8 +313,8 @@ class WorkspaceView(BaseView):
             entry.grid(row=r, column=1, sticky="ew", pady=1)
             self._iptc_fields[key] = entry
 
-        actions = ctk.CTkFrame(section, fg_color="transparent")
-        actions.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        actions = ctk.CTkFrame(self._editor_body, fg_color="transparent")
+        actions.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
         ctk.CTkButton(actions, text="Lire", width=60, height=26, command=self._editor_read).pack(
             side="left", padx=(0, SPACE_XS)
         )
@@ -288,6 +335,16 @@ class WorkspaceView(BaseView):
             actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._editor_status.pack(side="right")
+
+    def _toggle_editor_collapsed(self) -> None:
+        """Show/hide the Editor IPTC body, keeping the title bar visible."""
+        self._editor_collapsed = not self._editor_collapsed
+        if self._editor_collapsed:
+            self._editor_body.grid_remove()
+            self._editor_toggle_btn.configure(text="▶")
+        else:
+            self._editor_body.grid()
+            self._editor_toggle_btn.configure(text="▼")
 
     def _select_for_edit(self, path: Path) -> None:
         self._current_path = path
@@ -928,10 +985,24 @@ class WorkspaceView(BaseView):
     # ==================================================================
     # Helpers
 
-    def _panel(self, parent: ctk.CTkFrame, row: int, title: str) -> ctk.CTkFrame:
+    def _panel(
+        self,
+        parent: ctk.CTkFrame,
+        row: int,
+        title: str,
+        *,
+        bg_key: str = "bg_elevated",
+    ) -> ctk.CTkFrame:
+        """Create a titled panel frame.
+
+        ``bg_key`` selects which palette key drives the background; the
+        default ``bg_elevated`` gives the standard "card on canvas" look.
+        Pass ``bg_key="bg_deep"`` to make a panel sink below the canvas
+        in dark mode (used by Sources for a workspace-floor feel).
+        """
         frame = ctk.CTkFrame(
             parent,
-            fg_color=palette_pair("bg_elevated"),
+            fg_color=palette_pair(bg_key),
             border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,

@@ -84,6 +84,14 @@ def _check_workspace_panels(app) -> None:
     assert hasattr(workspace, "_validate_summary")
     assert hasattr(workspace, "_history_lines")
     assert hasattr(workspace, "_settings_chips")
+    # Editor IPTC has a collapse chevron that hides the body keeping the title.
+    assert hasattr(workspace, "_editor_toggle_btn")
+    assert hasattr(workspace, "_editor_body")
+    assert workspace._editor_collapsed is False
+    workspace._toggle_editor_collapsed()
+    assert workspace._editor_collapsed is True
+    workspace._toggle_editor_collapsed()
+    assert workspace._editor_collapsed is False
 
 
 def _check_open_in_modal(app) -> None:
