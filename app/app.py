@@ -25,9 +25,9 @@ from app.config.theme import (
     SPACE_LG,
     SPACE_MD,
     SPACE_SM,
+    ThemeManager,
     get_font,
     palette_pair,
-    toggle_theme,
 )
 from app.core.events import EventBus
 from app.core.navigation import Router
@@ -73,6 +73,7 @@ class App(ctk.CTk):
         self.router = Router(self._center, self.bus)
         self._register_views()
         self._register_shortcuts()
+        self._register_theme_hooks()
 
         # The workspace is the only navigable view — no sidebar, no nav.
         self.router.navigate_to("home")
@@ -294,34 +295,41 @@ class App(ctk.CTk):
     # Action implementations (some are placeholders until later phases)
 
     def _toggle_theme(self) -> None:
-        """Switch light <-> dark.
+        """Cycle light → dark → system → light via the ThemeManager.
 
-        Every CTk widget in app/ is now constructed with tuple
-        ``(light, dark)`` colors via ``palette_pair(...)``, so
-        ``ctk.set_appearance_mode(...)`` (called inside ``toggle_theme``)
-        propagates the new theme to every live widget without a
-        destroy/rebuild — user state in panels (folder path, IPTC
-        drafts, scroll positions, audit table contents) is preserved.
-
-        Two surfaces don't auto-switch and need an explicit refresh:
-        - ``ttk.Style`` used by DataTable's Treeview (Tk-native, not CTk).
-        - The topbar health strip, whose chip colors are computed at
-          build time by a provider — rebuilt via ``refresh_theme``.
+        ThemeManager.toggle() does three things atomically:
+        1. ``ctk.set_appearance_mode(...)`` — every widget that uses
+           ``palette_pair`` tuples auto-bascule.
+        2. ``notify_all()`` calls ``apply_theme()`` on every Themeable
+           observer (e.g. Topbar, the pilot widget; Phase B will add
+           more).
+        3. Fires the global hooks registered via
+           ``ThemeManager.add_global_hook`` — used here to refresh the
+           ttk.Style consumed by DataTable.
         """
-        new = toggle_theme()
-        self.topbar.refresh_theme()
-        # Refresh the ttk.Style used by every DataTable. The style is
-        # global, so one call covers all live tables; we still iterate
-        # to update each tree's row-tag background.
+        new = ThemeManager.get_instance().toggle()
+        logger.info("Theme switched to: %s", new)
+
+    def _register_theme_hooks(self) -> None:
+        """Wire the ttk.Style refresh into the ThemeManager dispatch.
+
+        ttk.Style is process-global and not CTk-aware, so a Treeview
+        keeps its old colours after ``set_appearance_mode`` unless we
+        re-call ``apply_treeview_style()``. We piggyback on the
+        ThemeManager's ``notify_all()`` chain so this stays a single
+        observer registration instead of being scattered.
+        """
         from app.components.data_table import DataTable, apply_treeview_style
 
-        apply_treeview_style()
-        for table in self._iter_widgets(self, DataTable):
-            try:
-                table.refresh_theme()
-            except Exception:
-                logger.exception("DataTable refresh_theme failed")
-        logger.info("Theme switched to: %s", new)
+        def _refresh_ttk() -> None:
+            apply_treeview_style()
+            for table in self._iter_widgets(self, DataTable):
+                try:
+                    table.refresh_theme()
+                except Exception:
+                    logger.exception("DataTable refresh_theme failed")
+
+        ThemeManager.get_instance().add_global_hook(_refresh_ttk)
 
     def _iter_widgets(self, root: ctk.CTkBaseClass, kind: type):
         """Yield every descendant of *root* that ``isinstance(.., kind)``."""

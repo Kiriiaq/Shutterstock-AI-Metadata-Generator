@@ -1,9 +1,14 @@
-"""Topbar — title, global health strip, theme toggle, help.
+"""Topbar — pilot migration to Themeable + apply_theme pattern.
 
-The search/CommandPalette button is gone in the dense-atelier layout:
-each tool's panel exposes its own actions, so there is no global nav
-left to search through. The freed space hosts the always-visible
-health strip (Backend · ExifTool, populated by a provider callable).
+Demonstrates the explicit observer pattern that the rest of the
+codebase will follow in Phase B. Reads colors via
+``ThemeManager.get_instance().get(key)`` (single hex string) and
+reapplies them on every theme switch via ``apply_theme()``.
+
+The other ~17 component / view files still consume tuples through
+``palette_pair`` and rely on CTk's native ``set_appearance_mode``
+auto-bascule. Both pathways coexist; the ThemeManager dispatches both
+on ``toggle()``.
 """
 
 from __future__ import annotations
@@ -21,16 +26,18 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XS,
+    Themeable,
+    ThemeManager,
     get_font,
-    palette_pair,
+    register_themeable,
 )
 from app.i18n.fr import t
 
 logger = logging.getLogger(__name__)
 
-# Provider returns {label: (value, color_kind)}; color_kind ∈ success/warning/error/muted.
+# Provider returns {label: (value, kind)}; kind ∈ success / warning / error / muted.
 HealthProvider = Callable[[], dict[str, tuple[str, str]]]
-_KIND_TO_COLOR: dict[str, str] = {
+_KIND_TO_KEY: dict[str, str] = {
     "success": "success",
     "warning": "warning",
     "error": "error",
@@ -38,7 +45,7 @@ _KIND_TO_COLOR: dict[str, str] = {
 }
 
 
-class Topbar(ctk.CTkFrame):
+class Topbar(ctk.CTkFrame, Themeable):
     """Horizontal bar at the top of the window. Height fixed at 44 px.
 
     Layout: [App title]  [global health chips]  [theme] [help]
@@ -54,11 +61,11 @@ class Topbar(ctk.CTkFrame):
         on_help: Callable[[], None],
         health_provider: HealthProvider | None = None,
     ) -> None:
-        super().__init__(
+        ctk.CTkFrame.__init__(
+            self,
             master,
             height=self.HEIGHT,
             corner_radius=0,
-            fg_color=palette_pair("bg_elevated"),
         )
         self.grid_propagate(False)
         self.grid_columnconfigure(1, weight=1)
@@ -71,8 +78,15 @@ class Topbar(ctk.CTkFrame):
         self._build_title()
         self._build_health_strip()
         self._build_actions()
-        self.refresh_health()
 
+        # Register at the very end of __init__, once every child widget
+        # exists. ``register_themeable`` wires <Destroy> for auto-
+        # unregister and runs an initial ``apply_theme()`` so we don't
+        # have to repeat the configure logic here.
+        register_themeable(self)
+
+    # ------------------------------------------------------------------
+    # Build (structural; colors come from apply_theme())
     # ------------------------------------------------------------------
 
     def _build_title(self) -> None:
@@ -80,7 +94,6 @@ class Topbar(ctk.CTkFrame):
             self,
             text="ShutterstockAnalyzer v2.0.0 — Atelier",
             font=get_font("body_strong"),
-            text_color=palette_pair("fg"),
             anchor="w",
         )
         self._title.grid(row=0, column=0, sticky="w", padx=SPACE_LG)
@@ -93,38 +106,60 @@ class Topbar(ctk.CTkFrame):
         actions = ctk.CTkFrame(self, fg_color="transparent")
         actions.grid(row=0, column=2, sticky="e", padx=SPACE_MD)
 
-        self._theme_btn = self._action_button(actions, "◐", on_click=self._on_theme)
-        add_tooltip(self._theme_btn, t("topbar.theme_toggle_tooltip"))
-        self._theme_btn.pack(side="left", padx=SPACE_SM)
-
-        self._help_btn = self._action_button(actions, "?", on_click=self._on_help)
-        add_tooltip(self._help_btn, t("topbar.help_tooltip"))
-        self._help_btn.pack(side="left", padx=SPACE_SM)
-
-    def _action_button(
-        self,
-        parent: ctk.CTkFrame,
-        text: str,
-        *,
-        on_click: Callable[[], None],
-    ) -> ctk.CTkButton:
-        return ctk.CTkButton(
-            parent,
-            text=text,
+        self._theme_btn = ctk.CTkButton(
+            actions,
+            text="◐",
             width=32,
             height=32,
             corner_radius=RADIUS_MD,
             fg_color="transparent",
-            hover_color=palette_pair("bg_hover"),
-            text_color=palette_pair("fg"),
             font=get_font("body_strong"),
-            command=on_click,
+            command=self._on_theme,
         )
+        add_tooltip(self._theme_btn, t("topbar.theme_toggle_tooltip"))
+        self._theme_btn.pack(side="left", padx=SPACE_SM)
 
+        self._help_btn = ctk.CTkButton(
+            actions,
+            text="?",
+            width=32,
+            height=32,
+            corner_radius=RADIUS_MD,
+            fg_color="transparent",
+            font=get_font("body_strong"),
+            command=self._on_help,
+        )
+        add_tooltip(self._help_btn, t("topbar.help_tooltip"))
+        self._help_btn.pack(side="left", padx=SPACE_SM)
+
+    # ------------------------------------------------------------------
+    # Themeable contract
+    # ------------------------------------------------------------------
+
+    def apply_theme(self) -> None:
+        """Re-pull colors from ThemeManager and reconfigure every widget.
+
+        Called on every theme switch by ``ThemeManager.notify_all()``.
+        Also called once at the end of __init__ via ``register_themeable``.
+        """
+        tm = ThemeManager.get_instance()
+        self.configure(fg_color=tm.get("bg_secondary"))
+        self._title.configure(text_color=tm.get("text_primary"))
+        for btn in (self._theme_btn, self._help_btn):
+            btn.configure(
+                hover_color=tm.get("bg_hover"),
+                text_color=tm.get("text_primary"),
+            )
+        # Health chips encode their color via the provider's "kind"; we
+        # rebuild the strip wholesale so each chip picks the new palette.
+        self.refresh_health()
+
+    # ------------------------------------------------------------------
+    # Health strip (rebuilt on theme change too)
     # ------------------------------------------------------------------
 
     def refresh_health(self) -> None:
-        """Re-poll the health provider and rebuild the strip."""
+        """Re-poll the provider and rebuild the strip."""
         for child in self._strip.winfo_children():
             child.destroy()
         self._chip_widgets.clear()
@@ -139,34 +174,43 @@ class Topbar(ctk.CTkFrame):
             self._build_chip(label, value, kind)
 
     def _build_chip(self, label: str, value: str, kind: str) -> None:
-        color = palette_pair(_KIND_TO_COLOR.get(kind, "fg_subtle"))
+        tm = ThemeManager.get_instance()
+        color = tm.get(_KIND_TO_KEY.get(kind, "fg_subtle"))
         chip = ctk.CTkFrame(
             self._strip,
-            fg_color=palette_pair("bg"),
+            fg_color=tm.get("bg_primary"),
             border_color=color,
             border_width=1,
             corner_radius=RADIUS_SM,
         )
         chip.pack(side="left", padx=SPACE_XS)
-        dot = ctk.CTkLabel(chip, text="●", font=get_font("body"), text_color=color, width=12)
+        dot = ctk.CTkLabel(
+            chip,
+            text="●",
+            font=get_font("body"),
+            text_color=color,
+            width=12,
+        )
         dot.pack(side="left", padx=(SPACE_SM, SPACE_XS), pady=2)
         text = ctk.CTkLabel(
             chip,
             text=f"{label} · {value}",
             font=get_font("small"),
-            text_color=palette_pair("fg"),
+            text_color=tm.get("text_primary"),
         )
         text.pack(side="left", padx=(0, SPACE_SM), pady=2)
         self._chip_widgets[label] = (dot, text)
 
-    def refresh_theme(self) -> None:
-        self.configure(fg_color=palette_pair("bg_elevated"))
-        self._title.configure(text_color=palette_pair("fg"))
-        for btn in (self._theme_btn, self._help_btn):
-            btn.configure(hover_color=palette_pair("bg_hover"), text_color=palette_pair("fg"))
-        self.refresh_health()
+    # ------------------------------------------------------------------
+    # Compatibility shims
+    # ------------------------------------------------------------------
 
-    # ``set_breadcrumb`` kept as a no-op for API compatibility — the dense
-    # atelier no longer surfaces a breadcrumb because there is no nav.
+    # Older code (pre Phase A) called ``refresh_theme`` explicitly. The
+    # ThemeManager now handles dispatch automatically, but the public
+    # method is kept as an alias for backward compatibility.
+    def refresh_theme(self) -> None:
+        self.apply_theme()
+
+    # set_breadcrumb is a no-op since the dense atelier removed nav.
     def set_breadcrumb(self, _label: str) -> None:
         return None
