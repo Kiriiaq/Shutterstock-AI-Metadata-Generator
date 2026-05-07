@@ -419,12 +419,12 @@ class OllamaClient:
             else:
                 return self._generate_sync(payload)
 
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as exc:
             self.status = OllamaStatus.ERROR
-            raise OllamaTimeoutError(f"Request timed out after {self.timeout}s")
+            raise OllamaTimeoutError(f"Request timed out after {self.timeout}s") from exc
         except Exception as e:
             self.status = OllamaStatus.ERROR
-            raise OllamaError(f"Generation failed: {e}")
+            raise OllamaError(f"Generation failed: {e}") from e
         finally:
             if self.status == OllamaStatus.BUSY:
                 self.status = OllamaStatus.ONLINE

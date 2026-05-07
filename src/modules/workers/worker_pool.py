@@ -465,7 +465,7 @@ class ProcessingPipeline:
 
         self._total_stages = len(self._stages)
 
-        for stage_idx, (stage_name, handler) in enumerate(self._stages):
+        for stage_idx, (stage_name, _handler) in enumerate(self._stages):
             self._current_stage = stage_idx + 1
 
             logger.info(f"Starting pipeline stage {self._current_stage}/{self._total_stages}: {stage_name}")
@@ -473,11 +473,13 @@ class ProcessingPipeline:
             pool = self._pools[stage_name]
             pool.start()
 
-            # Setup progress callback for this stage
+            # Setup progress callback for this stage. The default-arg trick
+            # binds *stage_name* at definition time so the closure doesn't
+            # capture the loop variable (B023).
             if self._progress_callback:
 
-                def stage_progress(completed, total, current_file):
-                    self._progress_callback(stage_name, self._current_stage, self._total_stages, completed, total)
+                def stage_progress(completed, total, current_file, _stage_name=stage_name):
+                    self._progress_callback(_stage_name, self._current_stage, self._total_stages, completed, total)
 
                 pool.set_progress_callback(stage_progress)
 

@@ -439,10 +439,10 @@ class MetadataWriter:
             logger.info(f"Metadata written to: {file_path}")
             return True
 
-        except subprocess.TimeoutExpired:
-            raise MetadataWriteError(f"ExifTool timeout writing to: {file_path}")
+        except subprocess.TimeoutExpired as exc:
+            raise MetadataWriteError(f"ExifTool timeout writing to: {file_path}") from exc
         except Exception as e:
-            raise MetadataWriteError(f"Failed to write metadata: {e}")
+            raise MetadataWriteError(f"Failed to write metadata: {e}") from e
 
     def get_dry_run_results(self) -> List[DryRunResult]:
         """Get results from dry run operations"""
@@ -484,7 +484,7 @@ class MetadataWriter:
             logger.info(f"Restored backup for: {file_path}")
             return True
         except Exception as e:
-            raise MetadataWriteError(f"Failed to restore backup: {e}")
+            raise MetadataWriteError(f"Failed to restore backup: {e}") from e
 
     def cleanup_backups(self, directory: Path, recursive: bool = False) -> int:
         """
@@ -533,8 +533,7 @@ class MetadataWriter:
         ".dng",  # Pentax, Adobe DNG
         ".raf",  # Fujifilm
         ".raw",
-        ".rwl",
-        ".rw2",  # Leica
+        ".rwl",  # Leica (.rw2 already listed above for Panasonic)
         ".3fr",  # Hasselblad
         ".fff",  # Imacon
         ".iiq",  # Phase One
