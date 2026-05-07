@@ -121,9 +121,9 @@ class Router:
             return self._build_error(view_id)
 
     def _build_placeholder(self, view_id: str) -> ctk.CTkFrame:
-        from app.config.theme import SPACE_LG, SPACE_SM, get_color, get_font
+        from app.config.theme import SPACE_LG, SPACE_SM, get_font, palette_pair
 
-        frame = ctk.CTkFrame(self._container, fg_color=get_color("bg"))
+        frame = ctk.CTkFrame(self._container, fg_color=palette_pair("bg"))
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_rowconfigure(0, weight=1)
         inner = ctk.CTkFrame(frame, fg_color="transparent")
@@ -132,26 +132,26 @@ class Router:
             inner,
             text=t("placeholder.under_construction", label=self._labels.get(view_id, view_id)),
             font=get_font("h2"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         ).pack(pady=(0, SPACE_SM))
         ctk.CTkLabel(
             inner,
             text=t("placeholder.under_construction_body"),
             font=get_font("body"),
-            text_color=get_color("fg_muted"),
+            text_color=palette_pair("fg_muted"),
         ).pack(pady=(0, SPACE_LG))
         return frame
 
     def _build_error(self, view_id: str) -> ctk.CTkFrame:
-        from app.config.theme import SPACE_LG, get_color, get_font
+        from app.config.theme import SPACE_LG, get_font, palette_pair
 
-        frame = ctk.CTkFrame(self._container, fg_color=get_color("error_bg"))
+        frame = ctk.CTkFrame(self._container, fg_color=palette_pair("error_bg"))
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_rowconfigure(0, weight=1)
         ctk.CTkLabel(
             frame,
             text=f"Erreur lors du chargement de la vue « {view_id} ».",
             font=get_font("h3"),
-            text_color=get_color("error"),
+            text_color=palette_pair("error"),
         ).grid(row=0, column=0, padx=SPACE_LG, pady=SPACE_LG)
         return frame

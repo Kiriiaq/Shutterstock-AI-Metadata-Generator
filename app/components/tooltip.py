@@ -13,7 +13,7 @@ import tkinter as tk
 
 import customtkinter as ctk
 
-from app.config.theme import RADIUS_SM, SPACE_SM, SPACE_XS, get_color, get_font
+from app.config.theme import RADIUS_SM, SPACE_SM, SPACE_XS, get_font, palette_pair
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +73,14 @@ class Tooltip:
             tip.attributes("-topmost", True)
         except tk.TclError:
             pass
-        tip.configure(fg_color=get_color("fg"))
+        tip.configure(fg_color=palette_pair("fg"))
         tip.geometry(f"+{x}+{y}")
 
         ctk.CTkLabel(
             tip,
             text=self._text,
             font=get_font("small"),
-            text_color=get_color("bg"),
+            text_color=palette_pair("bg"),
             wraplength=self._wraplength,
             justify="left",
             corner_radius=RADIUS_SM,

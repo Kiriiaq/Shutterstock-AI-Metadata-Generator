@@ -19,7 +19,7 @@ from typing import Literal
 
 import customtkinter as ctk
 
-from app.config.theme import RADIUS_MD, SPACE_LG, SPACE_MD, SPACE_SM, get_color, get_font
+from app.config.theme import RADIUS_MD, SPACE_LG, SPACE_MD, SPACE_SM, get_font, palette_pair
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ class _Toast(ctk.CTkToplevel):
 
         if kind not in _VALID_KINDS:
             kind = "info"
-        bg = get_color(f"{kind}_bg")
-        fg = get_color(kind)
+        bg = palette_pair(f"{kind}_bg")
+        fg = palette_pair(kind)
 
         self.configure(fg_color=bg)
         frame = ctk.CTkFrame(

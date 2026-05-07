@@ -10,8 +10,8 @@ from app.config.theme import (
     RADIUS_LG,
     SPACE_LG,
     SPACE_MD,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.i18n.fr import t
 
@@ -37,13 +37,13 @@ def confirm(
     dialog.title(title or t("dialog.confirm_default_title"))
     dialog.transient(parent.winfo_toplevel())
     dialog.resizable(False, False)
-    dialog.configure(fg_color=get_color("bg"))
+    dialog.configure(fg_color=palette_pair("bg"))
 
     body = ctk.CTkFrame(
         dialog,
-        fg_color=get_color("bg_elevated"),
+        fg_color=palette_pair("bg_elevated"),
         corner_radius=RADIUS_LG,
-        border_color=get_color("border"),
+        border_color=palette_pair("border"),
         border_width=1,
     )
     body.pack(fill="both", expand=True, padx=SPACE_LG, pady=SPACE_LG)
@@ -52,7 +52,7 @@ def confirm(
         body,
         text=title,
         font=get_font("h3"),
-        text_color=get_color("fg"),
+        text_color=palette_pair("fg"),
         anchor="w",
         justify="left",
     ).pack(fill="x", padx=SPACE_LG, pady=(SPACE_LG, SPACE_MD))
@@ -61,7 +61,7 @@ def confirm(
         body,
         text=message,
         font=get_font("body"),
-        text_color=get_color("fg_muted"),
+        text_color=palette_pair("fg_muted"),
         wraplength=380,
         justify="left",
         anchor="w",
@@ -80,14 +80,14 @@ def confirm(
         result["value"] = False
         dialog.destroy()
 
-    ok_color = get_color("error") if destructive else get_color("accent")
-    ok_hover = get_color("error") if destructive else get_color("accent_hover")
+    ok_color = palette_pair("error") if destructive else palette_pair("accent")
+    ok_hover = palette_pair("error") if destructive else palette_pair("accent_hover")
     ok_btn = ctk.CTkButton(
         btn_row,
         text=ok_label,
         fg_color=ok_color,
         hover_color=ok_hover,
-        text_color=get_color("accent_fg"),
+        text_color=palette_pair("accent_fg"),
         font=get_font("body_strong"),
         height=32,
         command=_ok,
@@ -98,10 +98,10 @@ def confirm(
         btn_row,
         text=cancel_label,
         fg_color="transparent",
-        hover_color=get_color("bg_hover"),
-        text_color=get_color("fg"),
+        hover_color=palette_pair("bg_hover"),
+        text_color=palette_pair("fg"),
         border_width=1,
-        border_color=get_color("border_strong"),
+        border_color=palette_pair("border_strong"),
         font=get_font("body"),
         height=32,
         command=_cancel,

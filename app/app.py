@@ -25,8 +25,8 @@ from app.config.theme import (
     SPACE_LG,
     SPACE_MD,
     SPACE_SM,
-    get_color,
     get_font,
+    palette_pair,
     toggle_theme,
 )
 from app.core.events import EventBus
@@ -84,7 +84,7 @@ class App(ctk.CTk):
         self.title(t("app.title"))
         self.geometry(self.INITIAL_GEOMETRY)
         self.minsize(*self.MIN_SIZE)
-        self.configure(fg_color=get_color("bg"))
+        self.configure(fg_color=palette_pair("bg"))
 
         icon = _resource_path("assets/icons/icone.ico")
         if icon.exists():
@@ -108,7 +108,7 @@ class App(ctk.CTk):
         )
         self.topbar.grid(row=0, column=0, sticky="new")
 
-        self._center = ctk.CTkFrame(self, fg_color=get_color("bg"), corner_radius=0)
+        self._center = ctk.CTkFrame(self, fg_color=palette_pair("bg"), corner_radius=0)
         self._center.grid(row=1, column=0, sticky="nsew")
         self._center.grid_columnconfigure(0, weight=1)
         self._center.grid_rowconfigure(0, weight=1)
@@ -156,12 +156,12 @@ class App(ctk.CTk):
         modal.title(title)
         modal.geometry("420x520")
         modal.transient(self)
-        modal.configure(fg_color=get_color("bg"))
+        modal.configure(fg_color=palette_pair("bg"))
 
         inner = ctk.CTkFrame(
             modal,
-            fg_color=get_color("bg_elevated"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_LG,
         )
@@ -171,7 +171,7 @@ class App(ctk.CTk):
             inner,
             text=title,
             font=get_font("h3"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             anchor="w",
         ).pack(fill="x", padx=SPACE_LG, pady=(SPACE_LG, SPACE_SM))
 
@@ -184,7 +184,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(
                 body,
                 text="Erreur de chargement.",
-                text_color=get_color("error"),
+                text_color=palette_pair("error"),
                 font=get_font("body"),
             ).pack()
 
@@ -192,9 +192,9 @@ class App(ctk.CTk):
             inner,
             text=t("common.close"),
             command=modal.destroy,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             height=32,
         ).pack(side="right", padx=SPACE_LG, pady=(0, SPACE_LG))
@@ -221,9 +221,9 @@ class App(ctk.CTk):
         modal.title(self._modal_titles.get(view_id, view_id))
         modal.geometry("1100x780")
         modal.transient(self)
-        modal.configure(fg_color=get_color("bg"))
+        modal.configure(fg_color=palette_pair("bg"))
 
-        container = ctk.CTkFrame(modal, fg_color=get_color("bg"))
+        container = ctk.CTkFrame(modal, fg_color=palette_pair("bg"))
         container.pack(fill="both", expand=True)
         container.grid_columnconfigure(0, weight=1)
         container.grid_rowconfigure(0, weight=1)
@@ -297,14 +297,45 @@ class App(ctk.CTk):
     # Action implementations (some are placeholders until later phases)
 
     def _toggle_theme(self) -> None:
+        """Switch light <-> dark.
+
+        Every CTk widget in app/ is now constructed with tuple
+        ``(light, dark)`` colors via ``palette_pair(...)``, so
+        ``ctk.set_appearance_mode(...)`` (called inside ``toggle_theme``)
+        propagates the new theme to every live widget without a
+        destroy/rebuild — user state in panels (folder path, IPTC
+        drafts, scroll positions, audit table contents) is preserved.
+
+        Two surfaces don't auto-switch and need an explicit refresh:
+        - ``ttk.Style`` used by DataTable's Treeview (Tk-native, not CTk).
+        - The topbar health strip, whose chip colors are computed at
+          build time by a provider — rebuilt via ``refresh_theme``.
+        """
         new = toggle_theme()
         self.topbar.refresh_theme()
-        self.configure(fg_color=get_color("bg"))
-        self._center.configure(fg_color=get_color("bg"))
-        # Re-render the workspace to pick up new colours throughout.
-        if self.router.current_id == "home":
-            self.router.navigate_to("home")
+        # Refresh the ttk.Style used by every DataTable. The style is
+        # global, so one call covers all live tables; we still iterate
+        # to update each tree's row-tag background.
+        from app.components.data_table import DataTable, apply_treeview_style
+
+        apply_treeview_style()
+        for table in self._iter_widgets(self, DataTable):
+            try:
+                table.refresh_theme()
+            except Exception:
+                logger.exception("DataTable refresh_theme failed")
         logger.info("Theme switched to: %s", new)
+
+    def _iter_widgets(self, root: ctk.CTkBaseClass, kind: type):
+        """Yield every descendant of *root* that ``isinstance(.., kind)``."""
+        try:
+            children = root.winfo_children()
+        except Exception:
+            return
+        for child in children:
+            if isinstance(child, kind):
+                yield child
+            yield from self._iter_widgets(child, kind)
 
     def _open_help(self) -> None:
         """Render GLOBAL_SHORTCUTS as a 2-column dialog (binding · description).
@@ -325,14 +356,14 @@ class App(ctk.CTk):
         modal = ctk.CTkToplevel(self)
         modal.title(t("help.title"))
         modal.transient(self)
-        modal.configure(fg_color=get_color("bg"))
+        modal.configure(fg_color=palette_pair("bg"))
         modal.geometry("520x460")
 
         outer = ctk.CTkFrame(
             modal,
-            fg_color=get_color("bg_elevated"),
+            fg_color=palette_pair("bg_elevated"),
             corner_radius=RADIUS_LG,
-            border_color=get_color("border"),
+            border_color=palette_pair("border"),
             border_width=1,
         )
         outer.pack(fill="both", expand=True, padx=SPACE_LG, pady=SPACE_LG)
@@ -341,7 +372,7 @@ class App(ctk.CTk):
             outer,
             text=t("help.title"),
             font=get_font("h2"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             anchor="w",
         ).pack(fill="x", padx=SPACE_LG, pady=(SPACE_LG, SPACE_SM))
 
@@ -354,7 +385,7 @@ class App(ctk.CTk):
                 scroll,
                 text=binding,
                 font=get_font("code"),
-                text_color=get_color("accent"),
+                text_color=palette_pair("accent"),
                 anchor="w",
                 width=140,
             ).grid(row=idx, column=0, sticky="w", padx=(0, SPACE_MD), pady=2)
@@ -362,7 +393,7 @@ class App(ctk.CTk):
                 scroll,
                 text=label,
                 font=get_font("body"),
-                text_color=get_color("fg"),
+                text_color=palette_pair("fg"),
                 anchor="w",
                 justify="left",
             ).grid(row=idx, column=1, sticky="w", pady=2)
@@ -371,9 +402,9 @@ class App(ctk.CTk):
             outer,
             text=t("common.close"),
             command=modal.destroy,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             height=36,
         ).pack(side="right", padx=SPACE_LG, pady=(0, SPACE_LG))

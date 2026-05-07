@@ -21,8 +21,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XS,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.i18n.fr import t
 
@@ -58,7 +58,7 @@ class Topbar(ctk.CTkFrame):
             master,
             height=self.HEIGHT,
             corner_radius=0,
-            fg_color=get_color("bg_elevated"),
+            fg_color=palette_pair("bg_elevated"),
         )
         self.grid_propagate(False)
         self.grid_columnconfigure(1, weight=1)
@@ -80,7 +80,7 @@ class Topbar(ctk.CTkFrame):
             self,
             text="ShutterstockAnalyzer v2.0.0 — Atelier",
             font=get_font("body_strong"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             anchor="w",
         )
         self._title.grid(row=0, column=0, sticky="w", padx=SPACE_LG)
@@ -115,8 +115,8 @@ class Topbar(ctk.CTkFrame):
             height=32,
             corner_radius=RADIUS_MD,
             fg_color="transparent",
-            hover_color=get_color("bg_hover"),
-            text_color=get_color("fg"),
+            hover_color=palette_pair("bg_hover"),
+            text_color=palette_pair("fg"),
             font=get_font("body_strong"),
             command=on_click,
         )
@@ -139,10 +139,10 @@ class Topbar(ctk.CTkFrame):
             self._build_chip(label, value, kind)
 
     def _build_chip(self, label: str, value: str, kind: str) -> None:
-        color = get_color(_KIND_TO_COLOR.get(kind, "fg_subtle"))
+        color = palette_pair(_KIND_TO_COLOR.get(kind, "fg_subtle"))
         chip = ctk.CTkFrame(
             self._strip,
-            fg_color=get_color("bg"),
+            fg_color=palette_pair("bg"),
             border_color=color,
             border_width=1,
             corner_radius=RADIUS_SM,
@@ -154,16 +154,16 @@ class Topbar(ctk.CTkFrame):
             chip,
             text=f"{label} · {value}",
             font=get_font("small"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
         )
         text.pack(side="left", padx=(0, SPACE_SM), pady=2)
         self._chip_widgets[label] = (dot, text)
 
     def refresh_theme(self) -> None:
-        self.configure(fg_color=get_color("bg_elevated"))
-        self._title.configure(text_color=get_color("fg"))
+        self.configure(fg_color=palette_pair("bg_elevated"))
+        self._title.configure(text_color=palette_pair("fg"))
         for btn in (self._theme_btn, self._help_btn):
-            btn.configure(hover_color=get_color("bg_hover"), text_color=get_color("fg"))
+            btn.configure(hover_color=palette_pair("bg_hover"), text_color=palette_pair("fg"))
         self.refresh_health()
 
     # ``set_breadcrumb`` kept as a no-op for API compatibility — the dense

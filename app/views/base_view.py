@@ -11,7 +11,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-from app.config.theme import get_color
+from app.config.theme import palette_pair
 
 
 class BaseView(ctk.CTkFrame):
@@ -20,7 +20,7 @@ class BaseView(ctk.CTkFrame):
     view_id: str = ""
 
     def __init__(self, master: ctk.CTkFrame, **kwargs: Any) -> None:
-        super().__init__(master, fg_color=get_color("bg"), **kwargs)
+        super().__init__(master, fg_color=palette_pair("bg"), **kwargs)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 

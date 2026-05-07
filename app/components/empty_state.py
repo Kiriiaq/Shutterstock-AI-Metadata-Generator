@@ -15,8 +15,8 @@ from app.config.theme import (
     SPACE_LG,
     SPACE_MD,
     SPACE_SM,
-    get_color,
     get_font,
+    palette_pair,
 )
 
 
@@ -33,7 +33,7 @@ class EmptyState(ctk.CTkFrame):
         action_label: str | None = None,
         on_action: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__(master, fg_color=get_color("bg"))
+        super().__init__(master, fg_color=palette_pair("bg"))
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -44,14 +44,14 @@ class EmptyState(ctk.CTkFrame):
             inner,
             text=icon,
             font=ctk.CTkFont(size=48),
-            text_color=get_color("fg_subtle"),
+            text_color=palette_pair("fg_subtle"),
         ).pack(pady=(0, SPACE_MD))
 
         ctk.CTkLabel(
             inner,
             text=title,
             font=get_font("h2"),
-            text_color=get_color("fg"),
+            text_color=palette_pair("fg"),
             justify="center",
         ).pack(pady=(0, SPACE_SM))
 
@@ -60,7 +60,7 @@ class EmptyState(ctk.CTkFrame):
                 inner,
                 text=subtitle,
                 font=get_font("body"),
-                text_color=get_color("fg_muted"),
+                text_color=palette_pair("fg_muted"),
                 justify="center",
                 wraplength=420,
             ).pack(pady=(0, SPACE_LG))
@@ -70,9 +70,9 @@ class EmptyState(ctk.CTkFrame):
                 inner,
                 text=action_label,
                 font=get_font("body_strong"),
-                fg_color=get_color("accent"),
-                hover_color=get_color("accent_hover"),
-                text_color=get_color("accent_fg"),
+                fg_color=palette_pair("accent"),
+                hover_color=palette_pair("accent_hover"),
+                text_color=palette_pair("accent_fg"),
                 corner_radius=RADIUS_MD,
                 height=36,
                 command=on_action,

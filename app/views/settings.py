@@ -14,8 +14,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.views.base_view import BaseView
 
@@ -73,7 +73,7 @@ class SettingsView(BaseView):
         wrapper.grid(row=0, column=0, sticky="nsew", padx=SPACE_XL, pady=SPACE_XL)
         wrapper.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Paramètres", font=get_font("h1"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(wrapper, text="Paramètres", font=get_font("h1"), text_color=palette_pair("fg")).grid(
             row=0, column=0, sticky="w", pady=(0, SPACE_LG)
         )
 
@@ -142,9 +142,9 @@ class SettingsView(BaseView):
         ctk.CTkButton(
             actions,
             text="Enregistrer",
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             command=self._save,
         ).pack(side="left", padx=(0, SPACE_SM))
@@ -161,14 +161,14 @@ class SettingsView(BaseView):
     ) -> int:
         section = ctk.CTkFrame(
             parent,
-            fg_color=get_color("bg_elevated"),
-            border_color=get_color("border"),
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
             border_width=1,
             corner_radius=RADIUS_MD,
         )
         section.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_LG))
         section.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(section, text=title, font=get_font("body_strong"), text_color=get_color("fg")).grid(
+        ctk.CTkLabel(section, text=title, font=get_font("body_strong"), text_color=palette_pair("fg")).grid(
             row=0, column=0, sticky="w", padx=SPACE_LG, pady=(SPACE_MD, SPACE_SM)
         )
 

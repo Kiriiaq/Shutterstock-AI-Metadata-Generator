@@ -16,8 +16,8 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
-    get_color,
     get_font,
+    palette_pair,
 )
 from app.views.base_view import BaseView
 
@@ -73,14 +73,14 @@ class EditorView(BaseView):
         self._build_editor(wrapper)
 
     def _build_file_list(self, parent: ctk.CTkFrame, files: list[Path]) -> None:
-        side = ctk.CTkFrame(parent, fg_color=get_color("bg_elevated"), corner_radius=RADIUS_MD, width=260)
+        side = ctk.CTkFrame(parent, fg_color=palette_pair("bg_elevated"), corner_radius=RADIUS_MD, width=260)
         side.grid(row=0, column=0, sticky="ns", padx=(0, SPACE_LG))
         side.grid_propagate(False)
         side.grid_columnconfigure(0, weight=1)
         side.grid_rowconfigure(1, weight=1)
 
         ctk.CTkLabel(
-            side, text=f"Fichiers ({len(files)})", font=get_font("body_strong"), text_color=get_color("fg")
+            side, text=f"Fichiers ({len(files)})", font=get_font("body_strong"), text_color=palette_pair("fg")
         ).grid(row=0, column=0, sticky="w", padx=SPACE_MD, pady=SPACE_MD)
 
         list_frame = ctk.CTkScrollableFrame(side, fg_color="transparent")
@@ -91,8 +91,8 @@ class EditorView(BaseView):
                 text=path.name,
                 anchor="w",
                 fg_color="transparent",
-                hover_color=get_color("bg_hover"),
-                text_color=get_color("fg"),
+                hover_color=palette_pair("bg_hover"),
+                text_color=palette_pair("fg"),
                 font=get_font("body"),
                 height=28,
                 command=lambda p=path: self._select_file(p),
@@ -107,7 +107,7 @@ class EditorView(BaseView):
             editor,
             text="Sélectionnez un fichier dans la liste",
             font=get_font("h2"),
-            text_color=get_color("fg_muted"),
+            text_color=palette_pair("fg_muted"),
             anchor="w",
         )
         self._title_label.grid(row=0, column=0, sticky="ew", pady=(0, SPACE_MD))
@@ -135,9 +135,9 @@ class EditorView(BaseView):
             actions,
             text="Enregistrer",
             width=120,
-            fg_color=get_color("accent"),
-            hover_color=get_color("accent_hover"),
-            text_color=get_color("accent_fg"),
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
             font=get_font("body_strong"),
             command=self._save,
         ).pack(side="left", padx=SPACE_SM)
@@ -147,7 +147,7 @@ class EditorView(BaseView):
 
     def _select_file(self, path: Path) -> None:
         self._current_path = path
-        self._title_label.configure(text=path.name, text_color=get_color("fg"))
+        self._title_label.configure(text=path.name, text_color=palette_pair("fg"))
         self._reload()
 
     def _reload(self) -> None:
