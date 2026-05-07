@@ -386,13 +386,32 @@ class App(ctk.CTk):
         self._open_modals.append(modal)
 
     def _close_top_modal(self) -> None:
-        for modal in reversed(self._open_modals):
+        """Esc handler: close the top-most modal, or cancel processing.
+
+        Escape priority:
+        1. If any modal Toplevel is alive, destroy the most recent one.
+        2. Else, if the workspace is mid-processing (analyse IA), cancel
+           it via the workspace's stop method — matches the user's
+           expectation that Esc and the "Arrêter" button do the same
+           thing.
+        """
+        # Prune destroyed modals (X-clicked or self-destroyed via Esc).
+        self._open_modals[:] = [m for m in self._open_modals if m.winfo_exists()]
+        if self._open_modals:
             try:
-                if modal.winfo_exists():
-                    modal.destroy()
-                    return
+                self._open_modals.pop().destroy()
             except Exception:
-                continue
+                logger.exception("Modal close failed")
+            return
+        # Workspace fallback: cancel running batch if any.
+        workspace = getattr(self.router, "_current_view", None)
+        if workspace is not None and getattr(workspace, "_processing", False):
+            stop = getattr(workspace, "_analyze_stop", None)
+            if callable(stop):
+                try:
+                    stop()
+                except Exception:
+                    logger.exception("Workspace cancel failed")
 
     # ------------------------------------------------------------------
     # Lifecycle

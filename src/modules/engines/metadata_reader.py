@@ -227,10 +227,10 @@ class MetadataReader:
             data = json.loads(result.stdout)
             return data[0] if data else {}
 
-        except subprocess.TimeoutExpired:
-            raise MetadataReadError(f"ExifTool timeout for: {file_path}")
+        except subprocess.TimeoutExpired as exc:
+            raise MetadataReadError(f"ExifTool timeout for: {file_path}") from exc
         except json.JSONDecodeError as e:
-            raise MetadataReadError(f"Failed to parse ExifTool output: {e}")
+            raise MetadataReadError(f"Failed to parse ExifTool output: {e}") from e
 
     def _run_exiftool_batch(self, file_paths: List[Path]) -> List[Dict[str, Any]]:
         """Run ExifTool on multiple files at once"""
@@ -248,10 +248,10 @@ class MetadataReader:
             data = json.loads(result.stdout)
             return data if isinstance(data, list) else [data]
 
-        except subprocess.TimeoutExpired:
-            raise MetadataReadError("ExifTool batch timeout")
+        except subprocess.TimeoutExpired as exc:
+            raise MetadataReadError("ExifTool batch timeout") from exc
         except json.JSONDecodeError as e:
-            raise MetadataReadError(f"Failed to parse ExifTool batch output: {e}")
+            raise MetadataReadError(f"Failed to parse ExifTool batch output: {e}") from e
 
     def _parse_metadata(self, file_path: Path, raw_data: Dict[str, Any]) -> ImageMetadata:
         """Parse raw ExifTool output into ImageMetadata structure"""
