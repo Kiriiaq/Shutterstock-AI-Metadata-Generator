@@ -109,7 +109,22 @@ class App(ctk.CTk):
         )
         self.topbar.grid(row=0, column=0, sticky="new")
 
-        self._center = ctk.CTkFrame(self, fg_color=palette_pair("bg"), corner_radius=0)
+        # Unified scroll: ``self._center`` is now a single
+        # ``CTkScrollableFrame`` so the entire workspace scrolls as one
+        # surface. The previous design had two side-by-side scrollable
+        # columns inside the workspace, plus the workspace inside this
+        # center frame — three scrollbars competing. Now the workspace
+        # columns are plain CTkFrames and overflow flows to *this* one
+        # vertical scrollbar at the window level. If content fits, the
+        # scrollbar stays hidden; if it overflows, the scroll-window
+        # interaction also surfaces layout-overflow regressions early.
+        self._center = ctk.CTkScrollableFrame(
+            self,
+            fg_color=palette_pair("bg"),
+            corner_radius=0,
+            scrollbar_button_color=palette_pair("border"),
+            scrollbar_button_hover_color=palette_pair("border_strong"),
+        )
         self._center.grid(row=1, column=0, sticky="nsew")
         self._center.grid_columnconfigure(0, weight=1)
         self._center.grid_rowconfigure(0, weight=1)

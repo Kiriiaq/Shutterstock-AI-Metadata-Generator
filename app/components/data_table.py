@@ -8,6 +8,7 @@ hold one DataTable per logical list and call ``set_rows`` / ``get_selected``.
 from __future__ import annotations
 
 import logging
+import tkinter as tk
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from tkinter import ttk
@@ -17,6 +18,7 @@ import customtkinter as ctk
 
 from app.config.theme import (
     get_color,
+    palette_pair,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,21 +41,40 @@ class Column:
 def apply_treeview_style() -> None:
     """Configure the global ttk style used by DataTable.
 
-    Idempotent — safe to call repeatedly (e.g. on theme switch).
+    On Windows the default ttk theme is ``vista``, which **ignores**
+    our ``style.configure(background=...)`` calls for Treeview — it
+    falls back to native OS colors (white). The ``clam`` theme is the
+    only built-in theme that respects ``style.configure`` for
+    Treeview backgrounds, so we force-switch to it the first time.
+
+    Subsequent calls (on every theme toggle) just re-issue the
+    configure with the new palette colors.
     """
     style = ttk.Style()
-    bg = get_color("bg")
-    bg_alt = get_color("bg_elevated")
-    fg = get_color("fg")
-    sel_bg = get_color("bg_active")
+
+    # First call: force 'clam' so subsequent .configure() calls take
+    # effect. theme_use() is process-wide and persists.
+    if "clam" in style.theme_names() and style.theme_use() != "clam":
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            logger.exception("Could not switch ttk theme to 'clam'")
+
+    # Pull from the v3-spec keys; legacy aliases still resolve
+    # (e.g. "fg" → text_primary, "bg" → bg_primary).
+    rows_bg = get_color("bg_secondary")  # rows: card surface
+    field_bg = get_color("bg_primary")  # empty area below rows: canvas
+    fg = get_color("text_primary")
+    sel_bg = get_color("accent")
+    sel_fg = get_color("accent_fg")
     border = get_color("border")
     heading_bg = get_color("bg_elevated")
+    heading_active = get_color("bg_hover")
 
-    style.theme_use(style.theme_use())  # keep current base theme
     style.configure(
         _STYLE_NAME,
-        background=bg,
-        fieldbackground=bg,
+        background=rows_bg,
+        fieldbackground=field_bg,
         foreground=fg,
         bordercolor=border,
         rowheight=26,
@@ -62,7 +83,7 @@ def apply_treeview_style() -> None:
     style.map(
         _STYLE_NAME,
         background=[("selected", sel_bg)],
-        foreground=[("selected", fg)],
+        foreground=[("selected", sel_fg)],
     )
     style.configure(
         _HEADING_STYLE,
@@ -73,12 +94,8 @@ def apply_treeview_style() -> None:
     )
     style.map(
         _HEADING_STYLE,
-        background=[("active", get_color("bg_hover"))],
+        background=[("active", heading_active)],
     )
-
-    # Tags applied on rows (alternating, not selected)
-    # Tag styling lives on each tree instance — set in DataTable.__init__.
-    _ = bg_alt  # available for tag use
 
 
 class DataTable(ctk.CTkFrame):
@@ -96,8 +113,14 @@ class DataTable(ctk.CTkFrame):
         *,
         columns: list[Column],
         select_mode: Literal["browse", "extended"] = "extended",
+        height: int = 10,
     ) -> None:
-        super().__init__(master, fg_color=get_color("bg"))
+        # Use palette_pair tuple (not get_color string) so the frame's
+        # background auto-bascules on ``set_appearance_mode``: that's
+        # the difference between a DataTable that stays at its initial
+        # theme color forever and one that follows light/dark switches.
+        # (refresh_theme() also re-applies it explicitly, belt + braces.)
+        super().__init__(master, fg_color=palette_pair("bg_secondary"))
         self._columns = columns
         self._sort_state: dict[str, bool] = {}  # col_id -> reverse?
         self._on_select_cb: Callable[[list[dict[str, Any]]], None] | None = None
@@ -114,6 +137,7 @@ class DataTable(ctk.CTkFrame):
             show="headings",
             selectmode=select_mode,
             style=_STYLE_NAME,
+            height=height,
         )
         for col in columns:
             self._tree.heading(
@@ -127,11 +151,15 @@ class DataTable(ctk.CTkFrame):
 
         self._tree.grid(row=0, column=0, sticky="nsew")
 
+        # Vertical scrollbar only — columns are configured with
+        # ``stretch=True`` so horizontal overflow can't really happen,
+        # and the unified-scroll spec asks for as few internal
+        # scrollbars as possible. Y-scroll is kept because long row
+        # lists would otherwise force the panel to grow infinitely
+        # and dominate the global window scroll.
         self._yscroll = ttk.Scrollbar(self, orient="vertical", command=self._tree.yview)
         self._yscroll.grid(row=0, column=1, sticky="ns")
-        self._xscroll = ttk.Scrollbar(self, orient="horizontal", command=self._tree.xview)
-        self._xscroll.grid(row=1, column=0, sticky="ew")
-        self._tree.configure(yscrollcommand=self._yscroll.set, xscrollcommand=self._xscroll.set)
+        self._tree.configure(yscrollcommand=self._yscroll.set)
 
         self._tree.bind("<<TreeviewSelect>>", self._handle_select)
         self._tree.bind("<Double-1>", self._handle_activate)
@@ -160,9 +188,16 @@ class DataTable(ctk.CTkFrame):
         self._on_activate_cb = callback
 
     def refresh_theme(self) -> None:
-        """Re-apply ttk style after a theme switch."""
+        """Re-apply ttk style + frame background after a theme switch.
+
+        The CTkFrame is built with a ``palette_pair`` tuple so it
+        auto-switches via ``set_appearance_mode``, but we re-issue
+        configure here as a belt-and-braces guard for any edge case
+        (e.g. partial repaint while a Treeview is rebuilding).
+        """
         apply_treeview_style()
         try:
+            self.configure(fg_color=palette_pair("bg_secondary"))
             self._tree.tag_configure("alt", background=get_color("bg_elevated"))
         except Exception:
             logger.exception("DataTable refresh_theme failed")

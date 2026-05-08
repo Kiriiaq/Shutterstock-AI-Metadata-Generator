@@ -23,7 +23,7 @@ from app.config.theme import (
     palette_pair,
 )
 from app.utils.formatters import fmt_datetime, fmt_duration_ms
-from app.views.base_view import BaseView
+from app.views.base_view import BaseView, _modal_header
 
 if TYPE_CHECKING:
     from app.app import App
@@ -63,9 +63,8 @@ class AuditView(BaseView):
         wrapper.grid_columnconfigure(0, weight=1)
         wrapper.grid_rowconfigure(2, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Historique", font=get_font("h1"), text_color=palette_pair("fg")).grid(
-            row=0, column=0, sticky="w", pady=(0, SPACE_LG)
-        )
+        # Header: icon + h1 title, anchored top-left.
+        _modal_header(wrapper, icon="🕐", title="Historique", row=0)
 
         self._build_filters(wrapper, row=1)
         self._build_table(wrapper, row=2)
