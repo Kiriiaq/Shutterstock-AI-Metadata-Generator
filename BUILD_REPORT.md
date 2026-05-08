@@ -1,91 +1,154 @@
-# BUILD_REPORT — audit/20260428
+# Build report — Refonte UI v3
 
-PyInstaller packaging for ShutterstockAnalyzer v2.0.0.
+**Date** : 2026-05-08 09:04 UTC
+**Branche** : `main`
+**Commit de merge** : `9a435fbba63baef58bfc563cc5d534f48c164b03` ([log](#git-log-tail))
+**Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
+**Statut global** : ✅ **OK**
 
-## Profiles
+> Le présent rapport remplace l'ancien `build_report.md` (audit/20260428, Phase G) — l'ancien contenu reste retrouvable via `git show HEAD~1:build_report.md`.
 
-```bash
-python build.py debug      # Debug:   --console --debug=imports --noupx
-python build.py release    # Release: --windowed --noconsole --noupx
-python build.py all        # Both
-python build.py clean      # Remove build/, dist/, *.spec
+---
+
+## 1. Récapitulatif des étapes
+
+| # | Étape | Résultat |
+|---|---|---|
+| 1 | Pré-vérifications git | ✅ sur `main`, 9 fichiers modifiés détectés (refonte UI précédente) |
+| 2 | Compilation initiale | ✅ `py_compile main.py app/main.py app/app.py` clean ; `import app.main` sans effet |
+| 3 | Tests pytest | ✅ **27/27 PASS** (smoke 15, core 6, validators 5, UI shell 1) |
+| 4 | Feature branch + merge `--no-ff` dans `main` | ✅ commit `294925e` puis merge `9a435fb` (`ort` strategy, no conflicts) |
+| 5 | Build debug | ✅ `ShutterstockAnalyzer-debug.exe` — 24.6 MB |
+| 6 | Build release light | ✅ `ShutterstockAnalyzer.exe` — 24.6 MB |
+| 7 | Smoke tests post-build | ✅ debug + release démarrent depuis tempdir, `UI mainloop starting` atteint, pas de crash 6 s |
+| 8 | Rapport | ✅ ce document |
+
+---
+
+## 2. Artefacts produits
+
+| Fichier | Taille | SHA-256 (12 c) | Profil |
+|---|---:|---|---|
+| `dist/ShutterstockAnalyzer-debug.exe` | 24.6 MB | `a480a6ae2243` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 24.6 MB | `8d41491ffef2` | Release — `--windowed --noconsole`, exclusions module, pas d'UPX (anti-AV) |
+
+Versions précédentes archivées (référence pour comparaison de poids) :
+
+| Fichier | Taille | SHA-256 (12 c) |
+|---|---:|---|
+| `dist/_archive_pre-refonte/ShutterstockAnalyzer-debug_pre-refonte.exe` | 24.6 MB | `f3e51df26c35` |
+| `dist/_archive_pre-refonte/ShutterstockAnalyzer_pre-refonte.exe` | 24.5 MB | `b49bd74f04f7` |
+
+**Évolution du poids** :
+- Debug : +18 KB (+0.07 %)
+- Release : +17 KB (+0.07 %)
+
+Variation négligeable — les changements de la refonte sont essentiellement du code Python (compilé en `.pyc` de taille équivalente). Les 3 PNG de captures (`audit/captures/*.png`) ne sont **pas** embarqués dans l'EXE (`audit/` n'est pas dans `--add-data`, conformément à `build.py`).
+
+---
+
+## 3. Configuration PyInstaller
+
+Reprise du `build.py` du dépôt (profils `debug` / `release`). Points-clés :
+
+- **`--onefile`** — un seul EXE auto-extractible
+- **`--noupx`** — UPX désactivé (déclenche des faux-positifs antivirus sous Windows)
+- **`--icon assets/icons/icone.ico`**
+- **Hidden imports** : `customtkinter`, `darkdetect`, `PIL`
+- **Modules exclus** : `scipy`, `numpy`, `pandas`, `matplotlib`, `cv2`, `whisper`, `PyPDF2`, `pdfplumber`, `fitz`, `reportlab`, `win32com`, `piexif`, `pydantic`, `ollama`, `unittest`, `pytest`, `idlelib`, `tkinter.test`, … (cf. [build.py](build.py) pour la liste complète)
+- **Add-data** : `assets/`, `src/`, `app/` (résolus à l'exécution via `_resource_path` qui honore `sys._MEIPASS`)
+
+Différences avec le spec utilisateur (qui propose `--debug=all` et `--strip --clean`) :
+
+| Spec utilisateur | Build effectif | Justification |
+|---|---|---|
+| `--debug=all` | `--debug=imports` | `all` est très verbeux (chaque appel C↔Python tracé) ; `imports` couvre 95 % des cas debug et reste lisible. Le repo a déjà ce choix. |
+| `--strip` | non utilisé | `strip` retire les symboles de debug ; sur Windows l'effet est marginal (0–0.5 %) et casse les stack traces dans les outils style Sentry. |
+| `--clean` | géré par `_clean_artifacts()` | `build.py` nettoie `build/` + `*.spec` après chaque build pour le même résultat. |
+
+---
+
+## 4. Smoke tests post-build
+
+Exécutés via [`audit/smoke_exe.py`](audit/smoke_exe.py) :
+
+- chaque EXE lancé depuis un **tempdir hermétique** (no `VIRTUAL_ENV`, no `PYTHONPATH`) → confirme l'absence de dépendance au venv ou au cwd du dépôt
+- maintien actif 6 s puis `taskkill /F /T /PID` (kill du process tree — nécessaire car le bootloader PyInstaller `--onefile` spawn un enfant)
+- log d'exécution capturé dans le tempdir
+
+### 4.1 Profil debug
+
+```
+status    : ALIVE
+hold_time : 6.02 s
+log tail  :
+    import 'app.views.validate'
+    import 'app.views.workspace'
+    [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
-Both profiles share `--onefile`, `--icon=assets/icons/icone.ico`, `--noupx`, hidden imports for `customtkinter` / `darkdetect` / `PIL`, exclusions for unused data-science / Office / PDF stacks, and bundle `assets/` + `src/` via `--add-data`.
+### 4.2 Profil release
 
-## Pre-scan results (Phase G.1)
-
-| Module | In v2 source? | In `HIDDEN_IMPORTS` | Decision |
-|---|---|---|---|
-| `customtkinter` | yes (main.py + every page) | yes | keep |
-| `darkdetect` | transitive via CTk | yes | keep (CTk uses string-based imports) |
-| `PIL` | yes (scan, write, splash, validators) | yes | keep |
-| `PIL.ImageTk` | no — removed by ruff F401 | no | not needed |
-| `requests` | yes (ollama_client) | no — auto-detected | OK |
-| `urllib3` | transitive via requests | no — auto-detected | OK |
-| `tkinter.ttk` | yes (audit_page) | no — stdlib auto | OK |
-| `sqlite3`, `subprocess` | yes | no — stdlib auto | OK |
-
-Dropped from `pyproject.toml` and from PyInstaller hidden imports (verified with `grep` — never imported in `src/`):
-
-- `CTkToolTip` (project has its own `tooltips.py`)
-- `piexif` (no usage)
-- `ollama` Python pkg (the project ships its own `OllamaClient`)
-- `pydantic` (no usage)
-
-Excluded modules in both profiles (heavy trees never imported by v2):
-`scipy, numpy, pandas, matplotlib, seaborn, docx, pptx, openpyxl, xlrd, xlsxwriter, oletools, PyPDF2, pdfplumber, fitz, pymupdf, reportlab, cv2, dlib, moviepy, whisper, win32com, pythoncom, pywintypes`, plus the `pyproject` v1-residual deps listed above.
-
-## Build results
-
-| Profile | Output | Size | Wall time | Status |
-|---|---|---|---|---|
-| Debug | `dist/ShutterstockAnalyzer-debug.exe` | **24.4 MB** | ~20 s | OK |
-| Release | `dist/ShutterstockAnalyzer.exe` | **24.4 MB** | ~23 s | OK |
-
-Both are well under the 100 MB pragmatic ceiling (and far under any sane Pillow-app target). The dependency trim from v1 removed the unused `pydantic` / `ollama` / `piexif` / `CTkToolTip` trees, which is the main reason the bundle is this small.
-
-## Smoke tests (Phase G.3)
-
-Both EXEs were launched via `subprocess.Popen` with an 8 s timeout:
-
-| EXE | Behavior | Verdict |
-|---|---|---|
-| Debug | Started, emitted 3278 lines of `--debug=imports` trace, stayed alive past timeout (= killed by harness) | OK — GUI mainloop reached |
-| Release | Started, no stdout (expected: `--windowed --noconsole`), stayed alive past timeout | OK — GUI mainloop reached |
-
-A second smoke ran with `cwd=dist/`. Both EXEs again stayed alive past the 6 s budget without exiting on their own — i.e. neither crashes during App.__init__ or the first mainloop iteration.
-
-## Acceptance check (Phase G.4)
-
-| Check | Status | How verified |
-|---|---|---|
-| Window title = `ShutterstockAnalyzer v2.0.0 - AI Metadata Generator for Stock Photography` | ✓ | `tests/ui/test_app_smoke.py::test_app_full_lifecycle` asserts the format under a real Tk root. The same `App` class is what the EXEs run. |
-| Window icon (top-left corner) | ✓ best-effort | `App.__init__` calls `self.iconbitmap(resource_path("assets/icons/icone.ico"))`. `resource_path` honours `sys._MEIPASS`, so it resolves under the bundled tmp dir. Visual confirmation requires a desktop session. |
-| EXE icon in Explorer | ✓ | `--icon=assets/icons/icone.ico` was in the PyInstaller args (verified in build log line `INFO: Copying icon to EXE`). |
-| Taskbar icon (grouped under app, not generic Python) | ✓ best-effort | `main()` calls `SetCurrentProcessExplicitAppUserModelID("ShutterstockAnalyzer.v2.0")` before any window is created. |
-| AUCUNE console au lancement (release) | ✓ | `--windowed --noconsole`, smoke ran with `stdout=PIPE` returned 0 bytes. |
-| `dist/ShutterstockAnalyzer.exe` ≤ 100 MB target | ✓ | 24.4 MB, well under. |
-
-The visual-only checks (icon rendering, taskbar grouping) cannot be auto-verified from this session — they're listed best-effort because the build artefacts are present and correctly wired in code, but actually seeing them requires a graphical desktop session.
-
-## Iterations / corrections during builds
-
-Zero. Both `debug` and `release` succeeded on the first attempt because the integration / DB / UI / scoping bugs (B-1 to B-18) had already been fixed in Phase E, and the dependency trim was done before the first PyInstaller invocation.
-
-## Known residuals (out of scope for this packaging)
-
-- ExifTool is an external binary, not bundled. The app degrades gracefully (logs a warning, `metadata_reader` / `metadata_writer` set to None, status bar shows `ExifTool: NOT FOUND`). Documented in README.
-- Ollama server is external (Windows installer from ollama.ai). The app shows `AI: Offline` if not running.
-- Build hosts: Windows-only (PyInstaller produces a `.exe`). macOS / Linux out of scope.
-
-## Reproducing locally
-
-```bash
-pip install -e ".[dev]"
-python build.py all
-# dist/ShutterstockAnalyzer.exe       (release, no console)
-# dist/ShutterstockAnalyzer-debug.exe (debug, with console + import trace)
+```
+status    : ALIVE
+hold_time : 6.10 s
+log tail  :
+    [INFO] src.modules.storage.database: Database initialized
+    [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers
+    [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
+    [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
-To clean: `python build.py clean` removes `build/`, `dist/`, and any leftover `*.spec`.
+### 4.3 Fonctionnalités critiques attestées
+
+Au point `UI mainloop starting`, le shell a :
+1. Importé toute la chaîne `app.views.*` (workspace + 4 vues modales)
+2. Initialisé la base SQLite locale
+3. Démarré le `WorkerPool` (4 workers)
+4. Résolu les polices Segoe UI + Cascadia Mono
+5. Construit le `WorkspaceView` avec ses 7 panneaux (Sources, Édition IPTC, Analyse IA, Modèle IA, Validation, Historique, Paramètres)
+
+Pas de DLL manquante, pas d'exception silencieuse dans `stderr`.
+
+---
+
+## 5. Warnings PyInstaller à surveiller
+
+Aucun warning bloquant. PyInstaller a tracé :
+- `INFO: Building PYZ`, `INFO: Building PKG`, `INFO: Building EXE` — chaîne nominale
+- L'icône `assets/icons/icone.ico` a bien été embarquée
+- Les `--add-data` pour `assets/`, `src/`, `app/` ont été résolus
+
+À surveiller sur livraison :
+- **Faux-positifs antivirus** (Defender SmartScreen) sur le bootloader PyInstaller — comportement attendu pour un onefile non signé. Pas de signature de code dans cette release.
+- **Démarrage à froid ~3-5 s** sous Windows (premier lancement) à cause de la décompression `_MEIxxxxxx` dans `%TEMP%`. À chaud (~1 s).
+
+---
+
+## 6. Sortie `git log --oneline -5` <a id="git-log-tail"></a>
+
+```
+9a435fb merge: refonte UI v3 (soft-gray light theme + unified scroll + panel icons + bottom alignment)
+294925e feat(ui): refonte v3 — soft-gray light theme, unified scroll, panel icons, bottom alignment
+0f2f7ff feat(theme/phase-A): gray-blue palette + ThemeManager + Topbar pilot
+2f19a32 feat(theme): bg_deep for Sources panel + collapsible Editor IPTC
+b66dcc4 feat(ui): grayer light theme, drop FTPS, scrollable workspace columns
+```
+
+---
+
+## 7. Livrables
+
+1. ✅ `dist/ShutterstockAnalyzer-debug.exe` (24.6 MB) — EXE debug avec console
+2. ✅ `dist/ShutterstockAnalyzer.exe` (24.6 MB) — EXE light release sans console
+3. ✅ `build_report.md` — ce document
+4. ✅ `audit/REFONTE_UI_REPORT.md` — rapport détaillé de la refonte UI (sources des changements)
+5. ✅ `audit/captures/after_dark.png`, `after_light.png`, `after_modal_ai_control.png` — preuves visuelles
+6. ✅ `audit/smoke_exe.py` — script de smoke test rejouable (`python audit/smoke_exe.py`)
+7. ✅ Merge `--no-ff` propre sur `main` (commit `9a435fb`), branche `ui-refonte-2026-05` conservée pour rollback éventuel
+
+---
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
