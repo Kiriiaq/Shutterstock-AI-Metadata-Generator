@@ -55,10 +55,18 @@ ThemeMode = Literal["light", "dark", "system"]
 # ============================================================================
 
 LIGHT_THEME: Final[dict[str, str]] = {
-    "bg_primary": "#EEF1F5",
-    "bg_secondary": "#E1E6ED",
-    "bg_elevated": "#F5F7FA",
-    "border": "#C5CDD9",
+    # Light theme softened (no pure white) — three neutral-gray tiers,
+    # picked from the user-suggested palette (#F5F5F7 / #ECEEF1 /
+    # #E8EAED). Less near-white than the previous near-#F5F7FA, less
+    # blue cast than the older #EEF1F5 — reads as a calm soft gray
+    # while keeping enough contrast for borders and text.
+    "bg_primary": "#ECEEF1",  # canvas — base surface
+    "bg_secondary": "#E8EAED",  # recessed (cards under canvas)
+    "bg_elevated": "#F5F5F7",  # raised (inner frames on cards)
+    # Border darkened from #C5CDD9 to give cards a sharper, more
+    # readable edge on the gray-blue canvas (per user feedback —
+    # "rajoute plus de contraste").
+    "border": "#A8B2C0",
     "text_primary": "#1E2733",
     "text_secondary": "#4A5566",
     "accent": "#3B6EA5",
@@ -98,13 +106,17 @@ DARK_THEME: Final[dict[str, str]] = {
 
 _LEGACY_LIGHT: Final[dict[str, str]] = {
     "bg": LIGHT_THEME["bg_primary"],
-    "bg_hover": "#D6DCE5",  # between bg_secondary and bg_primary
+    # Hover surface — sits between bg_secondary (#E8EAED) and the
+    # border (#A8B2C0), giving a clear pressed/hover feedback without
+    # dropping all the way to a near-border value.
+    "bg_hover": "#D8DCE2",
     "bg_active": LIGHT_THEME["border"],
     "bg_deep": LIGHT_THEME["bg_secondary"],  # Sources panel — same as cards in light
     "fg": LIGHT_THEME["text_primary"],
     "fg_muted": LIGHT_THEME["text_secondary"],
     "fg_subtle": "#7B8696",
-    "border_strong": "#A8B2C0",
+    # Stronger border for sharper card edges on the gray-blue canvas.
+    "border_strong": "#94A0AE",
     "accent_fg": "#FFFFFF",
     "accent_secondary_fg": "#FFFFFF",
     "success_fg": "#FFFFFF",

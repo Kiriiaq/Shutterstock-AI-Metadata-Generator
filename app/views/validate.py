@@ -12,7 +12,6 @@ import customtkinter as ctk
 from app.components.data_table import Column, DataTable
 from app.components.empty_state import EmptyState
 from app.config.theme import (
-    SPACE_LG,
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
@@ -20,7 +19,7 @@ from app.config.theme import (
     palette_pair,
 )
 from app.utils.formatters import fmt_int
-from app.views.base_view import BaseView
+from app.views.base_view import BaseView, _modal_header
 
 if TYPE_CHECKING:
     from app.app import App
@@ -66,9 +65,8 @@ class ValidateView(BaseView):
         wrapper.grid_columnconfigure(0, weight=1)
         wrapper.grid_rowconfigure(2, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Validation", font=get_font("h1"), text_color=palette_pair("fg")).grid(
-            row=0, column=0, sticky="w", pady=(0, SPACE_LG)
-        )
+        # Header: icon + h1 title, anchored top-left.
+        _modal_header(wrapper, icon="✓", title="Validation", row=0)
 
         self._summary = ctk.CTkLabel(
             wrapper, text="Lancement…", font=get_font("body"), text_color=palette_pair("fg_muted")

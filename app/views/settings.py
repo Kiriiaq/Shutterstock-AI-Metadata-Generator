@@ -17,7 +17,7 @@ from app.config.theme import (
     get_font,
     palette_pair,
 )
-from app.views.base_view import BaseView
+from app.views.base_view import BaseView, _modal_header
 
 if TYPE_CHECKING:
     from app.app import App
@@ -70,9 +70,8 @@ class SettingsView(BaseView):
         wrapper.grid(row=0, column=0, sticky="nsew", padx=SPACE_XL, pady=SPACE_XL)
         wrapper.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(wrapper, text="Paramètres", font=get_font("h1"), text_color=palette_pair("fg")).grid(
-            row=0, column=0, sticky="w", pady=(0, SPACE_LG)
-        )
+        # Header: icon + h1 title, anchored top-left.
+        _modal_header(wrapper, icon="⚙", title="Paramètres", row=0)
 
         row = 1
         row = self._build_section(
