@@ -70,23 +70,36 @@ class WorkspaceView(BaseView):
     # Layout
 
     def _build(self) -> None:
-        # Two-column layout. Each column is a CTkScrollableFrame so the
-        # panels remain reachable when the user shrinks the window: the
-        # column scrolls vertically instead of clipping content. Row
-        # weights are dropped because a scrollable canvas takes natural
-        # heights — the 5 s auto-refresh and the panel internals still
-        # work the same way.
+        # Two-column layout. Both columns are plain ``CTkFrame``s now —
+        # the unified vertical scroll lives at ``App._center`` (one
+        # ``CTkScrollableFrame`` for the whole window). When content
+        # overflows, the WHOLE workspace scrolls together; when it
+        # fits, no scrollbar.
+        #
+        # Bottom alignment: each column reserves a stretching row at
+        # its bottom (``grid_rowconfigure(LAST, weight=1)`` + the last
+        # panel grids ``sticky="nsew"``) so the columns end on the
+        # same horizontal line regardless of how many panels each
+        # column holds (3 left, 4 right).
         self.grid_columnconfigure(0, weight=3)
         self.grid_columnconfigure(1, weight=2, minsize=320)
         self.grid_rowconfigure(0, weight=1)
 
-        left = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0)
+        left = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         left.grid(row=0, column=0, sticky="nsew", padx=(SPACE_MD, SPACE_SM), pady=SPACE_MD)
         left.grid_columnconfigure(0, weight=1)
+        # Last panel (Analyse IA, row 2) absorbs vertical slack — its
+        # textbox naturally grows, but the row weight guarantees the
+        # column reaches the same y-bottom as the right column even
+        # when the textbox is empty.
+        left.grid_rowconfigure(2, weight=1)
 
-        right = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0)
+        right = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         right.grid(row=0, column=1, sticky="nsew", padx=(SPACE_SM, SPACE_MD), pady=SPACE_MD)
         right.grid_columnconfigure(0, weight=1)
+        # Last panel on the right is Paramètres (row 3) — same trick:
+        # weight=1 on its row stretches it to match the left column.
+        right.grid_rowconfigure(3, weight=1)
 
         self._build_sources_panel(left, row=0)
         self._build_editor_panel(left, row=1)
@@ -104,10 +117,10 @@ class WorkspaceView(BaseView):
     # ----- Panel: Sources & tri ---------------------------------------
 
     def _build_sources_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        # bg_key="bg_deep" → unchanged white in light mode, slate-950
-        # (deeper than canvas) in dark mode: gives the file-table area
-        # a "workspace floor" feel instead of an elevated card.
-        section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep")
+        # bg_key="bg_deep" → soft-gray bg_secondary in light mode (so it
+        # blends with the new neutral palette instead of glowing white),
+        # slate-950 in dark mode for the "workspace floor" feel.
+        section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁")
         section.grid_rowconfigure(3, weight=1)
 
         bar = ctk.CTkFrame(section, fg_color="transparent")
@@ -252,17 +265,25 @@ class WorkspaceView(BaseView):
         section.grid(row=row, column=0, sticky="nsew", pady=(0, SPACE_SM))
         section.grid_columnconfigure(0, weight=1)
 
-        # Header: title + chevron toggle
+        # Header: icon + title (top-left) + chevron toggle (right)
         header = ctk.CTkFrame(section, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew", padx=SPACE_SM, pady=(SPACE_SM, SPACE_XS))
-        header.grid_columnconfigure(0, weight=1)
+        header.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(
+            header,
+            text="✎",
+            font=get_font("body_strong"),
+            text_color=palette_pair("fg_muted"),
+            width=18,
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w", padx=(0, SPACE_XS))
         ctk.CTkLabel(
             header,
             text="ÉDITION IPTC",
             font=get_font("small"),
             text_color=palette_pair("fg_subtle"),
             anchor="w",
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=1, sticky="w")
         self._editor_toggle_btn = ctk.CTkButton(
             header,
             text="▼",
@@ -275,7 +296,7 @@ class WorkspaceView(BaseView):
             font=get_font("small"),
             command=self._toggle_editor_collapsed,
         )
-        self._editor_toggle_btn.grid(row=0, column=1, sticky="e")
+        self._editor_toggle_btn.grid(row=0, column=2, sticky="e")
 
         # Body wrapper — grid_remove'd when collapsed.
         self._editor_body = ctk.CTkFrame(section, fg_color="transparent")
@@ -422,7 +443,9 @@ class WorkspaceView(BaseView):
     # ----- Panel: Analyse IA ------------------------------------------
 
     def _build_analyze_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "ANALYSE IA")
+        # Last panel of the left column → ``sticky="nsew"`` so the
+        # column stretches down to align with the right column's bottom.
+        section = self._panel(parent, row, "ANALYSE IA", icon="🧠", sticky="nsew")
         section.grid_rowconfigure(3, weight=1)
         section.grid_columnconfigure(0, weight=1)
 
@@ -589,7 +612,7 @@ class WorkspaceView(BaseView):
     # ----- Panel: Modèle IA -------------------------------------------
 
     def _build_model_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "MODÈLE IA")
+        section = self._panel(parent, row, "MODÈLE IA", icon="🤖")
         section.grid_columnconfigure(0, weight=1)
 
         body = ctk.CTkFrame(section, fg_color="transparent")
@@ -679,7 +702,7 @@ class WorkspaceView(BaseView):
     # ----- Panel: Validation ------------------------------------------
 
     def _build_validate_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "VALIDATION")
+        section = self._panel(parent, row, "VALIDATION", icon="✓")
         section.grid_columnconfigure(0, weight=1)
 
         self._validate_summary = ctk.CTkLabel(
@@ -769,7 +792,7 @@ class WorkspaceView(BaseView):
     # ----- Panel: Historique ------------------------------------------
 
     def _build_history_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "HISTORIQUE")
+        section = self._panel(parent, row, "HISTORIQUE", icon="🕐")
         section.grid_columnconfigure(0, weight=1)
         section.grid_rowconfigure(2, weight=1)
 
@@ -826,7 +849,10 @@ class WorkspaceView(BaseView):
     # ----- Panel: Paramètres ------------------------------------------
 
     def _build_settings_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "PARAMÈTRES")
+        # Last panel of the right column → ``sticky="nsew"`` so the
+        # column reaches the same y-bottom as the left column even
+        # though it has 4 panels vs the left's 3.
+        section = self._panel(parent, row, "PARAMÈTRES", icon="⚙", sticky="nsew")
         section.grid_columnconfigure(0, weight=1)
 
         body = ctk.CTkFrame(section, fg_color="transparent")
@@ -992,6 +1018,8 @@ class WorkspaceView(BaseView):
         title: str,
         *,
         bg_key: str = "bg_elevated",
+        icon: str | None = None,
+        sticky: str = "new",
     ) -> ctk.CTkFrame:
         """Create a titled panel frame.
 
@@ -999,6 +1027,16 @@ class WorkspaceView(BaseView):
         default ``bg_elevated`` gives the standard "card on canvas" look.
         Pass ``bg_key="bg_deep"`` to make a panel sink below the canvas
         in dark mode (used by Sources for a workspace-floor feel).
+
+        ``icon`` (optional, e.g. ``"🧠"``) is rendered immediately to
+        the *left* of the title — top-left of the panel — so the panel
+        type is identifiable at a glance and the title stays anchored
+        to the upper-left corner (per the v3 UI spec).
+
+        ``sticky`` defaults to ``"new"`` (top-anchored, fills width);
+        pass ``"nsew"`` for the LAST panel of a column so it stretches
+        and pulls the column's bottom edge into alignment with its
+        sibling column.
         """
         frame = ctk.CTkFrame(
             parent,
@@ -1007,15 +1045,34 @@ class WorkspaceView(BaseView):
             border_width=1,
             corner_radius=RADIUS_MD,
         )
-        frame.grid(row=row, column=0, sticky="nsew", pady=(0, SPACE_SM))
+        frame.grid(row=row, column=0, sticky=sticky, pady=(0, SPACE_SM))
         frame.grid_columnconfigure(0, weight=1)
+
+        # Title row — icon (if any) + label, anchored top-left so every
+        # panel's identity sits in the same corner. The header uses a
+        # nested transparent frame so the icon and title share a single
+        # baseline, and so an optional trailing widget (e.g. a chevron
+        # for collapsible panels) can still grid into ``frame`` row 0
+        # without colliding.
+        header = ctk.CTkFrame(frame, fg_color="transparent")
+        header.grid(row=0, column=0, sticky="ew", padx=SPACE_SM, pady=(SPACE_SM, SPACE_XS))
+        header.grid_columnconfigure(1, weight=1)
+        if icon:
+            ctk.CTkLabel(
+                header,
+                text=icon,
+                font=get_font("body_strong"),
+                text_color=palette_pair("fg_muted"),
+                width=18,
+                anchor="w",
+            ).grid(row=0, column=0, sticky="w", padx=(0, SPACE_XS))
         ctk.CTkLabel(
-            frame,
+            header,
             text=title,
             font=get_font("small"),
             text_color=palette_pair("fg_subtle"),
             anchor="w",
-        ).grid(row=0, column=0, sticky="w", padx=SPACE_SM, pady=(SPACE_SM, SPACE_XS))
+        ).grid(row=0, column=1, sticky="w")
         return frame
 
 
