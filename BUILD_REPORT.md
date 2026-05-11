@@ -1,10 +1,11 @@
 # Build report — Refonte UI v3
 
-**Date** : 2026-05-08 09:04 UTC
+**Date du build courant** : **2026-05-11 22:06** (rebuild on demand)
+**Date du build initial** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit de merge** : `9a435fbba63baef58bfc563cc5d534f48c164b03` ([log](#git-log-tail))
+**Commit HEAD** : `7069953` (build artefacts) sur la base de `9a435fbba63baef58bfc563cc5d534f48c164b03` (merge UI v3) ([log](#git-log-tail))
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
-**Statut global** : ✅ **OK**
+**Statut global** : ✅ **OK** (27/27 tests, debug + light ALIVE)
 
 > Le présent rapport remplace l'ancien `build_report.md` (audit/20260428, Phase G) — l'ancien contenu reste retrouvable via `git show HEAD~1:build_report.md`.
 
@@ -27,23 +28,34 @@
 
 ## 2. Artefacts produits
 
-| Fichier | Taille | SHA-256 (12 c) | Profil |
-|---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 24.6 MB | `a480a6ae2243` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 24.6 MB | `8d41491ffef2` | Release — `--windowed --noconsole`, exclusions module, pas d'UPX (anti-AV) |
+**Build courant (2026-05-11 22:06)** :
 
-Versions précédentes archivées (référence pour comparaison de poids) :
+| Fichier | Taille | SHA-256 (16 c) | Profil |
+|---|---:|---|---|
+| `dist/ShutterstockAnalyzer-debug.exe` | 24.57 MB | `ce9bdca53c2ca653` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 24.57 MB | `f68f7c2cedb161ec` | Release — `--windowed --noconsole`, exclusions module, pas d'UPX (anti-AV) |
+
+**Build du 2026-05-08** (archivé sous `dist/_archive_20260511_220435/`) :
 
 | Fichier | Taille | SHA-256 (12 c) |
 |---|---:|---|
-| `dist/_archive_pre-refonte/ShutterstockAnalyzer-debug_pre-refonte.exe` | 24.6 MB | `f3e51df26c35` |
-| `dist/_archive_pre-refonte/ShutterstockAnalyzer_pre-refonte.exe` | 24.5 MB | `b49bd74f04f7` |
+| `ShutterstockAnalyzer-debug.exe` | 24.57 MB | `a480a6ae2243` |
+| `ShutterstockAnalyzer.exe`       | 24.57 MB | `8d41491ffef2` |
 
-**Évolution du poids** :
-- Debug : +18 KB (+0.07 %)
-- Release : +17 KB (+0.07 %)
+**Build pré-refonte** (archivé sous `dist/_archive_pre-refonte/`) :
 
-Variation négligeable — les changements de la refonte sont essentiellement du code Python (compilé en `.pyc` de taille équivalente). Les 3 PNG de captures (`audit/captures/*.png`) ne sont **pas** embarqués dans l'EXE (`audit/` n'est pas dans `--add-data`, conformément à `build.py`).
+| Fichier | Taille | SHA-256 (12 c) |
+|---|---:|---|
+| `ShutterstockAnalyzer-debug_pre-refonte.exe` | 24.55 MB | `f3e51df26c35` |
+| `ShutterstockAnalyzer_pre-refonte.exe`       | 24.55 MB | `b49bd74f04f7` |
+
+**Évolution du poids depuis pré-refonte → build courant** :
+- Debug : 25 744 794 B → 25 766 834 B = **+22 KB (+0.09 %)**
+- Release : 25 741 987 B → 25 762 256 B = **+20 KB (+0.08 %)**
+
+Variation négligeable entre runs (`±4 KB` selon le timestamp embarqué). Les changements de la refonte sont essentiellement du code Python (compilé en `.pyc` de taille équivalente). Les 3 PNG de captures (`audit/captures/*.png`) ne sont **pas** embarqués dans l'EXE (`audit/` n'est pas dans `--add-data`, conformément à `build.py`).
+
+Les hashes SHA-256 diffèrent entre les builds **même quand le code est identique** : PyInstaller embarque un timestamp de compilation dans le PE header → reproductibilité non bit-à-bit.
 
 ---
 
@@ -76,29 +88,31 @@ Exécutés via [`audit/smoke_exe.py`](audit/smoke_exe.py) :
 - maintien actif 6 s puis `taskkill /F /T /PID` (kill du process tree — nécessaire car le bootloader PyInstaller `--onefile` spawn un enfant)
 - log d'exécution capturé dans le tempdir
 
-### 4.1 Profil debug
+### 4.1 Profil debug (build du 2026-05-11 22:06)
 
 ```
 status    : ALIVE
-hold_time : 6.02 s
+hold_time : 6.19 s
 log tail  :
-    import 'app.views.validate'
-    import 'app.views.workspace'
-    [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    [INFO] ShutterstockAnalyzer: UI mainloop starting
+    import 'app.views.validate' # PyiFrozenLoader
+    PyiFrozenFinder: find_spec called with fullname='app.views.workspace'
+    PyiFrozenFinder: found 'app.views.workspace' in PYZ
+    import 'app.views.workspace' # PyiFrozenLoader
+    22:06:31 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    22:06:31 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
-### 4.2 Profil release
+### 4.2 Profil release (build du 2026-05-11 22:06)
 
 ```
 status    : ALIVE
-hold_time : 6.10 s
+hold_time : 6.22 s
 log tail  :
-    [INFO] src.modules.storage.database: Database initialized
-    [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers
-    [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
-    [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    [INFO] ShutterstockAnalyzer: UI mainloop starting
+    22:06:37 [INFO] src.modules.storage.database: Database initialized: ~/.shutterstock_ai/shutterstock_ai.db
+    22:06:37 [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers (processes=False)
+    22:06:37 [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
+    22:06:38 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    22:06:38 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
 ### 4.3 Fonctionnalités critiques attestées
