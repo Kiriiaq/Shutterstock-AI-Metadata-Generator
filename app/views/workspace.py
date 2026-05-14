@@ -110,6 +110,14 @@ class WorkspaceView(BaseView):
         self._build_history_panel(right, row=2)
         self._build_settings_panel(right, row=3)
 
+        # Initial state computation. ``_sync_sources_state`` projects
+        # the (empty) model into the counter, app_state and the two
+        # row-level buttons (Supprimer / Vider) — and itself calls
+        # ``_refresh_action_states`` for the Analyse IA Démarrer/Arrêter
+        # pair. Without this initial call, Démarrer would stay in its
+        # default visual state until the user touches Sources.
+        self._sync_sources_state()
+
     # ==================================================================
     # LEFT COLUMN — production loop
     # ==================================================================
@@ -120,8 +128,16 @@ class WorkspaceView(BaseView):
         # bg_key="bg_deep" → soft-gray bg_secondary in light mode (so it
         # blends with the new neutral palette instead of glowing white),
         # slate-950 in dark mode for the "workspace floor" feel.
+        #
+        # Phase F (2026-05-14, audit T-030..T-033) — refonte du
+        # modèle de fichiers : on conserve l'entrée + bouton Scanner
+        # historique (compat workflow par dossier), mais on ajoute une
+        # ligne d'actions explicites "Ajouter fichiers / Ajouter dossier
+        # / Supprimer / Vider" et un compteur permanent toujours
+        # visible. Le modèle ``_scanned`` est désormais incrémentiel
+        # (extends au lieu de replace), avec dédoublonnage par chemin.
         section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁")
-        section.grid_rowconfigure(3, weight=1)
+        section.grid_rowconfigure(4, weight=1)
 
         bar = ctk.CTkFrame(section, fg_color="transparent")
         bar.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
@@ -145,10 +161,78 @@ class WorkspaceView(BaseView):
         opts.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         self._recursive_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(opts, text="Récursif", variable=self._recursive_var, font=get_font("body")).pack(side="left")
+        # Compteur permanent — visible dès le démarrage en gris doux,
+        # passe en accent dès qu'il y a des fichiers. Évite l'effet
+        # "rien ne s'incrémente" remonté par T-030..T-033 quand
+        # l'utilisateur clique uniquement sur "…".
         self._sources_status = ctk.CTkLabel(
-            opts, text="Aucun scan", font=get_font("small"), text_color=palette_pair("fg_muted")
+            opts,
+            text="0 fichier · aucune sélection",
+            font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
         )
         self._sources_status.pack(side="right")
+
+        # New: dedicated action row for the incremental model. The
+        # buttons all share the same vertical band immediately above
+        # the table so the relationship between "what's listed" and
+        # "what can I do with it" is unambiguous.
+        actions = ctk.CTkFrame(section, fg_color="transparent")
+        actions.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        self._add_files_btn = ctk.CTkButton(
+            actions,
+            text="+ Fichiers…",
+            width=110,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            command=self._add_files,
+        )
+        self._add_files_btn.pack(side="left", padx=(0, SPACE_XS))
+        self._add_folder_btn = ctk.CTkButton(
+            actions,
+            text="+ Dossier…",
+            width=110,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            command=self._add_folder,
+        )
+        self._add_folder_btn.pack(side="left", padx=SPACE_XS)
+        self._remove_btn = ctk.CTkButton(
+            actions,
+            text="Supprimer",
+            width=100,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            state="disabled",
+            command=self._remove_selected,
+        )
+        self._remove_btn.pack(side="left", padx=SPACE_XS)
+        self._clear_btn = ctk.CTkButton(
+            actions,
+            text="Vider",
+            width=70,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("error"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            state="disabled",
+            command=self._clear_all,
+        )
+        self._clear_btn.pack(side="left", padx=SPACE_XS)
 
         self._sources_table = DataTable(
             section,
@@ -160,9 +244,16 @@ class WorkspaceView(BaseView):
             ],
             select_mode="extended",
         )
-        self._sources_table.grid(row=3, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        self._sources_table.grid(row=4, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
         self._sources_table.on_select(self._on_sources_select)
         self._sources_table.on_activate(self._on_sources_activate)
+        # Suppr clavier — fait le même travail que le bouton "Supprimer".
+        try:
+            self._sources_table._tree.bind("<Delete>", lambda _e: self._remove_selected())
+        except Exception:
+            logger.exception("Could not bind <Delete> on sources table")
+
+    # ----- Sources model: incremental add / remove / clear -----------
 
     def _browse(self) -> None:
         path = filedialog.askdirectory(title="Choisir un dossier")
@@ -172,29 +263,112 @@ class WorkspaceView(BaseView):
             self._scan()
 
     def _scan(self) -> None:
+        """Scanner historique — REMPLACE le modèle par les fichiers du
+        dossier (compat workflow legacy). Pour ajouter sans écraser,
+        utiliser ``Ajouter dossier`` (méthode ``_add_folder``)."""
         folder = self._folder_entry.get().strip()
         if not folder or not Path(folder).is_dir():
             self.app.toasts.show("Dossier introuvable.", kind="error")
             return
         self._scan_btn.configure(state="disabled", text="Scan…")
         self._sources_status.configure(text="Recherche…", text_color=palette_pair("warning"))
-        threading.Thread(target=self._scan_worker, args=(Path(folder),), daemon=True).start()
+        threading.Thread(
+            target=self._collect_worker,
+            args=(Path(folder), self._recursive_var.get(), True),
+            daemon=True,
+        ).start()
 
-    def _scan_worker(self, folder: Path) -> None:
+    def _add_files(self) -> None:
+        """Ajout incrémental d'un ou plusieurs fichiers via filedialog."""
+        patterns = [("Images", " ".join(f"*{e}" for e in SUPPORTED_EXTS)), ("Tous les fichiers", "*.*")]
+        paths = filedialog.askopenfilenames(title="Ajouter des fichiers", filetypes=patterns)
+        if not paths:
+            return
+        files = [Path(p) for p in paths if Path(p).is_file()]
+        if not files:
+            return
+        self._sources_status.configure(text="Lecture…", text_color=palette_pair("warning"))
+        threading.Thread(target=self._enrich_and_append_worker, args=(files, None), daemon=True).start()
+
+    def _add_folder(self) -> None:
+        """Ajout incrémental — sélection d'un dossier, append (pas
+        replace) au modèle existant. Respecte l'option ``Récursif``."""
+        path = filedialog.askdirectory(title="Ajouter un dossier")
+        if not path:
+            return
+        self._sources_status.configure(text="Recherche…", text_color=palette_pair("warning"))
+        threading.Thread(
+            target=self._collect_worker,
+            args=(Path(path), self._recursive_var.get(), False),
+            daemon=True,
+        ).start()
+
+    def _remove_selected(self) -> None:
+        """Retire les lignes sélectionnées du modèle et de la table.
+        Synchronise compteur, app_state et états des boutons."""
+        selected = self._sources_table.get_selected()
+        if not selected:
+            return
+        to_remove = {r.get("_path") for r in selected}
+        self._scanned = [r for r in self._scanned if r.get("_path") not in to_remove]
+        self._sources_table.set_rows(self._scanned)
+        self._sync_sources_state(message=f"{fmt_int(len(to_remove))} fichier(s) retiré(s)", kind="warning")
+
+    def _clear_all(self) -> None:
+        """Vide totalement le modèle + la table + l'app_state."""
+        if not self._scanned:
+            return
+        n = len(self._scanned)
+        self._scanned = []
+        self._sources_table.set_rows([])
+        self._sync_sources_state(message=f"{fmt_int(n)} fichier(s) supprimé(s)", kind="warning")
+
+    def _collect_worker(self, folder: Path, recursive: bool, replace: bool) -> None:
+        """Récupère la liste d'images d'un dossier puis enrichit les
+        métadonnées. Fait le travail hors mainloop pour rester réactif.
+
+        ``replace=True`` pour le Scanner historique, ``False`` pour
+        l'ajout incrémental.
+        """
+        try:
+            from src.modules.workers.worker_pool import collect_image_files
+
+            files = collect_image_files(folder, recursive=recursive, extensions=list(SUPPORTED_EXTS))
+            self.after(0, lambda fld=folder, fl=files, rep=replace: self._continue_enrich(fld, fl, rep))
+        except Exception as e:
+            logger.exception("Collect failed")
+            self.after(0, lambda err=str(e): self._on_sources_failed(err))
+
+    def _continue_enrich(self, folder: Path, files: list[Path], replace: bool) -> None:
+        """Phase 2 du collect_worker — démarre l'enrichissement."""
+        if replace:
+            # Scanner-style: reset before enrichment.
+            self._scanned = []
+            self._sources_table.set_rows([])
+            self.app.app_state.set("source_folder", folder)
+        threading.Thread(
+            target=self._enrich_and_append_worker,
+            args=(files, folder),
+            daemon=True,
+        ).start()
+
+    def _enrich_and_append_worker(self, files: list[Path], folder: Path | None) -> None:
+        """Lit dimensions + métadonnées pour chaque fichier, puis
+        re-injecte dans le modèle en évitant les doublons par chemin."""
         try:
             from PIL import Image
 
-            from src.modules.workers.worker_pool import collect_image_files
-
-            files = collect_image_files(folder, recursive=self._recursive_var.get(), extensions=list(SUPPORTED_EXTS))
             api = self.app.api
             reader = api.metadata_reader if api else None
-            rows: list[dict[str, Any]] = []
+            existing = {r["_path"] for r in self._scanned}
+            new_rows: list[dict[str, Any]] = []
             for f in files:
+                if f in existing:
+                    continue
                 row: dict[str, Any] = {
                     "_path": f,
                     "name": f.name,
-                    "size": fmt_size(f.stat().st_size),
+                    "size": fmt_size(f.stat().st_size) if f.exists() else "—",
                     "dim": "—",
                     "meta": "—",
                 }
@@ -208,44 +382,103 @@ class WorkspaceView(BaseView):
                         row["meta"] = "Oui" if reader.get_quick_info(f) else "Non"
                     except Exception:
                         row["meta"] = "?"
-                rows.append(row)
-            self.after(0, lambda r=rows, fld=folder: self._on_scan_complete(r, fld))
+                new_rows.append(row)
+            self.after(0, lambda rows=new_rows, fld=folder: self._on_sources_appended(rows, fld))
         except Exception as e:
-            logger.exception("Scan failed")
-            self.after(0, lambda err=str(e): self._on_scan_failed(err))
+            logger.exception("Enrich failed")
+            self.after(0, lambda err=str(e): self._on_sources_failed(err))
 
-    def _on_scan_complete(self, rows: list[dict[str, Any]], folder: Path) -> None:
+    def _on_sources_appended(self, new_rows: list[dict[str, Any]], folder: Path | None) -> None:
+        """Met à jour le modèle + la table avec les nouvelles lignes."""
+        self._scanned.extend(new_rows)
+        self._sources_table.set_rows(self._scanned)
         self._scan_btn.configure(state="normal", text="Scanner")
-        self._scanned = rows
-        self._sources_table.set_rows(rows)
-        self._sources_status.configure(
-            text=f"{fmt_int(len(rows))} images · {folder.name}",
-            text_color=palette_pair("success") if rows else palette_pair("warning"),
+        suffix = f" · {folder.name}" if folder is not None else ""
+        added = len(new_rows)
+        kind = "success" if new_rows else "warning"
+        msg = (
+            f"+{fmt_int(added)} ajouté(s){suffix}"
+            if added
+            else f"Aucun nouveau fichier{suffix} (déjà présent ou format non supporté)"
         )
-        self.app.app_state.set("source_folder", folder)
-        self.app.app_state.set("scanned_images", [r["_path"] for r in rows])
-        self._update_selection_summary()
-        self._validate_summary.configure(text=f"{fmt_int(len(rows))} images · non validées")
+        self._sync_sources_state(message=msg, kind=kind)
+        # Validation panel can summarise too.
+        try:
+            self._validate_summary.configure(text=f"{fmt_int(len(self._scanned))} fichier(s) · non validés")
+        except Exception:
+            pass
 
-    def _on_scan_failed(self, err: str) -> None:
+    def _on_sources_failed(self, err: str) -> None:
         self._scan_btn.configure(state="normal", text="Scanner")
         self._sources_status.configure(text=f"Erreur : {err}", text_color=palette_pair("error"))
 
-    def _on_sources_select(self, selected: list[dict[str, Any]]) -> None:
-        self._update_selection_summary()
+    def _sync_sources_state(self, *, message: str | None = None, kind: str = "fg_muted") -> None:
+        """Source of truth pour : compteur, app_state, états boutons.
+
+        Appelée après toute mutation du modèle (add / remove / clear /
+        sélection). Garantit que les 6 surfaces dépendant de la
+        sélection sont cohérentes :
+            1. Label compteur ``_sources_status``
+            2. app_state["scanned_images"]
+            3. app_state["selected_paths"]
+            4. Bouton Supprimer (selon sélection)
+            5. Bouton Vider (selon contenu)
+            6. Bouton Démarrer (centralisé via ``_refresh_action_states``)
+        """
+        n_total = len(self._scanned)
+        selected = self._sources_table.get_selected() if hasattr(self, "_sources_table") else []
+        n_sel = len(selected)
+
+        kind_to_color = {
+            "success": palette_pair("success"),
+            "warning": palette_pair("warning"),
+            "error": palette_pair("error"),
+            "fg_muted": palette_pair("fg_muted"),
+            "fg": palette_pair("fg"),
+        }
+        if message:
+            text = f"{fmt_int(n_total)} fichier(s) · {fmt_int(n_sel)} sélectionné(s) — {message}"
+            color = kind_to_color.get(kind, palette_pair("fg_muted"))
+        elif n_total == 0:
+            text = "0 fichier · aucune sélection"
+            color = palette_pair("fg_muted")
+        else:
+            text = f"{fmt_int(n_total)} fichier(s) · {fmt_int(n_sel)} sélectionné(s)"
+            color = palette_pair("fg") if n_sel else palette_pair("fg_muted")
+
+        self._sources_status.configure(text=text, text_color=color)
+
+        # Sync app_state for downstream consumers (analyze, validate…)
+        self.app.app_state.set("scanned_images", [r["_path"] for r in self._scanned])
         self.app.app_state.set("selected_paths", [r["_path"] for r in selected])
+
+        # Sync row-level action buttons
+        try:
+            self._remove_btn.configure(state="normal" if n_sel else "disabled")
+            self._clear_btn.configure(state="normal" if n_total else "disabled")
+        except Exception:
+            pass
+
+        # Analyse IA dependents
+        try:
+            self._analyze_summary.configure(
+                text=(f"{fmt_int(n_sel)} / {fmt_int(n_total)} sélectionnée(s)" if n_total else "Aucune image")
+            )
+        except Exception:
+            pass
+        self._refresh_action_states()
+
+    def _on_sources_select(self, _selected: list[dict[str, Any]]) -> None:
+        # Toute mutation de sélection passe par ``_sync_sources_state``
+        # — qui se charge des trois projections (app_state, compteur,
+        # états boutons). Garantit qu'on n'oublie pas une projection
+        # quand on ajoute une nouvelle surface dépendante.
+        self._sync_sources_state()
 
     def _on_sources_activate(self, row: dict[str, Any]) -> None:
         path = row.get("_path")
         if isinstance(path, Path):
             self._select_for_edit(path)
-
-    def _update_selection_summary(self) -> None:
-        n_total = len(self._scanned)
-        n_sel = len(self._sources_table.get_selected())
-        self._analyze_summary.configure(
-            text=f"{fmt_int(n_sel)} / {fmt_int(n_total)} sélectionnée(s)" if n_total else "Aucune image"
-        )
 
     # ----- Panel: Édition IPTC ----------------------------------------
 
@@ -445,8 +678,19 @@ class WorkspaceView(BaseView):
     def _build_analyze_panel(self, parent: ctk.CTkFrame, row: int) -> None:
         # Last panel of the left column → ``sticky="nsew"`` so the
         # column stretches down to align with the right column's bottom.
+        #
+        # Phase F (2026-05-14, audit T-034..T-036, T-221, T-220, T-218):
+        # - "Démarrer" est désormais ``state="disabled"`` par défaut et
+        #   ne s'active que via ``_refresh_action_states`` quand il y a
+        #   une sélection ET qu'aucun traitement n'est en cours.
+        # - La barre de progression vit sur sa propre ligne, est titrée
+        #   "Progression :" et utilise les couleurs accent / bg_hover
+        #   pour un contraste lisible dès 0 %.
+        # - ``_analyze_status`` démarre à "0 / 0 — En attente" plutôt
+        #   que "Prêt", pour rendre l'état initial immédiatement
+        #   compréhensible.
         section = self._panel(parent, row, "ANALYSE IA", icon="🧠", sticky="nsew")
-        section.grid_rowconfigure(3, weight=1)
+        section.grid_rowconfigure(4, weight=1)
         section.grid_columnconfigure(0, weight=1)
 
         opts = ctk.CTkFrame(section, fg_color="transparent")
@@ -473,7 +717,9 @@ class WorkspaceView(BaseView):
             fg_color=palette_pair("accent"),
             hover_color=palette_pair("accent_hover"),
             text_color=palette_pair("accent_fg"),
+            text_color_disabled=palette_pair("fg_subtle"),
             font=get_font("body_strong"),
+            state="disabled",
             command=self._analyze_start,
         )
         self._start_btn.grid(row=0, column=0, padx=(0, SPACE_XS))
@@ -484,17 +730,45 @@ class WorkspaceView(BaseView):
             height=28,
             fg_color=palette_pair("error"),
             text_color=palette_pair("error_fg"),
+            text_color_disabled=palette_pair("fg_subtle"),
             state="disabled",
             command=self._analyze_stop,
         )
         self._stop_btn.grid(row=0, column=1, padx=SPACE_XS)
-        self._analyze_progress = ctk.CTkProgressBar(controls)
-        self._analyze_progress.set(0)
-        self._analyze_progress.grid(row=0, column=2, sticky="ew", padx=SPACE_MD)
         self._analyze_status = ctk.CTkLabel(
-            controls, text="Prêt", font=get_font("small"), text_color=palette_pair("fg_muted")
+            controls,
+            text="0 / 0 — En attente",
+            font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
         )
-        self._analyze_status.grid(row=0, column=3, padx=(SPACE_XS, 0), sticky="e")
+        self._analyze_status.grid(row=0, column=2, padx=(SPACE_MD, 0), sticky="e")
+
+        # Progress bar lives on its own row now — gives it a full-width
+        # band so it remains visible even when the window is narrow,
+        # and the label "Progression :" above resolves the visibility
+        # complaint in T-036 ("je ne sais pas où elle est").
+        progress_row = ctk.CTkFrame(section, fg_color="transparent")
+        progress_row.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        progress_row.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(
+            progress_row,
+            text="Progression :",
+            font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
+            width=90,
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w")
+        self._analyze_progress = ctk.CTkProgressBar(
+            progress_row,
+            height=14,
+            corner_radius=RADIUS_SM,
+            progress_color=palette_pair("accent"),
+            fg_color=palette_pair("bg_hover"),
+            border_color=palette_pair("border"),
+            border_width=1,
+        )
+        self._analyze_progress.set(0)
+        self._analyze_progress.grid(row=0, column=1, sticky="ew", padx=(SPACE_XS, 0))
 
         self._analyze_results = ctk.CTkTextbox(
             section,
@@ -505,11 +779,40 @@ class WorkspaceView(BaseView):
             border_width=1,
             corner_radius=RADIUS_MD,
         )
-        self._analyze_results.grid(row=3, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        self._analyze_results.grid(row=4, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
         self._analyze_results.insert("1.0", "Les résultats apparaîtront ici en temps réel.\n")
         self._analyze_results.configure(state="disabled")
 
+    # ----- Centralised action-state refresh ---------------------------
+
+    def _refresh_action_states(self) -> None:
+        """Recompute the enabled/disabled state of Démarrer/Arrêter.
+
+        Single source of truth — every code path that could change the
+        gating inputs (selection count, processing flag) calls this
+        method instead of poking ``configure(state=…)`` directly.
+        Eliminates the class of races where one path forgets to
+        re-evaluate after a sibling mutation (cf. D-05).
+        """
+        try:
+            n_sel = len(self.app.app_state.get("selected_paths") or [])
+        except Exception:
+            n_sel = 0
+        processing = self._processing
+
+        if not hasattr(self, "_start_btn"):
+            return  # called before _build_analyze_panel completes
+        self._start_btn.configure(state="normal" if (n_sel > 0 and not processing) else "disabled")
+        self._stop_btn.configure(state="normal" if processing else "disabled")
+
     def _analyze_start(self) -> None:
+        # Garde-fou double-clic (D-04 / T-221) : si un traitement est
+        # déjà en cours, on retourne immédiatement avant toute mutation
+        # d'état. Le ``state="disabled"`` du bouton est une seconde
+        # protection mais ne couvre pas la fenêtre entre les deux clics
+        # rapides.
+        if self._processing:
+            return
         api = self.app.api
         if api is None:
             self.app.toasts.show("Backend indisponible.", kind="error")
@@ -519,9 +822,12 @@ class WorkspaceView(BaseView):
             self.app.toasts.show("Aucune image sélectionnée.", kind="warning")
             return
         self._processing = True
-        self._start_btn.configure(state="disabled")
-        self._stop_btn.configure(state="normal")
+        self._refresh_action_states()
         self._analyze_progress.set(0)
+        self._analyze_status.configure(
+            text=f"0 / {fmt_int(len(selected))} — Initialisation…",
+            text_color=palette_pair("fg"),
+        )
         self._set_analyze_results("Initialisation…\n")
         threading.Thread(target=self._analyze_worker, args=(api, selected), daemon=True).start()
 
@@ -553,6 +859,7 @@ class WorkspaceView(BaseView):
         if callable(cancel):
             cancel()
         self._analyze_status.configure(text="Arrêt…", text_color=palette_pair("warning"))
+        logger.info("Arrêt analyse demandé par l'utilisateur")
 
     def _analyze_on_progress(self, done: int, total: int, current: str) -> None:
         if total > 0:
@@ -574,8 +881,7 @@ class WorkspaceView(BaseView):
 
     def _analyze_on_complete(self, result: dict[str, Any]) -> None:
         self._processing = False
-        self._start_btn.configure(state="normal")
-        self._stop_btn.configure(state="disabled")
+        self._refresh_action_states()
         self._analyze_progress.set(1)
         completed = result.get("completed", 0)
         failed = result.get("failed", 0)
@@ -588,8 +894,7 @@ class WorkspaceView(BaseView):
 
     def _analyze_on_failed(self, err: str) -> None:
         self._processing = False
-        self._start_btn.configure(state="normal")
-        self._stop_btn.configure(state="disabled")
+        self._refresh_action_states()
         self._analyze_status.configure(text="Erreur", text_color=palette_pair("error"))
         self._append_analyze_results(f"\nERREUR : {err}\n")
 
@@ -1007,6 +1312,85 @@ class WorkspaceView(BaseView):
                 label.configure(text=f"{ts}  {ok} {action:<14} {fname}", text_color=color)
             else:
                 label.configure(text="", text_color=palette_pair("fg_muted"))
+
+    # ==================================================================
+    # Public API consumed by App._focus_workspace_panel (Ctrl+1..3)
+    # ==================================================================
+
+    def focus_panel(self, name: str) -> None:
+        """Bring a workspace panel into focus.
+
+        Called by the Ctrl+1..3 shortcuts via ``App._focus_workspace_panel``.
+        Strategy: focus a meaningful widget inside the target panel
+        (entry, primary button, first form field). If the panel is the
+        Editor IPTC and is collapsed, expand it first — the shortcut
+        is meant to "go to" the panel so a collapsed state would
+        defeat the user's intent.
+
+        We also try to scroll the surrounding ``CTkScrollableFrame``
+        so the focused widget is within the viewport on small windows;
+        any failure there is swallowed because the focus alone is the
+        contract.
+        """
+        targets: dict[str, Any] = {
+            "sources": getattr(self, "_folder_entry", None),
+            "editor": None,  # resolved below after potential expansion
+            "analyze": getattr(self, "_start_btn", None),
+        }
+        if name == "editor":
+            if self._editor_collapsed:
+                try:
+                    self._toggle_editor_collapsed()
+                except Exception:
+                    logger.exception("Could not auto-expand editor on Ctrl+2")
+            # Pick the first IPTC entry that exists.
+            for key in ("headline", "caption", "keywords", "byline", "copyright_notice"):
+                widget = self._iptc_fields.get(key)
+                if widget is not None:
+                    targets["editor"] = widget
+                    break
+
+        widget = targets.get(name)
+        if widget is None:
+            logger.debug("focus_panel: unknown panel %r", name)
+            return
+        try:
+            widget.focus_set()
+        except Exception:
+            logger.exception("focus_set failed for panel %r", name)
+        # Best-effort scroll into view — silent fallback if the
+        # surrounding container isn't the expected scrollable frame.
+        self._scroll_widget_into_view(widget)
+
+    def _scroll_widget_into_view(self, widget: Any) -> None:
+        """Scroll the parent ``CTkScrollableFrame`` so *widget* is visible.
+
+        Used as a best-effort by ``focus_panel``. If the widget is
+        already visible or the scrollable infrastructure isn't there,
+        this is a no-op. Errors are swallowed: the scroll is a nicety,
+        not a contract.
+        """
+        try:
+            self.update_idletasks()
+            # ``self.master`` is the CTkScrollableFrame's inner frame;
+            # ``self.master._parent_canvas`` is the actual canvas.
+            canvas = getattr(self.master, "_parent_canvas", None)
+            if canvas is None:
+                return
+            canvas.update_idletasks()
+            wy = widget.winfo_rooty() - canvas.winfo_rooty()
+            ch = canvas.winfo_height()
+            if 0 <= wy <= ch - widget.winfo_height():
+                return  # already visible
+            bbox = canvas.bbox("all")
+            if not bbox or bbox[3] <= bbox[1]:
+                return
+            total = bbox[3] - bbox[1]
+            target_top = canvas.canvasy(0) + wy - 20  # 20px breathing room
+            canvas.yview_moveto(max(0.0, min(1.0, target_top / total)))
+        except Exception:
+            # Scroll is best-effort. Focus already happened, that's enough.
+            pass
 
     # ==================================================================
     # Helpers

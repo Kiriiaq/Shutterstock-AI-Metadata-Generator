@@ -106,6 +106,12 @@ class Topbar(ctk.CTkFrame, Themeable):
         actions = ctk.CTkFrame(self, fg_color="transparent")
         actions.grid(row=0, column=2, sticky="e", padx=SPACE_MD)
 
+        # Phase F (2026-05-14, audit D-06) : ajout d'une bordure 1px sur
+        # les deux boutons ◐ / ? — sans elle, le ``fg_color="transparent"``
+        # les fait littéralement disparaître sur le fond gris-clair de
+        # la topbar en light mode. La bordure et le ``border_color`` sont
+        # repris depuis le ThemeManager dans ``apply_theme`` pour rester
+        # cohérents avec le palette en cours.
         self._theme_btn = ctk.CTkButton(
             actions,
             text="◐",
@@ -113,6 +119,7 @@ class Topbar(ctk.CTkFrame, Themeable):
             height=32,
             corner_radius=RADIUS_MD,
             fg_color="transparent",
+            border_width=1,
             font=get_font("body_strong"),
             command=self._on_theme,
         )
@@ -126,6 +133,7 @@ class Topbar(ctk.CTkFrame, Themeable):
             height=32,
             corner_radius=RADIUS_MD,
             fg_color="transparent",
+            border_width=1,
             font=get_font("body_strong"),
             command=self._on_help,
         )
@@ -149,6 +157,7 @@ class Topbar(ctk.CTkFrame, Themeable):
             btn.configure(
                 hover_color=tm.get("bg_hover"),
                 text_color=tm.get("text_primary"),
+                border_color=tm.get("border"),
             )
         # Health chips encode their color via the provider's "kind"; we
         # rebuild the strip wholesale so each chip picks the new palette.

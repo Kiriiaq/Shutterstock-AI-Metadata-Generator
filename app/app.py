@@ -284,21 +284,43 @@ class App(ctk.CTk):
             self.bind_all(binding, lambda _e, h=handler: self._safe_call(h))
 
     def _build_action_map(self) -> dict[str, Callable[[], None]]:
-        # No sidebar / nav router → most shortcut actions are now no-ops or
-        # mapped to modal-opening. Kept declarative so help dialog still
-        # mirrors the keys.
+        # Phase F (2026-05-14) : registre allégé après suppression des
+        # no-ops (palette de commandes, sidebar toggle, search, save view,
+        # history back/forward), et ajout des cinq raccourcis panneau
+        # Ctrl+1..5 demandés par la campagne de tests T-016..T-020.
+        # Les trois actions "focus_panel_*" délèguent à WorkspaceView qui
+        # fait le focus (et le scroll si nécessaire) sur le widget cible.
         return {
-            "open_command_palette": lambda: None,  # no global nav anymore
-            "toggle_sidebar": lambda: None,
+            "focus_panel_sources": lambda: self._focus_workspace_panel("sources"),
+            "focus_panel_editor": lambda: self._focus_workspace_panel("editor"),
+            "focus_panel_analyze": lambda: self._focus_workspace_panel("analyze"),
+            "open_validate": lambda: self.open_in_modal("validate"),
+            "open_history": lambda: self.open_in_modal("audit"),
             "toggle_theme": self._toggle_theme,
             "navigate_settings": lambda: self.open_in_modal("settings"),
-            "focus_view_search": lambda: None,
-            "save_current_view": lambda: None,
             "open_help": self._open_help,
             "close_modal": self._close_top_modal,
-            "history_back": lambda: None,
-            "history_forward": lambda: None,
         }
+
+    def _focus_workspace_panel(self, panel: str) -> None:
+        """Ctrl+1..3 helper: delegate to the workspace's focus_panel().
+
+        The workspace exposes ``focus_panel(name)`` (sources/editor/
+        analyze) which performs focus_set on the relevant widget and
+        scrolls the surrounding ``CTkScrollableFrame`` so the panel is
+        within the viewport. Falls back silently when the workspace
+        view isn't current (e.g. window just opened, router still in
+        transition).
+        """
+        view = getattr(self.router, "_current_view", None)
+        if view is None:
+            return
+        focus = getattr(view, "focus_panel", None)
+        if callable(focus):
+            try:
+                focus(panel)
+            except Exception:
+                logger.exception("focus_panel(%r) failed", panel)
 
     def _safe_call(self, fn: Callable[[], None]) -> None:
         try:
@@ -463,6 +485,17 @@ class App(ctk.CTk):
                     stop()
                 except Exception:
                     logger.exception("Workspace cancel failed")
+                else:
+                    # Surface the action — without this, Esc looks like it
+                    # does nothing because the cancel is cooperative and
+                    # takes effect on the next image boundary. The toast +
+                    # log give the user (and the test campaign) clear
+                    # confirmation that Esc was acted upon.
+                    logger.info("Escape → cancel processing requested")
+                    try:
+                        self.toasts.show("Annulation demandée…", kind="info", timeout_ms=2500)
+                    except Exception:
+                        logger.exception("Cancel toast failed")
 
     # ------------------------------------------------------------------
     # Lifecycle
