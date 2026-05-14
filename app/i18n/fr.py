@@ -11,25 +11,13 @@ T: dict[str, str] = {
     # ============================== App ==============================
     "app.title": "ShutterstockAnalyzer v2.0.0 — Générateur de métadonnées IA",
     "app.welcome_title": "Bienvenue",
-    "app.welcome_body": "Sélectionnez une vue dans la barre latérale ou utilisez Ctrl+K.",
-    # ============================== Sidebar ==========================
-    "nav.section.production": "Production",
-    "nav.section.system": "Pilotage et système",
-    "nav.home": "Atelier",
-    "nav.sources": "Sources et tri",
-    "nav.analyze": "Analyse IA",
-    "nav.editor": "Édition métadonnées",
-    "nav.validate": "Validation",
-    "nav.ai_control": "Modèle IA",
-    "nav.audit": "Historique",
-    "nav.settings": "Paramètres",
-    "nav.collapse_tooltip": "Replier la barre (Ctrl+B)",
-    "nav.expand_tooltip": "Déplier la barre (Ctrl+B)",
+    # NOTE Phase F : la sidebar a été supprimée — on remplace l'ancien
+    # message "Sélectionnez une vue dans la barre latérale" par un
+    # rappel aligné sur l'architecture Atelier actuelle (Ctrl+1..5).
+    "app.welcome_body": "Utilisez Ctrl+1 à Ctrl+5 pour naviguer entre les panneaux et modales.",
     # ============================== Topbar ===========================
-    "topbar.search_placeholder": "Rechercher… (Ctrl+K)",
     "topbar.theme_toggle_tooltip": "Basculer le thème (Ctrl+Shift+T)",
     "topbar.help_tooltip": "Raccourcis clavier (F1)",
-    "topbar.profile_tooltip": "Profil et préférences",
     # ============================== Confirm dialog ===================
     "dialog.confirm_default_title": "Confirmation requise",
     "dialog.ok": "Confirmer",
@@ -49,16 +37,15 @@ T: dict[str, str] = {
     "common.previous_step": "Étape précédente",
     # ============================== Help / shortcuts =================
     "help.title": "Raccourcis clavier",
-    "help.shortcut.cmd_k": "Palette de commandes",
-    "help.shortcut.collapse_sidebar": "Replier / déplier la barre latérale",
+    "help.shortcut.panel_sources": "Focus panneau Sources & tri",
+    "help.shortcut.panel_editor": "Focus panneau Édition IPTC",
+    "help.shortcut.panel_analyze": "Focus panneau Analyse IA",
+    "help.shortcut.panel_validate": "Ouvrir la modale Validation",
+    "help.shortcut.panel_history": "Ouvrir la modale Historique",
     "help.shortcut.toggle_theme": "Basculer thème clair / sombre",
     "help.shortcut.settings": "Ouvrir les paramètres",
-    "help.shortcut.search": "Rechercher dans la vue active",
-    "help.shortcut.save": "Enregistrer",
     "help.shortcut.help": "Afficher cette aide",
-    "help.shortcut.escape": "Fermer la modale active",
-    "help.shortcut.history_back": "Vue précédente",
-    "help.shortcut.history_forward": "Vue suivante",
+    "help.shortcut.escape": "Fermer la modale active ou annuler le traitement",
     # ============================== Placeholders =====================
     "placeholder.under_construction": "Vue « {label} » en construction.",
     "placeholder.under_construction_body": "Cette section sera disponible dans une prochaine itération.",
