@@ -38,6 +38,19 @@ def confirm(
     dialog.transient(parent.winfo_toplevel())
     dialog.resizable(False, False)
     dialog.configure(fg_color=palette_pair("bg"))
+    # Phase G (2026-05-16) — propage l'icône ShutterstockAnalyzer sur
+    # la fenêtre de confirmation, comme sur les autres modales. On
+    # remonte au winfo_toplevel() (la fenêtre App) puis on appelle son
+    # helper ``_apply_modal_icon`` si présent. Aucun import circulaire :
+    # on utilise getattr + try/except pour rester découplé du module
+    # ``app.app``.
+    top = parent.winfo_toplevel()
+    apply_icon = getattr(top, "_apply_modal_icon", None)
+    if callable(apply_icon):
+        try:
+            apply_icon(dialog)
+        except Exception:
+            pass
 
     body = ctk.CTkFrame(
         dialog,

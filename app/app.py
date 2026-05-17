@@ -96,6 +96,32 @@ class App(ctk.CTk):
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
+    def _apply_modal_icon(self, modal: ctk.CTkToplevel) -> None:
+        """Phase G (2026-05-16) : pose l'icône ShutterstockAnalyzer sur
+        une fenêtre modale (CTkToplevel) — sinon CTk affiche son icône
+        Tcl par défaut en haut-gauche de la barre de titre.
+
+        ``iconbitmap`` sur un CTkToplevel doit être appelé après que le
+        Toplevel a fini son setup interne (sinon CTk écrase l'icône
+        avec son défaut juste après). On retarde via ``after(200, …)``
+        ce qui est le pattern recommandé dans la doc customtkinter.
+        Une erreur ici est non bloquante (loggée puis ignorée).
+        """
+        icon = _resource_path("assets/icons/icone.ico")
+        if not icon.exists():
+            return
+
+        def _set():
+            try:
+                modal.iconbitmap(str(icon))
+            except Exception as e:
+                logger.debug("Could not set modal icon: %s", e)
+
+        try:
+            modal.after(200, _set)
+        except Exception:
+            logger.debug("Could not schedule modal icon set", exc_info=True)
+
     def _build_layout(self) -> None:
         # No sidebar — every tool has its own panel inside the workspace.
         self.grid_columnconfigure(0, weight=1)
@@ -170,6 +196,7 @@ class App(ctk.CTk):
         modal.geometry("420x520")
         modal.transient(self)
         modal.configure(fg_color=palette_pair("bg"))
+        self._apply_modal_icon(modal)
 
         inner = ctk.CTkFrame(
             modal,
@@ -235,6 +262,7 @@ class App(ctk.CTk):
         modal.geometry("1100x780")
         modal.transient(self)
         modal.configure(fg_color=palette_pair("bg"))
+        self._apply_modal_icon(modal)
 
         container = ctk.CTkFrame(modal, fg_color=palette_pair("bg"))
         container.pack(fill="both", expand=True)
@@ -400,6 +428,7 @@ class App(ctk.CTk):
         modal.transient(self)
         modal.configure(fg_color=palette_pair("bg"))
         modal.geometry("520x460")
+        self._apply_modal_icon(modal)
 
         outer = ctk.CTkFrame(
             modal,
