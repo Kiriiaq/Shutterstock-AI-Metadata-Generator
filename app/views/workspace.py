@@ -85,8 +85,15 @@ class WorkspaceView(BaseView):
         self.grid_columnconfigure(1, weight=2, minsize=320)
         self.grid_rowconfigure(0, weight=1)
 
+        # Phase G (2026-05-16) — marges externes augmentées (SPACE_LG
+        # au lieu de SPACE_MD à gauche du gauche / droite du droit, et
+        # en haut/bas) pour que le workspace ne soit pas collé au bord
+        # de la fenêtre Windows (effet « scotché » remonté par
+        # l'utilisateur — on perd 4 px supplémentaires de chaque côté
+        # mais la lecture devient plus aérée et le focus visuel est
+        # mieux séparé du chrome de l'OS).
         left = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
-        left.grid(row=0, column=0, sticky="nsew", padx=(SPACE_MD, SPACE_SM), pady=SPACE_MD)
+        left.grid(row=0, column=0, sticky="nsew", padx=(SPACE_LG, SPACE_SM), pady=SPACE_LG)
         left.grid_columnconfigure(0, weight=1)
         # Last panel (Analyse IA, row 2) absorbs vertical slack — its
         # textbox naturally grows, but the row weight guarantees the
@@ -95,7 +102,7 @@ class WorkspaceView(BaseView):
         left.grid_rowconfigure(2, weight=1)
 
         right = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
-        right.grid(row=0, column=1, sticky="nsew", padx=(SPACE_SM, SPACE_MD), pady=SPACE_MD)
+        right.grid(row=0, column=1, sticky="nsew", padx=(SPACE_SM, SPACE_LG), pady=SPACE_LG)
         right.grid_columnconfigure(0, weight=1)
         # Last panel on the right is Paramètres (row 3) — same trick:
         # weight=1 on its row stretches it to match the left column.
@@ -139,6 +146,12 @@ class WorkspaceView(BaseView):
         section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁")
         section.grid_rowconfigure(4, weight=1)
 
+        # Phase G (2026-05-16) : la checkbox "Récursif" est déplacée
+        # sur la même ligne que les boutons (juste après "Scanner") au
+        # lieu d'avoir sa propre rangée — gain de place vertical et
+        # cohérence (les trois éléments qui pilotent le scan dossier
+        # sont sur le même axe). La ligne 2 ne contient plus que le
+        # compteur permanent.
         bar = ctk.CTkFrame(section, fg_color="transparent")
         bar.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         bar.grid_columnconfigure(0, weight=1)
@@ -156,11 +169,13 @@ class WorkspaceView(BaseView):
             command=self._scan,
         )
         self._scan_btn.grid(row=0, column=2, padx=(2, 0))
+        self._recursive_var = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(bar, text="Récursif", variable=self._recursive_var, font=get_font("body")).grid(
+            row=0, column=3, padx=(SPACE_SM, 0)
+        )
 
         opts = ctk.CTkFrame(section, fg_color="transparent")
         opts.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-        self._recursive_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(opts, text="Récursif", variable=self._recursive_var, font=get_font("body")).pack(side="left")
         # Compteur permanent — visible dès le démarrage en gris doux,
         # passe en accent dès qu'il y a des fichiers. Évite l'effet
         # "rien ne s'incrémente" remonté par T-030..T-033 quand
