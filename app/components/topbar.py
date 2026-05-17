@@ -23,7 +23,6 @@ from app.config.theme import (
     RADIUS_MD,
     RADIUS_SM,
     SPACE_LG,
-    SPACE_MD,
     SPACE_SM,
     SPACE_XS,
     Themeable,
@@ -46,12 +45,20 @@ _KIND_TO_KEY: dict[str, str] = {
 
 
 class Topbar(ctk.CTkFrame, Themeable):
-    """Horizontal bar at the top of the window. Height fixed at 44 px.
+    """Horizontal bar at the top of the window. Height fixed at 64 px.
 
     Layout: [App title]  [global health chips]  [theme] [help]
+
+    Phase G (2026-05-17) : hauteur passée de 44 → 64 px pour permettre
+    une marge verticale (SPACE_LG = 16 px) équivalente aux marges
+    horizontales du titre et des boutons d'action. Avant ce changement
+    la marge top/bottom n'était que d'environ 6 px (44 - 32 button
+    height = 12 / 2), créant une asymétrie visible vs les 16 px à
+    gauche/droite. Voir aussi le grid_rowconfigure(0, weight=1) qui
+    permet le centrage vertical des widgets dans la cellule.
     """
 
-    HEIGHT = 44
+    HEIGHT = 64
 
     def __init__(
         self,
@@ -69,6 +76,13 @@ class Topbar(ctk.CTkFrame, Themeable):
         )
         self.grid_propagate(False)
         self.grid_columnconfigure(1, weight=1)
+        # Le centrage vertical des widgets de la topbar dépend de la
+        # cellule row=0 ayant un weight ≥ 1 — sinon la cellule prend la
+        # hauteur du widget le plus haut, pas HEIGHT, et le centre
+        # n'opère pas. Combiné avec sticky="w"/"e" (horizontal anchor
+        # uniquement) + ``pady`` symétrique, on obtient un centrage
+        # vertical propre.
+        self.grid_rowconfigure(0, weight=1)
 
         self._on_theme = on_theme_toggle
         self._on_help = on_help
@@ -90,21 +104,45 @@ class Topbar(ctk.CTkFrame, Themeable):
     # ------------------------------------------------------------------
 
     def _build_title(self) -> None:
+        # Phase G (2026-05-17) — marge SPACE_LG identique en haut/bas/gauche
+        # (et SPACE_SM côté droit = espacement interne avec les chips).
         self._title = ctk.CTkLabel(
             self,
             text="ShutterstockAnalyzer v2.0.0 — Atelier",
             font=get_font("body_strong"),
             anchor="w",
         )
-        self._title.grid(row=0, column=0, sticky="w", padx=SPACE_LG)
+        self._title.grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=(SPACE_LG, SPACE_SM),
+            pady=SPACE_LG,
+        )
 
     def _build_health_strip(self) -> None:
+        # Phase G — espacement SPACE_SM entre éléments + même marge
+        # verticale que le titre.
         self._strip = ctk.CTkFrame(self, fg_color="transparent")
-        self._strip.grid(row=0, column=1, sticky="e", padx=SPACE_MD)
+        self._strip.grid(
+            row=0,
+            column=1,
+            sticky="e",
+            padx=SPACE_SM,
+            pady=SPACE_LG,
+        )
 
     def _build_actions(self) -> None:
+        # Phase G — marge droite SPACE_LG identique à la marge gauche
+        # du titre (16 px) + même marge verticale.
         actions = ctk.CTkFrame(self, fg_color="transparent")
-        actions.grid(row=0, column=2, sticky="e", padx=SPACE_MD)
+        actions.grid(
+            row=0,
+            column=2,
+            sticky="e",
+            padx=(SPACE_SM, SPACE_LG),
+            pady=SPACE_LG,
+        )
 
         # Phase F (2026-05-14, audit D-06) : ajout d'une bordure 1px sur
         # les deux boutons ◐ / ? — sans elle, le ``fg_color="transparent"``
