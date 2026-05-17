@@ -1,10 +1,10 @@
-# Build report — Phase G (UI tweaks 2026-05-16)
+# Build report — Phase G suite (topbar margins 2026-05-17)
 
-**Date du build courant** : **2026-05-16 21:40** (rebuild après UI tweaks Phase G)
-**Date du build précédent** : 2026-05-14 19:23 (Phase F, archivé)
+**Date du build courant** : **2026-05-17 21:48** (rebuild après marges topbar uniformes)
+**Date du build précédent** : 2026-05-16 21:40 (Phase G initial, archivé)
 **Date du build initial v3** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit HEAD** : `2d60f20` (fix(ui): Récursif inline + marges fenêtre + icône app sur toutes les modales)
+**Commit HEAD** : `a636b3c` (fix(ui): topbar — marges uniformes 16 px sur les 4 côtés)
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
 **Statut global** : ✅ **OK** (30/30 tests, debug + release ALIVE)
 
@@ -25,14 +25,16 @@
 | 7 | Smoke tests post-build (`audit/smoke_exe.py`) | ✅ debug + release **ALIVE** (~6 s), `UI mainloop starting` atteint |
 | 8 | Rapport | ✅ ce document |
 
-### Changements Phase G intégrés
+### Changements Phase G intégrés (cumulés sur 2 commits)
+
+**Commit `2d60f20` (2026-05-16)** :
 
 1. **Sources panel** — la checkbox `Récursif` est désormais sur la
    même ligne que `Scanner` (au lieu d'une rangée dédiée). Gain de
    place vertical, les 3 contrôles qui pilotent le scan dossier sont
    alignés sur le même axe horizontal.
-2. **Marges externes** — `SPACE_MD` → `SPACE_LG` sur les `padx`/`pady`
-   des deux colonnes du workspace. Le contenu n'est plus collé au
+2. **Marges externes du Workspace** — `SPACE_MD` → `SPACE_LG` sur les
+   `padx`/`pady` des deux colonnes. Le contenu n'est plus collé au
    chrome de la fenêtre Windows (effet « scotché » quand
    l'Explorateur est ouvert à côté).
 3. **Icône d'application sur toutes les modales** — `iconbitmap` posé
@@ -43,30 +45,43 @@
    icône Tcl par défaut (cadre blanc + point). Maintenant : `icone.ico`
    ShutterstockAnalyzer.
 
+**Commit `a636b3c` (2026-05-17)** :
+
+4. **Topbar — marges uniformes 16 px sur les 4 côtés**. Avant : 16 px
+   à gauche du titre, 12 px à droite des boutons, et seulement ~6 px
+   en haut/bas (asymétrie visible). Après : `HEIGHT` passe de 44 à
+   64 px, `pady=SPACE_LG` (16 px) sur les 3 éléments grid (titre,
+   strip santé, boutons d'action), `padx` extérieur harmonisé à
+   `SPACE_LG` (16) gauche et droite, et `grid_rowconfigure(0, weight=1)`
+   ajouté pour permettre le centrage vertical naturel. Cleanup :
+   retrait de l'import `SPACE_MD` devenu inutilisé.
+
 ---
 
 ## 2. Artefacts produits
 
-**Build courant (2026-05-16 21:40)** :
+**Build courant (2026-05-17 21:48)** :
 
 | Fichier | Taille | SHA-256 | Profil |
 |---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 25 725 712 B (24.53 MB) | `757ffc312f0c7cd21eefe00b650b46f26f8bac2de575aeaefd0c2fcf66acb4aa` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 25 721 509 B (24.53 MB) | `81be8b04cab5351bb667c08139961a43cc9c30ffcfc9c9a5b9b671fc61b13c8f` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+| `dist/ShutterstockAnalyzer-debug.exe` | 25 724 550 B (24.53 MB) | `5cdb13837ab57bc960052cae7f8e46c8b2894909796ba00aaa51a5b01bdec388` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 25 723 268 B (24.53 MB) | `65e139ce35332caffd54262824372207ebdb45237487c82af6222685fd000651` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
 
-### Hashes du build précédent (Phase F, 2026-05-14)
-| Fichier | SHA-256 |
-|---|---|
-| `ShutterstockAnalyzer-debug.exe` | `4e6bb7b8945a9ce56a24c2702baba37308f626cebbef20c5a84b7f3ea8d00a5e` |
-| `ShutterstockAnalyzer.exe` | `17ca720cfdcfb8ccdae8cff1f766282cda0a15847c37ffc9066bc61d082ec596` |
+### Hashes des builds précédents
+| Build | Fichier | SHA-256 |
+|---|---|---|
+| Phase G initial (2026-05-16) | `ShutterstockAnalyzer-debug.exe` | `757ffc312f0c7cd21eefe00b650b46f26f8bac2de575aeaefd0c2fcf66acb4aa` |
+| Phase G initial (2026-05-16) | `ShutterstockAnalyzer.exe` | `81be8b04cab5351bb667c08139961a43cc9c30ffcfc9c9a5b9b671fc61b13c8f` |
+| Phase F (2026-05-14) | `ShutterstockAnalyzer-debug.exe` | `4e6bb7b8945a9ce56a24c2702baba37308f626cebbef20c5a84b7f3ea8d00a5e` |
+| Phase F (2026-05-14) | `ShutterstockAnalyzer.exe` | `17ca720cfdcfb8ccdae8cff1f766282cda0a15847c37ffc9066bc61d082ec596` |
 
 Les hashes diffèrent même quand le code est identique : PyInstaller embarque un timestamp dans le PE header → reproductibilité non bit-à-bit.
 
-**Évolution du poids vs Phase F (2026-05-14)** :
-- Debug : 25 720 151 B → 25 725 712 B = **+5 561 B (+0.02 %)** — overhead du helper `_apply_modal_icon` + commentaires Phase G
-- Release : 25 716 108 B → 25 721 509 B = **+5 401 B (+0.02 %)** — idem
+**Évolution du poids vs Phase G initial (2026-05-16)** :
+- Debug : 25 725 712 B → 25 724 550 B = **−1 162 B (−0.005 %)** — variation négligeable (timestamp + retrait import SPACE_MD)
+- Release : 25 721 509 B → 25 723 268 B = **+1 759 B (+0.007 %)** — idem
 
-Négligeable, dans l'épaisseur du timestamp.
+Dans l'épaisseur du timestamp PE.
 
 **Builds antérieurs disponibles via git :**
 
@@ -108,27 +123,27 @@ Chaque EXE est lancé depuis un **tempdir hermétique** (no `VIRTUAL_ENV`, no `P
 
 ```
 status    : ALIVE
-hold_time : 6.11 s
+hold_time : ~6.1 s
 log tail  :
     import 'app.views.validate' # <pyimod02_importers.PyiFrozenLoader…>
     PyiFrozenFinder(…\app\views): find_spec: called with fullname='app.views.workspace', target='app.views.workspace'
     PyiFrozenFinder(…\app\views): find_spec: found 'app.views.workspace' in PYZ as 'app.views.workspace', typecode=0
     import 'app.views.workspace' # <pyimod02_importers.PyiFrozenLoader…>
-    21:40:44 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    21:40:44 [INFO] ShutterstockAnalyzer: UI mainloop starting
+    21:48:29 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    21:48:29 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
 ### 4.2 Profil release / light
 
 ```
 status    : ALIVE
-hold_time : 6.11 s
+hold_time : 6.24 s
 log tail  :
-    21:40:50 [INFO] src.modules.storage.database: Database initialized: C:\Users\Emmanuel Grolleau\.shutterstock_ai\shutterstock_ai.db
-    21:40:50 [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers (processes=False)
-    21:40:50 [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
-    21:40:51 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    21:40:51 [INFO] ShutterstockAnalyzer: UI mainloop starting
+    21:48:35 [INFO] src.modules.storage.database: Database initialized: C:\Users\Emmanuel Grolleau\.shutterstock_ai\shutterstock_ai.db
+    21:48:35 [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers (processes=False)
+    21:48:35 [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
+    21:48:36 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    21:48:36 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
 ### 4.3 Fonctionnalités critiques attestées
@@ -175,14 +190,15 @@ Aucun warning bloquant. PyInstaller a tracé :
 
 ---
 
-## 7. Sortie `git log --oneline -5`
+## 7. Sortie `git log --oneline -6`
 
 ```
+a636b3c fix(ui): topbar — marges uniformes 16 px sur les 4 côtés (Phase G suite)
+d19249d build: rebuild debug + release EXEs après UI tweaks Phase G (2026-05-16 21:40)
 2d60f20 fix(ui): Récursif inline + marges fenêtre + icône app sur toutes les modales
 895bd84 build: rebuild debug + light EXEs après correctifs Phase F (2026-05-14 19:23)
 e8e8fe3 fix(audit): correctifs Phase F (lots A à E) — bugs T-016..T-036 + T-023
 2b55460 build: rebuild debug + light EXEs (2026-05-11 22:06)
-7069953 build: refonte UI v3 — debug + release EXEs + build_report
 ```
 
 ---
