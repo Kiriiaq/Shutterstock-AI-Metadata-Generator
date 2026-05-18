@@ -1,10 +1,10 @@
-# Build report — Phase G suite (topbar margins 2026-05-17)
+# Build report — Phase G+1 (Ollama chip + bouton + fix toggle 2026-05-18)
 
-**Date du build courant** : **2026-05-17 21:48** (rebuild après marges topbar uniformes)
-**Date du build précédent** : 2026-05-16 21:40 (Phase G initial, archivé)
+**Date du build courant** : **2026-05-18 08:44** (rebuild après chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline)
+**Date du build précédent** : 2026-05-17 21:48 (Phase G margins, archivé)
 **Date du build initial v3** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit HEAD** : `a636b3c` (fix(ui): topbar — marges uniformes 16 px sur les 4 côtés)
+**Commit HEAD** : `9a255d3` (feat(ui+ollama): chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline)
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
 **Statut global** : ✅ **OK** (30/30 tests, debug + release ALIVE)
 
@@ -56,16 +56,62 @@
    ajouté pour permettre le centrage vertical naturel. Cleanup :
    retrait de l'import `SPACE_MD` devenu inutilisé.
 
+**Commit `9a255d3` (2026-05-18) — Phase G+1** :
+
+5. **Topbar — 3ᵉ chip santé "Ollama"** (En ligne / Hors ligne /
+   Non init. / —). État caché dans `App._ollama_health`, mis à jour
+   par `WorkspaceView._refresh_dynamic_worker` qui tourne déjà toutes
+   les 5 s en background → pas d'appel HTTP synchrone dans
+   `topbar.refresh_health()`. Nouvelle méthode publique
+   `App.set_ollama_health(label, kind)`.
+
+6. **Panneau MODÈLE IA — bouton "▶ Démarrer Ollama"**. Lance
+   `subprocess.Popen([ollama, "serve"])` en process détaché
+   (`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` sous Windows pour
+   que le serveur survive à la fermeture de l'app). Recherche l'exe
+   dans le PATH puis dans `%LOCALAPPDATA%\\Programs\\Ollama\\` et
+   `C:/Program Files/Ollama/`. Toast info au démarrage, refresh
+   dynamique programmé à 2,5 s pour basculer la chip topbar sur
+   "En ligne". Toast d'erreur si l'exe est introuvable.
+
+7. **Fix bug rétrécissement colonne droite à chaque toggle thème**.
+   CTk `set_appearance_mode` recalcule le DPI scaling et grignote
+   quelques pixels du `CTkScrollableFrame` interne à chaque appel
+   (effet cumulatif visible après quelques cycles light/dark/system).
+   Workaround : `App._toggle_theme` capture `self.geometry()` avant
+   le toggle et la restaure ~50 ms après (`self.after(50, …)`).
+
+8. **Panneau Sources — compteur déplacé inline avec les boutons
+   d'action**. La rangée "opts" (qui ne contenait que le compteur)
+   est supprimée ; `_sources_status` est désormais packed
+   `side="right"` dans la même rangée que `+ Fichiers / + Dossier /
+   Supprimer / Vider`. Le format change pour matcher la demande
+   utilisateur : « nombre de fichiers : N » (avec
+   « · M sélectionné(s) » quand une sélection est active). Le
+   `DataTable` remonte d'une rangée (row 4 → row 3).
+
 ---
 
 ## 2. Artefacts produits
 
-**Build courant (2026-05-17 21:48)** :
+**Build courant (2026-05-18 08:44)** :
 
 | Fichier | Taille | SHA-256 | Profil |
 |---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 25 724 550 B (24.53 MB) | `5cdb13837ab57bc960052cae7f8e46c8b2894909796ba00aaa51a5b01bdec388` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 25 723 268 B (24.53 MB) | `65e139ce35332caffd54262824372207ebdb45237487c82af6222685fd000651` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+| `dist/ShutterstockAnalyzer-debug.exe` | 25 735 893 B (24.54 MB) | `2306e564186f017b900b468ae0d6ed9e2bba318f58b9d25ef0089f5ecac6ce72` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 25 731 662 B (24.54 MB) | `a1460c6f4316e53f7de4a5383123e99a392a57d0f5c13522dbf485a18a451616` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+
+### Hashes du build précédent (Phase G margins, 2026-05-17)
+| Fichier | SHA-256 |
+|---|---|
+| `ShutterstockAnalyzer-debug.exe` | `5cdb13837ab57bc960052cae7f8e46c8b2894909796ba00aaa51a5b01bdec388` |
+| `ShutterstockAnalyzer.exe` | `65e139ce35332caffd54262824372207ebdb45237487c82af6222685fd000651` |
+
+**Évolution du poids vs build du 2026-05-17 (Phase G margins)** :
+- Debug : 25 724 550 B → 25 735 893 B = **+11 343 B (+0.04 %)** — helpers Ollama start + chip topbar + workaround geometry
+- Release : 25 723 268 B → 25 731 662 B = **+8 394 B (+0.03 %)** — idem
+
+Variation négligeable.
 
 ### Hashes des builds précédents
 | Build | Fichier | SHA-256 |
@@ -190,15 +236,16 @@ Aucun warning bloquant. PyInstaller a tracé :
 
 ---
 
-## 7. Sortie `git log --oneline -6`
+## 7. Sortie `git log --oneline -7`
 
 ```
+9a255d3 feat(ui+ollama): chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline
+c5849d0 build: rebuild debug + release EXEs après marges topbar (2026-05-17 21:48)
 a636b3c fix(ui): topbar — marges uniformes 16 px sur les 4 côtés (Phase G suite)
 d19249d build: rebuild debug + release EXEs après UI tweaks Phase G (2026-05-16 21:40)
 2d60f20 fix(ui): Récursif inline + marges fenêtre + icône app sur toutes les modales
 895bd84 build: rebuild debug + light EXEs après correctifs Phase F (2026-05-14 19:23)
 e8e8fe3 fix(audit): correctifs Phase F (lots A à E) — bugs T-016..T-036 + T-023
-2b55460 build: rebuild debug + light EXEs (2026-05-11 22:06)
 ```
 
 ---
