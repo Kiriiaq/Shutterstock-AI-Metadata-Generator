@@ -67,6 +67,11 @@ class App(ctk.CTk):
         # exactly one place: a button in its workspace panel.
         self._modal_factories: dict[str, Any] = {}
         self._modal_titles: dict[str, str] = {}
+        # Phase G (2026-05-18) — état Ollama cached pour la chip topbar.
+        # Mis à jour par le WorkspaceView._refresh_dynamic_worker qui
+        # tourne en background toutes les 5 s ; on évite ainsi un appel
+        # HTTP synchrone à chaque ``topbar.refresh_health()``.
+        self._ollama_health: tuple[str, str] = ("Inconnu", "muted")
 
         self._configure_window()
         self._build_layout()
@@ -290,6 +295,11 @@ class App(ctk.CTk):
 
         color_kind ∈ {success, warning, error, muted}. Topbar resolves
         to a real palette colour at draw time.
+
+        Phase G (2026-05-18) : ajout d'une chip ``Ollama`` qui reflète
+        l'état du serveur local. Lit ``self._ollama_health`` (mis à
+        jour par le WorkspaceView en arrière-plan), ne fait pas
+        d'appel HTTP synchrone.
         """
         api = self.api
         return {
@@ -297,7 +307,18 @@ class App(ctk.CTk):
             "ExifTool": (("OK", "success") if (api and api.exiftool_available) else ("Absent", "warning"))
             if api
             else ("—", "muted"),
+            "Ollama": self._ollama_health,
         }
+
+    def set_ollama_health(self, label: str, kind: str) -> None:
+        """Met à jour l'état Ollama caché + déclenche un refresh de la
+        chip dans la topbar. Doit être appelé depuis le main thread —
+        les threads doivent passer par ``self.after(0, …)``."""
+        self._ollama_health = (label, kind)
+        try:
+            self.topbar.refresh_health()
+        except Exception:
+            logger.debug("topbar.refresh_health failed", exc_info=True)
 
     # ------------------------------------------------------------------
     # Shortcut wiring
@@ -371,9 +392,34 @@ class App(ctk.CTk):
         3. Fires the global hooks registered via
            ``ThemeManager.add_global_hook`` — used here to refresh the
            ttk.Style consumed by DataTable.
+
+        Phase G (2026-05-18) workaround : ``set_appearance_mode`` de
+        CTk recalcule le DPI scaling et peut grignoter quelques pixels
+        sur le ``CTkScrollableFrame`` interne à chaque toggle (effet
+        cumulatif : la colonne droite du workspace rétrécit visiblement
+        après quelques toggles). On capture la geometry **avant** le
+        toggle et on la restaure ~50 ms plus tard (après que CTk a
+        fini ses recalculs internes). Ça réinitialise la largeur
+        utilisable du scrollable frame à chaque toggle.
         """
+        # Snapshot taille fenêtre AVANT le toggle pour la restaurer après.
+        try:
+            saved_geometry = self.geometry()
+        except Exception:
+            saved_geometry = None
+
         new = ThemeManager.get_instance().toggle()
         logger.info("Theme switched to: %s", new)
+
+        if saved_geometry:
+
+            def _restore():
+                try:
+                    self.geometry(saved_geometry)
+                except Exception:
+                    logger.debug("Geometry restore failed", exc_info=True)
+
+            self.after(50, _restore)
 
     def _register_theme_hooks(self) -> None:
         """Wire the ttk.Style refresh into the ThemeManager dispatch.

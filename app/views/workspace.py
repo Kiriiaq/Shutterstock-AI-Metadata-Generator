@@ -18,6 +18,7 @@ so the panels stay reachable when the user shrinks the window):
 from __future__ import annotations
 
 import logging
+import os
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -144,7 +145,10 @@ class WorkspaceView(BaseView):
         # visible. Le modèle ``_scanned`` est désormais incrémentiel
         # (extends au lieu de replace), avec dédoublonnage par chemin.
         section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁")
-        section.grid_rowconfigure(4, weight=1)
+        # Phase G (2026-05-18) — la rangée "opts" (compteur seul) est
+        # supprimée et le compteur est déplacé inline dans la rangée
+        # d'actions. Le DataTable passe de row=4 à row=3.
+        section.grid_rowconfigure(3, weight=1)
 
         # Phase G (2026-05-16) : la checkbox "Récursif" est déplacée
         # sur la même ligne que les boutons (juste après "Scanner") au
@@ -174,26 +178,19 @@ class WorkspaceView(BaseView):
             row=0, column=3, padx=(SPACE_SM, 0)
         )
 
-        opts = ctk.CTkFrame(section, fg_color="transparent")
-        opts.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-        # Compteur permanent — visible dès le démarrage en gris doux,
-        # passe en accent dès qu'il y a des fichiers. Évite l'effet
-        # "rien ne s'incrémente" remonté par T-030..T-033 quand
-        # l'utilisateur clique uniquement sur "…".
-        self._sources_status = ctk.CTkLabel(
-            opts,
-            text="0 fichier · aucune sélection",
-            font=get_font("small"),
-            text_color=palette_pair("fg_muted"),
-        )
-        self._sources_status.pack(side="right")
+        # Phase G (2026-05-18) — la ligne 2 "opts" (qui n'avait que le
+        # compteur) est supprimée. Le compteur _sources_status est
+        # déplacé à droite des boutons d'action (ligne 3) — gain de
+        # place vertical et l'info "combien de fichiers / sélectionnés"
+        # est désormais sur la même ligne que les actions qui les
+        # modifient.
 
-        # New: dedicated action row for the incremental model. The
-        # buttons all share the same vertical band immediately above
-        # the table so the relationship between "what's listed" and
-        # "what can I do with it" is unambiguous.
+        # Dedicated action row for the incremental model. The buttons
+        # all share the same vertical band immediately above the table
+        # so the relationship between "what's listed" and "what can I
+        # do with it" is unambiguous.
         actions = ctk.CTkFrame(section, fg_color="transparent")
-        actions.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        actions.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         self._add_files_btn = ctk.CTkButton(
             actions,
             text="+ Fichiers…",
@@ -249,6 +246,18 @@ class WorkspaceView(BaseView):
         )
         self._clear_btn.pack(side="left", padx=SPACE_XS)
 
+        # Compteur permanent — désormais aligné à droite, sur la même
+        # ligne que les boutons. Format demandé : "nombre de fichiers :
+        # N · M sélectionné(s)". Visible dès le démarrage en gris doux,
+        # passe en couleur accent dès qu'il y a des fichiers.
+        self._sources_status = ctk.CTkLabel(
+            actions,
+            text="nombre de fichiers : 0",
+            font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
+        )
+        self._sources_status.pack(side="right", padx=(SPACE_SM, 0))
+
         self._sources_table = DataTable(
             section,
             columns=[
@@ -259,7 +268,7 @@ class WorkspaceView(BaseView):
             ],
             select_mode="extended",
         )
-        self._sources_table.grid(row=4, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        self._sources_table.grid(row=3, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
         self._sources_table.on_select(self._on_sources_select)
         self._sources_table.on_activate(self._on_sources_activate)
         # Suppr clavier — fait le même travail que le bouton "Supprimer".
@@ -451,15 +460,21 @@ class WorkspaceView(BaseView):
             "fg_muted": palette_pair("fg_muted"),
             "fg": palette_pair("fg"),
         }
+        # Phase G (2026-05-18) — format demandé par l'utilisateur :
+        # "nombre de fichiers : N" (avec compteur sélection si > 0).
         if message:
-            text = f"{fmt_int(n_total)} fichier(s) · {fmt_int(n_sel)} sélectionné(s) — {message}"
+            sel_part = f" · {fmt_int(n_sel)} sélectionné(s)" if n_sel else ""
+            text = f"nombre de fichiers : {fmt_int(n_total)}{sel_part} — {message}"
             color = kind_to_color.get(kind, palette_pair("fg_muted"))
         elif n_total == 0:
-            text = "0 fichier · aucune sélection"
+            text = "nombre de fichiers : 0"
             color = palette_pair("fg_muted")
+        elif n_sel:
+            text = f"nombre de fichiers : {fmt_int(n_total)} · {fmt_int(n_sel)} sélectionné(s)"
+            color = palette_pair("fg")
         else:
-            text = f"{fmt_int(n_total)} fichier(s) · {fmt_int(n_sel)} sélectionné(s)"
-            color = palette_pair("fg") if n_sel else palette_pair("fg_muted")
+            text = f"nombre de fichiers : {fmt_int(n_total)}"
+            color = palette_pair("fg_muted")
 
         self._sources_status.configure(text=text, text_color=color)
 
@@ -969,13 +984,28 @@ class WorkspaceView(BaseView):
 
         actions = ctk.CTkFrame(section, fg_color="transparent")
         actions.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
-        ctk.CTkButton(actions, text="Tester", width=90, height=26, command=self._model_test).pack(
-            side="left", padx=(0, SPACE_XS)
+        # Phase G (2026-05-18) — bouton "▶ Démarrer Ollama" qui tente
+        # de lancer le serveur local (subprocess.Popen détaché). Mis
+        # en premier car c'est le pré-requis pour que Tester /
+        # Configurer marchent.
+        self._ollama_start_btn = ctk.CTkButton(
+            actions,
+            text="▶ Démarrer Ollama",
+            width=150,
+            height=26,
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
+            command=self._start_ollama_server,
+        )
+        self._ollama_start_btn.pack(side="left", padx=(0, SPACE_XS))
+        ctk.CTkButton(actions, text="Tester", width=80, height=26, command=self._model_test).pack(
+            side="left", padx=SPACE_XS
         )
         ctk.CTkButton(
             actions,
             text="Configurer…",
-            width=120,
+            width=110,
             height=26,
             command=lambda: self.app.open_in_modal("ai_control"),
         ).pack(side="left", padx=SPACE_XS)
@@ -983,6 +1013,71 @@ class WorkspaceView(BaseView):
             actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._model_test_msg.pack(side="right")
+
+    def _start_ollama_server(self) -> None:
+        """Lance ``ollama serve`` en process détaché (Phase G 2026-05-18).
+
+        Cherche l'exécutable dans :
+          1. le PATH (``shutil.which("ollama")``)
+          2. les chemins d'installation standard Windows
+             (``%LOCALAPPDATA%\\Programs\\Ollama\\ollama.exe`` et
+             ``C:/Program Files/Ollama/ollama.exe``)
+
+        Si rien n'est trouvé, affiche un toast d'erreur ; sinon
+        démarre le serveur en arrière-plan (DETACHED_PROCESS sous
+        Windows pour que le serveur survive à la fermeture de l'app),
+        puis programme un refresh dynamique 2,5 s plus tard pour que
+        le statut topbar bascule sur « En ligne ».
+        """
+        import shutil
+        import subprocess
+        import sys
+
+        exe = shutil.which("ollama")
+        if not exe:
+            candidates = [
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe",
+                Path("C:/Program Files/Ollama/ollama.exe"),
+            ]
+            for c in candidates:
+                try:
+                    if c.exists():
+                        exe = str(c)
+                        break
+                except Exception:
+                    continue
+        if not exe:
+            self.app.toasts.show(
+                "Exécutable Ollama introuvable. Installez-le depuis ollama.com puis réessayez.",
+                kind="error",
+                timeout_ms=6000,
+            )
+            return
+
+        self._ollama_start_btn.configure(state="disabled", text="Démarrage…")
+        try:
+            kwargs: dict[str, Any] = {
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+                "stdin": subprocess.DEVNULL,
+            }
+            if sys.platform == "win32":
+                # DETACHED_PROCESS + CREATE_NEW_PROCESS_GROUP : le serveur
+                # ne meurt pas avec l'app et ne reçoit pas ses Ctrl+C.
+                kwargs["creationflags"] = (
+                    subprocess.DETACHED_PROCESS  # type: ignore[attr-defined]
+                    | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
+                )
+            subprocess.Popen([exe, "serve"], **kwargs)
+            self.app.toasts.show("Démarrage du serveur Ollama…", kind="info", timeout_ms=3000)
+            # Laisser ~2,5 s au serveur pour ouvrir le port 11434, puis
+            # rafraîchir le statut (qui mettra à jour la chip topbar).
+            self.after(2500, self._refresh_dynamic_async)
+            self.after(3000, lambda: self._ollama_start_btn.configure(state="normal", text="▶ Démarrer Ollama"))
+        except Exception as exc:
+            logger.exception("Démarrage Ollama échoué")
+            self.app.toasts.show(f"Échec démarrage Ollama : {exc}", kind="error")
+            self._ollama_start_btn.configure(state="normal", text="▶ Démarrer Ollama")
 
     def _model_test(self) -> None:
         api = self.app.api
@@ -1258,6 +1353,12 @@ class WorkspaceView(BaseView):
         if api is None:
             self._set_model_status("muted", "Backend absent", "—", "—")
             self._set_history_summary(0, 0, [])
+            # Phase G (2026-05-18) — sync chip topbar Ollama avec l'état
+            # "Backend absent" pour ne pas garder un statut périmé.
+            try:
+                self.app.set_ollama_health("—", "muted")
+            except Exception:
+                pass
             return
         threading.Thread(target=self._refresh_dynamic_worker, args=(api,), daemon=True).start()
 
@@ -1284,17 +1385,24 @@ class WorkspaceView(BaseView):
             kind = "success"
             status_text = f"En ligne · {ai_status.get('version', '')}".strip()
             current_model = ai_status.get("current_model") or "(aucun chargé)"
+            chip_label = "En ligne"
         elif ai_status.get("status") == "not_initialized":
             kind = "muted"
             status_text = "Non initialisé"
             current_model = "—"
+            chip_label = "Non init."
         else:
             kind = "warning"
             status_text = ai_status.get("message", "Hors ligne") or "Hors ligne"
             current_model = "—"
+            chip_label = "Hors ligne"
 
         self.after(0, lambda: self._set_model_status(kind, status_text, url, current_model))
         self.after(0, lambda lg=logs, no=n_ops, ne=n_err: self._set_history_summary(no, ne, lg))
+        # Phase G (2026-05-18) — pousser le statut Ollama vers la
+        # chip topbar via App.set_ollama_health(). Le chip se met à
+        # jour à chaque tick du refresh dynamique (toutes les 5 s).
+        self.after(0, lambda lbl=chip_label, k=kind: self.app.set_ollama_health(lbl, k))
 
     def _set_model_status(self, kind: str, status_text: str, url: str, model: str) -> None:
         color = {
