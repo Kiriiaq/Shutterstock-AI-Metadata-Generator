@@ -1,10 +1,10 @@
-# Build report — Phase G+1 (Ollama chip + bouton + fix toggle 2026-05-18)
+# Build report — Phase G+2 (statut inline + toggle robuste + ExifTool sans console 2026-05-19)
 
-**Date du build courant** : **2026-05-18 08:44** (rebuild après chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline)
-**Date du build précédent** : 2026-05-17 21:48 (Phase G margins, archivé)
+**Date du build courant** : **2026-05-19 12:32** (rebuild après statut sous boutons + toggle robuste + ExifTool no-window)
+**Date du build précédent** : 2026-05-18 08:44 (Phase G+1, archivé)
 **Date du build initial v3** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit HEAD** : `9a255d3` (feat(ui+ollama): chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline)
+**Commit HEAD** : `582c5ec` (fix(ui): statut sous boutons + toggle thème robuste + ExifTool sans console)
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
 **Statut global** : ✅ **OK** (30/30 tests, debug + release ALIVE)
 
@@ -90,26 +90,51 @@
    « · M sélectionné(s) » quand une sélection est active). Le
    `DataTable` remonte d'une rangée (row 4 → row 3).
 
+**Commit `582c5ec` (2026-05-19) — Phase G+2** :
+
+9. **Panneau MODÈLE IA — zone de feedback sortie sur sa propre
+   rangée** sous les boutons. Avant : `_model_test_msg` était
+   packed `side="right"` à droite de `Démarrer Ollama / Tester /
+   Configurer`, ce qui tronquait les messages longs sur les
+   petites fenêtres. Maintenant : grille row=3 dédiée alignée à
+   gauche avec `wraplength=380` pour les messages multi-lignes.
+
+10. **Toggle thème — bug du rétrécissement cumulatif enfin
+    corrigé**. Le workaround Phase G+1 (1 seul `after(50, …)`) ne
+    suffisait pas : CTk continue à recalculer plusieurs frames
+    après `set_appearance_mode`. Nouvelle approche multi-passes :
+    `geometry()` restaurée à 3 instants (50, 150, 350 ms),
+    `grid_columnconfigure` ré-appliquées sur le workspace
+    (weight 3 / 2 + minsize 320), `update_idletasks()` final.
+
+11. **ExifTool — plus de console qui flashe à chaque scan**.
+    Nouveau helper `src/utils/subprocess_helper.py` qui expose
+    `SUBPROCESS_NO_WINDOW = {"creationflags": CREATE_NO_WINDOW}`
+    sur Windows, no-op sur POSIX. Splaté dans les 8 appels
+    `subprocess.run` du pipeline metadata (4 reader + 4 writer).
+    Plus aucune fenêtre `exiftool.exe` qui apparaît pendant un
+    scan dossier ou une écriture batch.
+
 ---
 
 ## 2. Artefacts produits
 
-**Build courant (2026-05-18 08:44)** :
+**Build courant (2026-05-19 12:32)** :
 
 | Fichier | Taille | SHA-256 | Profil |
 |---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 25 735 893 B (24.54 MB) | `2306e564186f017b900b468ae0d6ed9e2bba318f58b9d25ef0089f5ecac6ce72` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 25 731 662 B (24.54 MB) | `a1460c6f4316e53f7de4a5383123e99a392a57d0f5c13522dbf485a18a451616` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+| `dist/ShutterstockAnalyzer-debug.exe` | 25 754 277 B (24.56 MB) | `c2d10532ce45ab1bbddbd29409eadf1a3c1b96449a0c8319517f8a9cd91e2220` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 25 749 561 B (24.55 MB) | `580419b69c3e988e273da62b764cd7d56d44701003174fded91626f91d2a2519` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
 
-### Hashes du build précédent (Phase G margins, 2026-05-17)
+### Hashes du build précédent (Phase G+1, 2026-05-18 08:44)
 | Fichier | SHA-256 |
 |---|---|
-| `ShutterstockAnalyzer-debug.exe` | `5cdb13837ab57bc960052cae7f8e46c8b2894909796ba00aaa51a5b01bdec388` |
-| `ShutterstockAnalyzer.exe` | `65e139ce35332caffd54262824372207ebdb45237487c82af6222685fd000651` |
+| `ShutterstockAnalyzer-debug.exe` | `2306e564186f017b900b468ae0d6ed9e2bba318f58b9d25ef0089f5ecac6ce72` |
+| `ShutterstockAnalyzer.exe` | `a1460c6f4316e53f7de4a5383123e99a392a57d0f5c13522dbf485a18a451616` |
 
-**Évolution du poids vs build du 2026-05-17 (Phase G margins)** :
-- Debug : 25 724 550 B → 25 735 893 B = **+11 343 B (+0.04 %)** — helpers Ollama start + chip topbar + workaround geometry
-- Release : 25 723 268 B → 25 731 662 B = **+8 394 B (+0.03 %)** — idem
+**Évolution du poids vs build du 2026-05-18 (Phase G+1)** :
+- Debug : 25 735 893 B → 25 754 277 B = **+18 384 B (+0.07 %)** — workaround toggle multi-passes + `_model_test_msg` sur rangée dédiée + helper `subprocess_helper.py` + appels `SUBPROCESS_NO_WINDOW`
+- Release : 25 731 662 B → 25 749 561 B = **+17 899 B (+0.07 %)** — idem
 
 Variation négligeable.
 
@@ -169,27 +194,21 @@ Chaque EXE est lancé depuis un **tempdir hermétique** (no `VIRTUAL_ENV`, no `P
 
 ```
 status    : ALIVE
-hold_time : ~6.1 s
+hold_time : 6.22 s
 log tail  :
     import 'app.views.validate' # <pyimod02_importers.PyiFrozenLoader…>
     PyiFrozenFinder(…\app\views): find_spec: called with fullname='app.views.workspace', target='app.views.workspace'
     PyiFrozenFinder(…\app\views): find_spec: found 'app.views.workspace' in PYZ as 'app.views.workspace', typecode=0
     import 'app.views.workspace' # <pyimod02_importers.PyiFrozenLoader…>
-    21:48:29 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    21:48:29 [INFO] ShutterstockAnalyzer: UI mainloop starting
+    12:31:58 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    12:31:58 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
 ### 4.2 Profil release / light
 
 ```
 status    : ALIVE
-hold_time : 6.24 s
-log tail  :
-    21:48:35 [INFO] src.modules.storage.database: Database initialized: C:\Users\Emmanuel Grolleau\.shutterstock_ai\shutterstock_ai.db
-    21:48:35 [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers (processes=False)
-    21:48:35 [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
-    21:48:36 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    21:48:36 [INFO] ShutterstockAnalyzer: UI mainloop starting
+hold_time : 6.22 s
 ```
 
 ### 4.3 Fonctionnalités critiques attestées
@@ -239,13 +258,13 @@ Aucun warning bloquant. PyInstaller a tracé :
 ## 7. Sortie `git log --oneline -7`
 
 ```
+582c5ec fix(ui): statut sous boutons + toggle thème robuste + ExifTool sans console
 9a255d3 feat(ui+ollama): chip topbar Ollama + bouton démarrer + fix toggle thème + compteur inline
 c5849d0 build: rebuild debug + release EXEs après marges topbar (2026-05-17 21:48)
 a636b3c fix(ui): topbar — marges uniformes 16 px sur les 4 côtés (Phase G suite)
 d19249d build: rebuild debug + release EXEs après UI tweaks Phase G (2026-05-16 21:40)
 2d60f20 fix(ui): Récursif inline + marges fenêtre + icône app sur toutes les modales
 895bd84 build: rebuild debug + light EXEs après correctifs Phase F (2026-05-14 19:23)
-e8e8fe3 fix(audit): correctifs Phase F (lots A à E) — bugs T-016..T-036 + T-023
 ```
 
 ---
