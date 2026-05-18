@@ -1,10 +1,10 @@
-# Build report — Phase G+3 (bouton « Vider l'historique » 2026-05-19)
+# Build report — Phase G+4 (boutons Tout/Aucun + Ctrl+A + mini progress bars 2026-05-19)
 
-**Date du build courant** : **2026-05-19 13:26** (rebuild après ajout bouton Vider l'historique)
-**Date du build précédent** : 2026-05-19 12:32 (Phase G+2, archivé)
+**Date du build courant** : **2026-05-19 15:43** (rebuild après Phase G+4)
+**Date du build précédent** : 2026-05-19 13:26 (Phase G+3, archivé)
 **Date du build initial v3** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit HEAD** : `94bf74a` (feat(history): bouton « Vider » à droite d'« Exporter »)
+**Commit HEAD** : `d0298b0` (feat(ui): boutons Tout/Aucun + Ctrl+A + mini progress bars minimalistes)
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
 **Statut global** : ✅ **OK** (30/30 tests, debug + release ALIVE)
 
@@ -129,26 +129,47 @@
     + commit. Toast feedback « N entrée(s) supprimée(s). » + refresh
     immédiat de l'aperçu (pas d'attente du poll 5 s).
 
+**Commit `d0298b0` (2026-05-19) — Phase G+4** :
+
+13. **Boutons « Tout / Aucun » + Ctrl+A** dans le panneau Sources.
+    Deux nouveaux boutons à droite de « Supprimer / Vider » qui
+    sélectionnent / désélectionnent toutes les lignes du DataTable
+    (activés selon `n_total > 0` et `n_sel > 0`). Bind interne
+    `<Control-a>` / `<Control-A>` sur le Treeview (local pour ne
+    pas interférer avec le Ctrl+A des widgets de saisie). Nouvelles
+    méthodes publiques `DataTable.select_all()` et `deselect_all()`.
+
+14. **Mini progress bars minimalistes en haut-droite des sections**.
+    Helper `_panel(busy_id=…)` enrichi. Si `busy_id` est fourni, un
+    `CTkProgressBar(mode="indeterminate", height=4, width=80)` est
+    créé en haut-droite du header et stocké dans
+    `self._panel_progress`. Caché par défaut, animé via
+    `_set_panel_busy(busy_id, busy)`. Strictement décoratif, sans
+    label. Appliqué à 3 panneaux :
+    - Sources (`busy_id="sources"`) → pendant scan/add_files/add_folder
+    - Analyse IA (`busy_id="analyze"`) → pendant `_analyze_worker`
+    - Historique (`busy_id="history"`) → pendant le poll 5 s
+
 ---
 
 ## 2. Artefacts produits
 
-**Build courant (2026-05-19 13:26)** :
+**Build courant (2026-05-19 15:43)** :
 
 | Fichier | Taille | SHA-256 | Profil |
 |---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 25 759 719 B (24.56 MB) | `f975595ab278ab26a34568d05c7c58e455f7d5d9f9d6e6a803e0a501fb29ef2d` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 25 755 005 B (24.56 MB) | `7573befcb0de34d34f998130ef0827b0dcf6b30b37189596e4909acb004edbf5` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+| `dist/ShutterstockAnalyzer-debug.exe` | 25 764 848 B (24.57 MB) | `7bba7f293c73e59b19d75815dfe268667654893ff2d06a310694bc8d7f5c46cc` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 25 760 939 B (24.57 MB) | `d69471e780df45000a680bb0de44d511c19985c5a19fbadf170877619c133d94` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
 
-### Hashes du build précédent (Phase G+2, 2026-05-19 12:32)
+### Hashes du build précédent (Phase G+3, 2026-05-19 13:26)
 | Fichier | SHA-256 |
 |---|---|
-| `ShutterstockAnalyzer-debug.exe` | `c2d10532ce45ab1bbddbd29409eadf1a3c1b96449a0c8319517f8a9cd91e2220` |
-| `ShutterstockAnalyzer.exe` | `580419b69c3e988e273da62b764cd7d56d44701003174fded91626f91d2a2519` |
+| `ShutterstockAnalyzer-debug.exe` | `f975595ab278ab26a34568d05c7c58e455f7d5d9f9d6e6a803e0a501fb29ef2d` |
+| `ShutterstockAnalyzer.exe` | `7573befcb0de34d34f998130ef0827b0dcf6b30b37189596e4909acb004edbf5` |
 
-**Évolution du poids vs build du 2026-05-19 12:32 (Phase G+2)** :
-- Debug : 25 754 277 B → 25 759 719 B = **+5 442 B (+0.02 %)** — backend `clear_audit_log()` + bouton + handler `_history_clear/_clear` dans 2 vues
-- Release : 25 749 561 B → 25 755 005 B = **+5 444 B (+0.02 %)** — idem
+**Évolution du poids vs build du 2026-05-19 13:26 (Phase G+3)** :
+- Debug : 25 759 719 B → 25 764 848 B = **+5 129 B (+0.02 %)** — `select_all`/`deselect_all` DataTable + boutons Tout/Aucun + helper `_set_panel_busy` + busy_id sur 3 panneaux
+- Release : 25 755 005 B → 25 760 939 B = **+5 934 B (+0.02 %)** — idem
 
 Variation négligeable.
 
