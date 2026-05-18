@@ -65,6 +65,9 @@ class WorkspaceView(BaseView):
         # Widgets
         self._iptc_fields: dict[str, ctk.CTkEntry] = {}
         self._editor_collapsed: bool = False
+        # Phase G+4 — registre des mini progress bars en haut-droite
+        # des panneaux ; rempli au build par ``_panel(busy_id=…)``.
+        self._panel_progress: dict[str, ctk.CTkProgressBar] = {}
         self._build()
 
     # ------------------------------------------------------------------
@@ -144,7 +147,7 @@ class WorkspaceView(BaseView):
         # / Supprimer / Vider" et un compteur permanent toujours
         # visible. Le modèle ``_scanned`` est désormais incrémentiel
         # (extends au lieu de replace), avec dédoublonnage par chemin.
-        section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁")
+        section = self._panel(parent, row, "SOURCES & TRI", bg_key="bg_deep", icon="📁", busy_id="sources")
         # Phase G (2026-05-18) — la rangée "opts" (compteur seul) est
         # supprimée et le compteur est déplacé inline dans la rangée
         # d'actions. Le DataTable passe de row=4 à row=3.
@@ -245,6 +248,37 @@ class WorkspaceView(BaseView):
             command=self._clear_all,
         )
         self._clear_btn.pack(side="left", padx=SPACE_XS)
+        # Phase G+4 (2026-05-19) — boutons « Tout / Aucun » pour la
+        # sélection. ``Tout`` est aussi accessible via Ctrl+A quand le
+        # focus est sur la table (binding interne DataTable).
+        self._select_all_btn = ctk.CTkButton(
+            actions,
+            text="Tout",
+            width=60,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            state="disabled",
+            command=self._select_all_sources,
+        )
+        self._select_all_btn.pack(side="left", padx=SPACE_XS)
+        self._deselect_all_btn = ctk.CTkButton(
+            actions,
+            text="Aucun",
+            width=60,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            state="disabled",
+            command=self._deselect_all_sources,
+        )
+        self._deselect_all_btn.pack(side="left", padx=SPACE_XS)
 
         # Compteur permanent — désormais aligné à droite, sur la même
         # ligne que les boutons. Format demandé : "nombre de fichiers :
@@ -296,6 +330,7 @@ class WorkspaceView(BaseView):
             return
         self._scan_btn.configure(state="disabled", text="Scan…")
         self._sources_status.configure(text="Recherche…", text_color=palette_pair("warning"))
+        self._set_panel_busy("sources", True)
         threading.Thread(
             target=self._collect_worker,
             args=(Path(folder), self._recursive_var.get(), True),
@@ -312,6 +347,7 @@ class WorkspaceView(BaseView):
         if not files:
             return
         self._sources_status.configure(text="Lecture…", text_color=palette_pair("warning"))
+        self._set_panel_busy("sources", True)
         threading.Thread(target=self._enrich_and_append_worker, args=(files, None), daemon=True).start()
 
     def _add_folder(self) -> None:
@@ -321,6 +357,7 @@ class WorkspaceView(BaseView):
         if not path:
             return
         self._sources_status.configure(text="Recherche…", text_color=palette_pair("warning"))
+        self._set_panel_busy("sources", True)
         threading.Thread(
             target=self._collect_worker,
             args=(Path(path), self._recursive_var.get(), False),
@@ -337,6 +374,22 @@ class WorkspaceView(BaseView):
         self._scanned = [r for r in self._scanned if r.get("_path") not in to_remove]
         self._sources_table.set_rows(self._scanned)
         self._sync_sources_state(message=f"{fmt_int(len(to_remove))} fichier(s) retiré(s)", kind="warning")
+
+    def _select_all_sources(self) -> None:
+        """Phase G+4 — sélectionne toutes les lignes du DataTable Sources
+        puis re-synchronise les compteurs et l'``app_state``."""
+        self._sources_table.select_all()
+        # ``selection_set`` ne déclenche pas ``<<TreeviewSelect>>`` en
+        # tk 8.6 si la sélection ne change pas pour certaines lignes ;
+        # on appelle directement ``_sync_sources_state`` pour être sûr.
+        self._sync_sources_state()
+
+    def _deselect_all_sources(self) -> None:
+        """Phase G+4 — efface la sélection (les lignes restent dans le
+        modèle, on retire juste la mise en surbrillance + on remet à 0
+        ``selected_paths`` dans l'``app_state``)."""
+        self._sources_table.deselect_all()
+        self._sync_sources_state()
 
     def _clear_all(self) -> None:
         """Vide totalement le modèle + la table + l'app_state."""
@@ -417,6 +470,7 @@ class WorkspaceView(BaseView):
         self._scanned.extend(new_rows)
         self._sources_table.set_rows(self._scanned)
         self._scan_btn.configure(state="normal", text="Scanner")
+        self._set_panel_busy("sources", False)
         suffix = f" · {folder.name}" if folder is not None else ""
         added = len(new_rows)
         kind = "success" if new_rows else "warning"
@@ -434,6 +488,7 @@ class WorkspaceView(BaseView):
 
     def _on_sources_failed(self, err: str) -> None:
         self._scan_btn.configure(state="normal", text="Scanner")
+        self._set_panel_busy("sources", False)
         self._sources_status.configure(text=f"Erreur : {err}", text_color=palette_pair("error"))
 
     def _sync_sources_state(self, *, message: str | None = None, kind: str = "fg_muted") -> None:
@@ -486,6 +541,10 @@ class WorkspaceView(BaseView):
         try:
             self._remove_btn.configure(state="normal" if n_sel else "disabled")
             self._clear_btn.configure(state="normal" if n_total else "disabled")
+            # Phase G+4 — Tout / Aucun n'ont de sens que s'il y a des
+            # lignes (Tout) ou une sélection en cours (Aucun).
+            self._select_all_btn.configure(state="normal" if n_total else "disabled")
+            self._deselect_all_btn.configure(state="normal" if n_sel else "disabled")
         except Exception:
             pass
 
@@ -719,7 +778,7 @@ class WorkspaceView(BaseView):
         # - ``_analyze_status`` démarre à "0 / 0 — En attente" plutôt
         #   que "Prêt", pour rendre l'état initial immédiatement
         #   compréhensible.
-        section = self._panel(parent, row, "ANALYSE IA", icon="🧠", sticky="nsew")
+        section = self._panel(parent, row, "ANALYSE IA", icon="🧠", sticky="nsew", busy_id="analyze")
         section.grid_rowconfigure(4, weight=1)
         section.grid_columnconfigure(0, weight=1)
 
@@ -859,6 +918,7 @@ class WorkspaceView(BaseView):
             text_color=palette_pair("fg"),
         )
         self._set_analyze_results("Initialisation…\n")
+        self._set_panel_busy("analyze", True)
         threading.Thread(target=self._analyze_worker, args=(api, selected), daemon=True).start()
 
     def _analyze_worker(self, api: Any, selected: list[Path]) -> None:
@@ -912,6 +972,7 @@ class WorkspaceView(BaseView):
     def _analyze_on_complete(self, result: dict[str, Any]) -> None:
         self._processing = False
         self._refresh_action_states()
+        self._set_panel_busy("analyze", False)
         self._analyze_progress.set(1)
         completed = result.get("completed", 0)
         failed = result.get("failed", 0)
@@ -925,6 +986,7 @@ class WorkspaceView(BaseView):
     def _analyze_on_failed(self, err: str) -> None:
         self._processing = False
         self._refresh_action_states()
+        self._set_panel_busy("analyze", False)
         self._analyze_status.configure(text="Erreur", text_color=palette_pair("error"))
         self._append_analyze_results(f"\nERREUR : {err}\n")
 
@@ -1220,7 +1282,7 @@ class WorkspaceView(BaseView):
     # ----- Panel: Historique ------------------------------------------
 
     def _build_history_panel(self, parent: ctk.CTkFrame, row: int) -> None:
-        section = self._panel(parent, row, "HISTORIQUE", icon="🕐")
+        section = self._panel(parent, row, "HISTORIQUE", icon="🕐", busy_id="history")
         section.grid_columnconfigure(0, weight=1)
         section.grid_rowconfigure(2, weight=1)
 
@@ -1417,6 +1479,7 @@ class WorkspaceView(BaseView):
             except Exception:
                 pass
             return
+        self._set_panel_busy("history", True)
         threading.Thread(target=self._refresh_dynamic_worker, args=(api,), daemon=True).start()
 
     def _refresh_dynamic_worker(self, api: Any) -> None:
@@ -1474,6 +1537,8 @@ class WorkspaceView(BaseView):
         self._model_name_label.configure(text=model)
 
     def _set_history_summary(self, n_ops: int, n_err: int, logs: list[Any]) -> None:
+        # Le worker historique est terminé — masque le mini progress.
+        self._set_panel_busy("history", False)
         text = f"{fmt_int(n_ops)} opérations / 24 h · {fmt_int(n_err)} erreur(s)"
         self._history_summary.configure(
             text=text,
@@ -1584,6 +1649,7 @@ class WorkspaceView(BaseView):
         bg_key: str = "bg_elevated",
         icon: str | None = None,
         sticky: str = "new",
+        busy_id: str | None = None,
     ) -> ctk.CTkFrame:
         """Create a titled panel frame.
 
@@ -1601,6 +1667,12 @@ class WorkspaceView(BaseView):
         pass ``"nsew"`` for the LAST panel of a column so it stretches
         and pulls the column's bottom edge into alignment with its
         sibling column.
+
+        ``busy_id`` (Phase G+4, 2026-05-19) — si fourni, un mini
+        ``CTkProgressBar`` indéterminé est créé en haut-droite du
+        header (hidden par défaut). Active via ``_set_panel_busy(id,
+        True)`` pendant une opération longue. Strictement décoratif
+        et minimaliste : hauteur 4 px, largeur 80 px, sans label.
         """
         frame = ctk.CTkFrame(
             parent,
@@ -1637,7 +1709,51 @@ class WorkspaceView(BaseView):
             text_color=palette_pair("fg_subtle"),
             anchor="w",
         ).grid(row=0, column=1, sticky="w")
+
+        if busy_id is not None:
+            # Mini progress bar en haut-droite, masquée par défaut.
+            # ``mode="indeterminate"`` + ``start()`` lui donne un
+            # défilement continu Pas de label, c'est un signal visuel
+            # subtil que "quelque chose se passe en arrière-plan".
+            bar = ctk.CTkProgressBar(
+                header,
+                width=80,
+                height=4,
+                corner_radius=RADIUS_SM,
+                progress_color=palette_pair("accent"),
+                fg_color=palette_pair("bg_hover"),
+                mode="indeterminate",
+            )
+            # Initialement : non grilled (caché). ``_set_panel_busy``
+            # se charge du grid/grid_remove + start/stop.
+            self._panel_progress[busy_id] = bar
+
         return frame
+
+    # ------------------------------------------------------------------
+    # Busy indicators (Phase G+4 — mini progress en haut-droite)
+
+    def _set_panel_busy(self, busy_id: str, busy: bool) -> None:
+        """Anime / cache le mini progress bar du panneau identifié.
+
+        ``busy=True`` → ``grid + start()`` (animation indéterminée)
+        ``busy=False`` → ``stop + grid_remove`` (caché complètement)
+
+        Safe à appeler avant que le panneau ne soit construit
+        (``busy_id`` absent du dict → no-op silencieux).
+        """
+        bar = self._panel_progress.get(busy_id)
+        if bar is None:
+            return
+        try:
+            if busy:
+                bar.grid(row=0, column=2, sticky="e", padx=(SPACE_SM, 0))
+                bar.start()
+            else:
+                bar.stop()
+                bar.grid_remove()
+        except Exception:
+            logger.debug("Panel busy toggle failed for %r", busy_id, exc_info=True)
 
 
 _ = SPACE_LG  # keep imported constant for future use

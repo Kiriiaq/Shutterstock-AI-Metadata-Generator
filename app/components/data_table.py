@@ -164,6 +164,12 @@ class DataTable(ctk.CTkFrame):
         self._tree.bind("<<TreeviewSelect>>", self._handle_select)
         self._tree.bind("<Double-1>", self._handle_activate)
         self._tree.bind("<Return>", self._handle_activate)
+        # Phase G+4 (2026-05-19) — Ctrl+A sélectionne toutes les lignes
+        # (mode select="extended" uniquement, no-op en "browse"). Bind
+        # local au Treeview pour ne pas interférer avec le Ctrl+A des
+        # widgets de saisie (CTkEntry, CTkTextbox).
+        self._tree.bind("<Control-a>", self._handle_ctrl_a)
+        self._tree.bind("<Control-A>", self._handle_ctrl_a)
 
     # ------------------------------------------------------------------
 
@@ -180,6 +186,24 @@ class DataTable(ctk.CTkFrame):
 
     def get_selected(self) -> list[dict[str, Any]]:
         return [self._row_data[iid] for iid in self._tree.selection() if iid in self._row_data]
+
+    def select_all(self) -> None:
+        """Phase G+4 — sélectionne toutes les lignes (mode extended)."""
+        children = self._tree.get_children()
+        if children:
+            self._tree.selection_set(children)
+
+    def deselect_all(self) -> None:
+        """Phase G+4 — efface la sélection."""
+        sel = self._tree.selection()
+        if sel:
+            self._tree.selection_remove(*sel)
+
+    def _handle_ctrl_a(self, _event: object) -> str:
+        """Ctrl+A → ``select_all`` puis ``break`` pour empêcher Tk de
+        propager l'event à des parents."""
+        self.select_all()
+        return "break"
 
     def on_select(self, callback: Callable[[list[dict[str, Any]]], None]) -> None:
         self._on_select_cb = callback

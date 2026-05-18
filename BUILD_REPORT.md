@@ -1,10 +1,10 @@
-# Build report — Phase G+2 (statut inline + toggle robuste + ExifTool sans console 2026-05-19)
+# Build report — Phase G+3 (bouton « Vider l'historique » 2026-05-19)
 
-**Date du build courant** : **2026-05-19 12:32** (rebuild après statut sous boutons + toggle robuste + ExifTool no-window)
-**Date du build précédent** : 2026-05-18 08:44 (Phase G+1, archivé)
+**Date du build courant** : **2026-05-19 13:26** (rebuild après ajout bouton Vider l'historique)
+**Date du build précédent** : 2026-05-19 12:32 (Phase G+2, archivé)
 **Date du build initial v3** : 2026-05-08 09:04 UTC
 **Branche** : `main`
-**Commit HEAD** : `582c5ec` (fix(ui): statut sous boutons + toggle thème robuste + ExifTool sans console)
+**Commit HEAD** : `94bf74a` (feat(history): bouton « Vider » à droite d'« Exporter »)
 **Builder** : PyInstaller 6.20.0 (Python 3.11.9, Windows 11 Home)
 **Statut global** : ✅ **OK** (30/30 tests, debug + release ALIVE)
 
@@ -115,26 +115,40 @@
     Plus aucune fenêtre `exiftool.exe` qui apparaît pendant un
     scan dossier ou une écriture batch.
 
+**Commit `94bf74a` (2026-05-19) — Phase G+3** :
+
+12. **Bouton « Vider l'historique » à droite d'« Exporter… »**.
+    Présent dans les 2 vues qui exposent un bouton Exporter :
+    - Panneau HISTORIQUE du workspace (visible par défaut)
+    - Modale Audit (« Tout voir… »)
+    Couleurs error (rouge) pour signaler l'effet destructif,
+    `confirm_destructive` obligatoire avant tout DELETE en base
+    (texte de confirmation : « Cette action supprime DÉFINITIVEMENT
+    toutes les entrées du journal… »). Backend : nouvelle méthode
+    `Database.clear_audit_log()` qui retourne le compte avant DELETE
+    + commit. Toast feedback « N entrée(s) supprimée(s). » + refresh
+    immédiat de l'aperçu (pas d'attente du poll 5 s).
+
 ---
 
 ## 2. Artefacts produits
 
-**Build courant (2026-05-19 12:32)** :
+**Build courant (2026-05-19 13:26)** :
 
 | Fichier | Taille | SHA-256 | Profil |
 |---|---:|---|---|
-| `dist/ShutterstockAnalyzer-debug.exe` | 25 754 277 B (24.56 MB) | `c2d10532ce45ab1bbddbd29409eadf1a3c1b96449a0c8319517f8a9cd91e2220` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
-| `dist/ShutterstockAnalyzer.exe` | 25 749 561 B (24.55 MB) | `580419b69c3e988e273da62b764cd7d56d44701003174fded91626f91d2a2519` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
+| `dist/ShutterstockAnalyzer-debug.exe` | 25 759 719 B (24.56 MB) | `f975595ab278ab26a34568d05c7c58e455f7d5d9f9d6e6a803e0a501fb29ef2d` | Debug — console visible, logs d'imports verbeux (`--debug=imports`) |
+| `dist/ShutterstockAnalyzer.exe` | 25 755 005 B (24.56 MB) | `7573befcb0de34d34f998130ef0827b0dcf6b30b37189596e4909acb004edbf5` | Release / light — `--windowed --noconsole`, exclusions module, pas d'UPX |
 
-### Hashes du build précédent (Phase G+1, 2026-05-18 08:44)
+### Hashes du build précédent (Phase G+2, 2026-05-19 12:32)
 | Fichier | SHA-256 |
 |---|---|
-| `ShutterstockAnalyzer-debug.exe` | `2306e564186f017b900b468ae0d6ed9e2bba318f58b9d25ef0089f5ecac6ce72` |
-| `ShutterstockAnalyzer.exe` | `a1460c6f4316e53f7de4a5383123e99a392a57d0f5c13522dbf485a18a451616` |
+| `ShutterstockAnalyzer-debug.exe` | `c2d10532ce45ab1bbddbd29409eadf1a3c1b96449a0c8319517f8a9cd91e2220` |
+| `ShutterstockAnalyzer.exe` | `580419b69c3e988e273da62b764cd7d56d44701003174fded91626f91d2a2519` |
 
-**Évolution du poids vs build du 2026-05-18 (Phase G+1)** :
-- Debug : 25 735 893 B → 25 754 277 B = **+18 384 B (+0.07 %)** — workaround toggle multi-passes + `_model_test_msg` sur rangée dédiée + helper `subprocess_helper.py` + appels `SUBPROCESS_NO_WINDOW`
-- Release : 25 731 662 B → 25 749 561 B = **+17 899 B (+0.07 %)** — idem
+**Évolution du poids vs build du 2026-05-19 12:32 (Phase G+2)** :
+- Debug : 25 754 277 B → 25 759 719 B = **+5 442 B (+0.02 %)** — backend `clear_audit_log()` + bouton + handler `_history_clear/_clear` dans 2 vues
+- Release : 25 749 561 B → 25 755 005 B = **+5 444 B (+0.02 %)** — idem
 
 Variation négligeable.
 
@@ -194,21 +208,20 @@ Chaque EXE est lancé depuis un **tempdir hermétique** (no `VIRTUAL_ENV`, no `P
 
 ```
 status    : ALIVE
-hold_time : 6.22 s
-log tail  :
-    import 'app.views.validate' # <pyimod02_importers.PyiFrozenLoader…>
-    PyiFrozenFinder(…\app\views): find_spec: called with fullname='app.views.workspace', target='app.views.workspace'
-    PyiFrozenFinder(…\app\views): find_spec: found 'app.views.workspace' in PYZ as 'app.views.workspace', typecode=0
-    import 'app.views.workspace' # <pyimod02_importers.PyiFrozenLoader…>
-    12:31:58 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
-    12:31:58 [INFO] ShutterstockAnalyzer: UI mainloop starting
+log tail  : (bootloader Tk / PyiFrozenFinder, démarrage propre)
 ```
 
 ### 4.2 Profil release / light
 
 ```
 status    : ALIVE
-hold_time : 6.22 s
+hold_time : 6.02 s
+log tail  :
+    13:26:38 [INFO] src.modules.storage.database: Database initialized
+    13:26:38 [INFO] src.modules.workers.worker_pool: WorkerPool initialized with 4 workers
+    13:26:38 [INFO] app.config.theme: UI proportional font resolved to: Segoe UI
+    13:26:39 [INFO] app.config.theme: UI monospace font resolved to: Cascadia Mono
+    13:26:39 [INFO] ShutterstockAnalyzer: UI mainloop starting
 ```
 
 ### 4.3 Fonctionnalités critiques attestées
