@@ -802,3 +802,23 @@ class Database:
                     )
 
         return len(logs)
+
+    def clear_audit_log(self) -> int:
+        """Supprime toutes les entrées de la table ``audit_log``.
+
+        Phase G+3 (2026-05-19) — exposé pour le bouton « Vider »
+        ajouté à droite d'« Exporter… » dans le panneau Historique
+        du workspace et dans la modale Audit. Action destructive,
+        l'appelant doit demander confirmation à l'utilisateur AVANT
+        d'appeler cette méthode.
+
+        Returns:
+            Nombre d'entrées supprimées (count avant le DELETE).
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM audit_log")
+        count = cursor.fetchone()[0]
+        cursor.execute("DELETE FROM audit_log")
+        conn.commit()
+        return int(count)

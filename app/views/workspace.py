@@ -1254,6 +1254,18 @@ class WorkspaceView(BaseView):
             height=26,
             command=self._history_export,
         ).pack(side="left", padx=SPACE_XS)
+        # Phase G+3 (2026-05-19) — bouton « Vider » destructif à droite
+        # d'Exporter. Couleurs error pour signaler l'effet, confirm()
+        # destructive avant tout DELETE en base.
+        ctk.CTkButton(
+            actions,
+            text="Vider",
+            width=80,
+            height=26,
+            fg_color=palette_pair("error"),
+            text_color=palette_pair("error_fg"),
+            command=self._history_clear,
+        ).pack(side="left", padx=SPACE_XS)
 
     def _history_export(self) -> None:
         api = self.app.api
@@ -1273,6 +1285,38 @@ class WorkspaceView(BaseView):
         except Exception as e:
             logger.exception("export failed")
             self.app.toasts.show(f"Échec : {e}", kind="error")
+
+    def _history_clear(self) -> None:
+        """Phase G+3 — purge complète de la table ``audit_log`` après
+        confirmation destructive. Refresh ensuite les indicateurs du
+        panneau Historique pour refléter l'état vide.
+        """
+        api = self.app.api
+        if api is None:
+            self.app.toasts.show("Backend indisponible.", kind="error")
+            return
+        if not self.app.confirm_destructive(
+            title="Vider l'historique",
+            message=(
+                "Cette action supprime DÉFINITIVEMENT toutes les entrées "
+                "du journal d'audit (analyses, écritures de métadonnées, "
+                "erreurs). Cette opération est irréversible. Continuer ?"
+            ),
+        ):
+            return
+        try:
+            count = api.database.clear_audit_log()
+        except Exception as e:
+            logger.exception("clear_audit_log failed")
+            self.app.toasts.show(f"Échec : {e}", kind="error")
+            return
+        self.app.toasts.show(f"{fmt_int(count)} entrée(s) supprimée(s).", kind="success")
+        # Force un refresh immédiat du panneau (compteurs + tail des
+        # 5 dernières lignes) sans attendre le poll automatique de 5 s.
+        try:
+            self._refresh_dynamic_async()
+        except Exception:
+            logger.debug("history refresh after clear failed", exc_info=True)
 
     # ----- Panel: Paramètres ------------------------------------------
 

@@ -104,6 +104,16 @@ class AuditView(BaseView):
         ctk.CTkButton(bar, text="Exporter…", width=110, command=self._export).pack(
             side="left", padx=SPACE_SM, pady=SPACE_MD
         )
+        # Phase G+3 (2026-05-19) — bouton « Vider » destructif à droite
+        # d'Exporter. Couleurs error + confirm() destructive avant DELETE.
+        ctk.CTkButton(
+            bar,
+            text="Vider",
+            width=90,
+            fg_color=palette_pair("error"),
+            text_color=palette_pair("error_fg"),
+            command=self._clear,
+        ).pack(side="left", padx=SPACE_SM, pady=SPACE_MD)
 
     def _build_table(self, parent: ctk.CTkFrame, row: int) -> None:
         self._table = DataTable(
@@ -211,3 +221,28 @@ class AuditView(BaseView):
         except Exception as e:
             logger.exception("Audit export failed")
             self.app.toasts.show(f"Échec : {e}", kind="error")
+
+    def _clear(self) -> None:
+        """Phase G+3 — purge complète de la table ``audit_log`` après
+        confirmation destructive. Recharge la table à zéro."""
+        api = self.app.api
+        if api is None:
+            self.app.toasts.show("Backend indisponible.", kind="error")
+            return
+        if not self.app.confirm_destructive(
+            title="Vider l'historique",
+            message=(
+                "Cette action supprime DÉFINITIVEMENT toutes les entrées "
+                "du journal d'audit (analyses, écritures de métadonnées, "
+                "erreurs). Cette opération est irréversible. Continuer ?"
+            ),
+        ):
+            return
+        try:
+            count = api.database.clear_audit_log()
+        except Exception as e:
+            logger.exception("Audit clear failed")
+            self.app.toasts.show(f"Échec : {e}", kind="error")
+            return
+        self.app.toasts.show(f"{count} entrée(s) supprimée(s).", kind="success")
+        self._reload()
