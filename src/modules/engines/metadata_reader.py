@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from ...utils.subprocess_helper import SUBPROCESS_NO_WINDOW
 from ..models.metadata_models import ImageMetadata, IPTCFields, MetadataSource
 
 logger = logging.getLogger(__name__)
@@ -219,7 +220,14 @@ class MetadataReader:
         cmd = [self.exiftool_path] + self.EXIFTOOL_ARGS + [str(file_path)]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             if result.returncode != 0 and "Warning" not in result.stderr:
                 raise MetadataReadError(f"ExifTool error: {result.stderr}")
@@ -243,6 +251,7 @@ class MetadataReader:
                 text=True,
                 encoding="utf-8",
                 timeout=300,  # Longer timeout for batch
+                **SUBPROCESS_NO_WINDOW,
             )
 
             data = json.loads(result.stdout)
@@ -459,7 +468,14 @@ class MetadataReader:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             data = json.loads(result.stdout)
             if data:
@@ -482,7 +498,14 @@ class MetadataReader:
         result = {"exif": False, "iptc": False, "xmp": False}
 
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             data = json.loads(proc.stdout)
             if data:

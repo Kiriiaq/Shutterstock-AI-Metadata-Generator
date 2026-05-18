@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from ...utils.subprocess_helper import SUBPROCESS_NO_WINDOW
 from ..models.metadata_models import ImageMetadata, IPTCFields, ShutterstockMetadata
 
 logger = logging.getLogger(__name__)
@@ -429,7 +430,14 @@ class MetadataWriter:
         cmd.append(str(file_path))
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             if result.returncode != 0:
                 error_msg = result.stderr.strip() or result.stdout.strip()
@@ -626,7 +634,14 @@ class MetadataWriter:
             cmd = [self.exiftool_path, "-o", str(xmp_path), "-charset", "utf8", str(file_path)]
 
             try:
-                result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=60,
+                    **SUBPROCESS_NO_WINDOW,
+                )
 
                 if result.returncode != 0 and "1 output files created" not in result.stdout:
                     # Create empty XMP sidecar
@@ -758,7 +773,14 @@ class MetadataWriter:
         cmd = [self.exiftool_path, "-json", "-charset", "utf8", "-XMP:all", str(xmp_path)]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=30)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             if result.returncode == 0:
                 data = json.loads(result.stdout)
@@ -805,7 +827,14 @@ class MetadataWriter:
         cmd.append(str(file_path))
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+                **SUBPROCESS_NO_WINDOW,
+            )
 
             if "1 image files updated" in result.stdout:
                 logger.info(f"Synced sidecar to RAW: {file_path}")
