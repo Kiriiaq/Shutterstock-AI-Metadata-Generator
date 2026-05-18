@@ -983,7 +983,7 @@ class WorkspaceView(BaseView):
         self._model_name_label.grid(row=2, column=1, columnspan=2, sticky="ew", pady=1)
 
         actions = ctk.CTkFrame(section, fg_color="transparent")
-        actions.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        actions.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         # Phase G (2026-05-18) — bouton "▶ Démarrer Ollama" qui tente
         # de lancer le serveur local (subprocess.Popen détaché). Mis
         # en premier car c'est le pré-requis pour que Tester /
@@ -1009,10 +1009,23 @@ class WorkspaceView(BaseView):
             height=26,
             command=lambda: self.app.open_in_modal("ai_control"),
         ).pack(side="left", padx=SPACE_XS)
+
+        # Phase G (2026-05-19) — la zone de feedback (résultat des tests
+        # Ollama, démarrage serveur, etc.) est désormais sur sa PROPRE
+        # rangée sous les boutons. Avant : packée à droite des boutons,
+        # elle pouvait être tronquée sur les petites fenêtres et nuisait
+        # à la lisibilité. Maintenant : ligne dédiée alignée à gauche,
+        # plus de surface pour les messages longs.
         self._model_test_msg = ctk.CTkLabel(
-            actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
+            section,
+            text="",
+            font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
+            anchor="w",
+            wraplength=380,
+            justify="left",
         )
-        self._model_test_msg.pack(side="right")
+        self._model_test_msg.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_SM))
 
     def _start_ollama_server(self) -> None:
         """Lance ``ollama serve`` en process détaché (Phase G 2026-05-18).

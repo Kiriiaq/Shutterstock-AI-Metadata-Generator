@@ -393,14 +393,26 @@ class App(ctk.CTk):
            ``ThemeManager.add_global_hook`` — used here to refresh the
            ttk.Style consumed by DataTable.
 
-        Phase G (2026-05-18) workaround : ``set_appearance_mode`` de
-        CTk recalcule le DPI scaling et peut grignoter quelques pixels
-        sur le ``CTkScrollableFrame`` interne à chaque toggle (effet
-        cumulatif : la colonne droite du workspace rétrécit visiblement
-        après quelques toggles). On capture la geometry **avant** le
-        toggle et on la restaure ~50 ms plus tard (après que CTk a
-        fini ses recalculs internes). Ça réinitialise la largeur
-        utilisable du scrollable frame à chaque toggle.
+        Phase G workaround — bug rétrécissement colonne droite
+        ----------------------------------------------------------
+        ``set_appearance_mode`` de CTk recalcule le DPI scaling et
+        peut grignoter quelques pixels sur le ``CTkScrollableFrame``
+        interne à chaque toggle (effet cumulatif : la colonne droite
+        du workspace rétrécit visiblement après quelques toggles).
+
+        Le workaround initial (1 seul ``after(50, …)`` qui rappelle
+        ``self.geometry(saved)``) ne suffisait pas — CTk continue à
+        recalculer plusieurs frames après le ``set_appearance_mode``,
+        ce qui peut écraser la 1ʳᵉ restauration.
+
+        Solution (2026-05-19) :
+        1. Sauve la geometry AVANT le toggle.
+        2. Restaure la geometry à 3 instants (50, 150, 350 ms) pour
+           survivre aux recalculs en cascade de CTk.
+        3. Re-applique explicitement les ``grid_columnconfigure`` du
+           workspace (poids 3 / 2 + minsize 320 sur la col droite)
+           pour forcer le scrollable frame interne à respecter à
+           nouveau les contraintes de largeur.
         """
         # Snapshot taille fenêtre AVANT le toggle pour la restaurer après.
         try:
@@ -411,15 +423,35 @@ class App(ctk.CTk):
         new = ThemeManager.get_instance().toggle()
         logger.info("Theme switched to: %s", new)
 
-        if saved_geometry:
-
-            def _restore():
+        def _restore() -> None:
+            # 1) Geometry — combat le grignotage CTkScrollableFrame
+            if saved_geometry:
                 try:
                     self.geometry(saved_geometry)
                 except Exception:
                     logger.debug("Geometry restore failed", exc_info=True)
+            # 2) Re-trigger les contraintes de largeur du workspace
+            #    (sinon le CTkScrollableFrame peut « oublier » le
+            #    minsize=320 et laisser la colonne droite rétrécir).
+            view = getattr(self.router, "_current_view", None)
+            if view is not None:
+                try:
+                    view.grid_columnconfigure(0, weight=3)
+                    view.grid_columnconfigure(1, weight=2, minsize=320)
+                except Exception:
+                    logger.debug("Column reconfigure failed", exc_info=True)
+            # 3) Force un repaint complet du shell
+            try:
+                self.update_idletasks()
+            except Exception:
+                pass
 
-            self.after(50, _restore)
+        # Trois passes pour survivre aux recalculs en cascade de CTk
+        # après ``set_appearance_mode``. Chaque délai cible une étape
+        # différente : 50 ms (premier idle), 150 ms (DPI tracker
+        # poll), 350 ms (re-render final).
+        for delay in (50, 150, 350):
+            self.after(delay, _restore)
 
     def _register_theme_hooks(self) -> None:
         """Wire the ttk.Style refresh into the ThemeManager dispatch.
