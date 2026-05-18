@@ -302,7 +302,9 @@ def _check_phase_f_workspace_states(app) -> None:
     assert ws._stop_btn.cget("state") == "disabled"
     assert ws._remove_btn.cget("state") == "disabled"
     assert ws._clear_btn.cget("state") == "disabled"
-    assert "0 fichier" in ws._sources_status.cget("text")
+    # Phase G (2026-05-18) — le format du compteur est désormais
+    # « nombre de fichiers : N · M sélectionné(s) ».
+    assert "nombre de fichiers : 0" in ws._sources_status.cget("text")
 
     # Barre de progression initialisée à 0 + statut "0 / 0 — En attente".
     assert ws._analyze_progress.winfo_exists()
