@@ -28,7 +28,7 @@ from __future__ import annotations
 import sys
 import time
 from pathlib import Path
-from tkinter import Tk, Label, Button
+from tkinter import Button, Label, Tk
 
 try:
     from PIL import ImageGrab

@@ -14,6 +14,7 @@ from app.config.theme import (
     SPACE_MD,
     SPACE_SM,
     SPACE_XL,
+    SPACE_XS,
     get_font,
     palette_pair,
 )
@@ -113,6 +114,8 @@ class SettingsView(BaseView):
                 ("create_backup", "Créer une sauvegarde _original", switch_factory("Activer")),
             ],
         )
+        row = self._build_license_section(wrapper, row)
+
         row = self._build_section(
             wrapper,
             row,
@@ -194,3 +197,184 @@ class SettingsView(BaseView):
         for key, field in self._fields.items():
             field.set_value(DEFAULTS.get(key, ""))
         self.app.toasts.show("Valeurs par défaut chargées (non enregistrées).", kind="info")
+
+    # ------------------------------------------------------------------
+    # Licence section — Community status + paste-key + activate/deactivate
+    # ------------------------------------------------------------------
+
+    def _build_license_section(self, parent: ctk.CTkFrame, row: int) -> int:
+        """Section dédiée à la licence Pro.
+
+        Contient :
+        - Affichage du tier courant + email + date d'expiration
+        - Textbox pour coller la clé JSON
+        - Bouton Activer (parse + verify + write file + reload)
+        - Bouton Retirer (suppression du license.json local)
+        - Lien Gumroad d'achat
+        """
+        api = self.app.api
+        section = ctk.CTkFrame(
+            parent,
+            fg_color=palette_pair("bg_elevated"),
+            border_color=palette_pair("border"),
+            border_width=1,
+            corner_radius=RADIUS_MD,
+        )
+        section.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_LG))
+        section.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            section, text="Licence", font=get_font("body_strong"),
+            text_color=palette_pair("fg"),
+        ).grid(row=0, column=0, sticky="w", padx=SPACE_LG, pady=(SPACE_MD, SPACE_SM))
+
+        body = ctk.CTkFrame(section, fg_color="transparent")
+        body.grid(row=1, column=0, sticky="ew", padx=SPACE_LG, pady=(0, SPACE_MD))
+        body.grid_columnconfigure(0, weight=1)
+
+        # Statut courant
+        self._license_status = ctk.CTkLabel(
+            body, text="", font=get_font("body"),
+            text_color=palette_pair("fg"), anchor="w", justify="left",
+        )
+        self._license_status.grid(row=0, column=0, sticky="ew", pady=(0, SPACE_SM))
+        self._refresh_license_status()
+
+        # Zone collage clé
+        ctk.CTkLabel(
+            body, text="Coller votre clé de licence (JSON) :",
+            font=get_font("small"), text_color=palette_pair("fg_muted"),
+            anchor="w",
+        ).grid(row=1, column=0, sticky="w")
+
+        self._license_textbox = ctk.CTkTextbox(
+            body, font=get_font("code"), height=120,
+            fg_color=palette_pair("bg"), text_color=palette_pair("fg"),
+            border_color=palette_pair("border"), border_width=1,
+            corner_radius=4,
+        )
+        self._license_textbox.grid(row=2, column=0, sticky="ew", pady=(SPACE_SM, SPACE_SM))
+
+        # Actions
+        actions = ctk.CTkFrame(body, fg_color="transparent")
+        actions.grid(row=3, column=0, sticky="ew")
+        actions.grid_columnconfigure(99, weight=1)
+
+        ctk.CTkButton(
+            actions, text="Activer", width=110, height=28,
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
+            font=get_font("body_strong"),
+            command=self._activate_license,
+        ).grid(row=0, column=0, padx=(0, SPACE_SM))
+
+        ctk.CTkButton(
+            actions, text="Retirer la licence", width=160, height=28,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1, border_color=palette_pair("border"),
+            command=self._deactivate_license,
+            state="normal" if (api and api.license.is_pro()) else "disabled",
+        ).grid(row=0, column=1, padx=SPACE_SM)
+        self._deactivate_btn = actions.winfo_children()[-1]  # ref pour refresh
+
+        # Lien d'achat (Gumroad — à brancher quand le listing est créé)
+        ctk.CTkLabel(
+            actions, text="Pas encore de licence ?",
+            font=get_font("small"), text_color=palette_pair("fg_muted"),
+        ).grid(row=0, column=10, padx=(SPACE_LG, SPACE_XS))
+        ctk.CTkButton(
+            actions, text="Acheter Pro →", width=120, height=28,
+            fg_color="transparent",
+            hover_color=palette_pair("bg_hover"),
+            text_color=palette_pair("accent"),
+            border_width=1, border_color=palette_pair("accent"),
+            command=self._open_purchase_link,
+        ).grid(row=0, column=11)
+
+        return row + 1
+
+    def _refresh_license_status(self) -> None:
+        """Met à jour le label de statut + état du bouton Retirer."""
+        api = self.app.api
+        if api is None:
+            self._license_status.configure(text="Backend indisponible.")
+            return
+        lic = api.license
+        if lic.is_pro():
+            tier_label = {
+                "pro_solo": "Pro Solo",
+                "pro_studio": "Pro Studio",
+                "lifetime": "Lifetime",
+            }.get(lic.tier.value, lic.tier.value)
+            email = lic.email or "—"
+            exp = lic.expires_at.strftime("%d/%m/%Y") if lic.expires_at else "jamais"
+            text = (
+                f"✅  Édition {tier_label}\n"
+                f"     Email : {email}\n"
+                f"     Expire : {exp}"
+            )
+            self._license_status.configure(text=text, text_color=palette_pair("success"))
+        else:
+            text = (
+                "🆓  Édition Community (gratuite)\n"
+                "     Batch jusqu'à 50 images · FTP simple · IA optionnelle\n"
+                "     Pro débloque : batch illimité, FTP scheduling, multi-comptes, templates IPTC"
+            )
+            self._license_status.configure(text=text, text_color=palette_pair("fg"))
+
+    def _activate_license(self) -> None:
+        api = self.app.api
+        if api is None:
+            self.app.toasts.show("Backend indisponible.", kind="error")
+            return
+        text = self._license_textbox.get("1.0", "end").strip()
+        if not text:
+            self.app.toasts.show("Collez d'abord votre clé.", kind="warning")
+            return
+        ok, msg = api.activate_license(text)
+        if ok:
+            self.app.toasts.show(msg, kind="success")
+            self._license_textbox.delete("1.0", "end")
+            self._refresh_license_status()
+            try:
+                self._deactivate_btn.configure(state="normal")
+            except Exception:
+                pass
+        else:
+            self.app.toasts.show(f"Activation échouée : {msg}", kind="error")
+
+    def _deactivate_license(self) -> None:
+        api = self.app.api
+        if api is None:
+            return
+        if not self.app.confirm_destructive(
+            title="Retirer la licence",
+            message=(
+                "Repasser en édition Community ? La clé n'est PAS supprimée "
+                "côté serveur — tu pourras la réactiver plus tard en la "
+                "recollant dans ce champ."
+            ),
+        ):
+            return
+        ok, msg = api.deactivate_license()
+        if ok:
+            self.app.toasts.show(msg, kind="info")
+            self._refresh_license_status()
+            try:
+                self._deactivate_btn.configure(state="disabled")
+            except Exception:
+                pass
+        else:
+            self.app.toasts.show(f"Échec : {msg}", kind="error")
+
+    def _open_purchase_link(self) -> None:
+        """Ouvre le listing Gumroad/Lemon Squeezy dans le navigateur."""
+        import webbrowser
+        url = "https://gumroad.com/l/shutterstockanalyzer-pro"  # TODO: remplacer par l'URL réelle
+        try:
+            webbrowser.open(url)
+        except Exception:
+            self.app.toasts.show(f"Lien : {url}", kind="info")
