@@ -1072,6 +1072,65 @@ class ShutterstockAIv2:
         except Exception as e:
             return {"available": False, "status": "error", "message": str(e)}
 
+    # ==================== Ollama model management ====================
+
+    def list_vision_models(self, *, refresh: bool = False) -> List[str]:
+        """Return the names of vision-capable models installed locally.
+
+        Lazy-initialises the OllamaClient if needed so the UI can call
+        this without a prior ``init_ai()``. Empty list on any error.
+        """
+        try:
+            if not hasattr(self, "ollama_client"):
+                self.init_ai()
+            if refresh:
+                self.ollama_client.list_models(refresh=True)
+            return [m.name for m in self.ollama_client.list_vision_models()]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("list_vision_models failed: %s", exc)
+            return []
+
+    def preload_model(self, model_name: str) -> Tuple[bool, str]:
+        """Load *model_name* into Ollama memory (warms up VRAM/RAM).
+
+        Persists the choice in settings (``ollama_model``) so the
+        next session re-loads the same model automatically.
+
+        Returns ``(success, message)`` — never raises.
+        """
+        if not model_name:
+            return False, "Aucun modèle indiqué."
+        try:
+            if not hasattr(self, "ollama_client"):
+                self.init_ai(model=model_name)
+            else:
+                # Make sure the analyzer points at the requested model
+                # so subsequent ``analyze_image`` calls use it.
+                if hasattr(self, "vision_analyzer"):
+                    self.vision_analyzer.model = model_name
+
+            ok = self.ollama_client.load_model(model_name)
+            if not ok:
+                return False, f"Échec chargement modèle {model_name}"
+            # Persist preference for next session.
+            try:
+                self.set_setting("ollama_model", model_name)
+            except Exception:  # noqa: BLE001
+                logger.debug("ollama_model setting persist failed", exc_info=True)
+            return True, f"Modèle chargé : {model_name}"
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("preload_model failed: %s", exc)
+            return False, str(exc)
+
+    def get_current_model(self) -> Optional[str]:
+        """Name of the model currently warm in Ollama memory, or None."""
+        try:
+            if not hasattr(self, "ollama_client"):
+                return None
+            return self.ollama_client.current_model
+        except Exception:  # noqa: BLE001
+            return None
+
     def analyze_image_ai(self, file_path: Path, skip_if_has_metadata: bool = False) -> Dict[str, Any]:
         """
         Analyze a single image using AI
@@ -1360,6 +1419,193 @@ class ShutterstockAIv2:
             on_progress=on_progress,
             on_result=on_result,
         )
+
+    # ==================== Expert Report (AI-optional) ====================
+
+    def build_expert_report(
+        self,
+        file_path: Path,
+        *,
+        use_ai: bool = False,
+        ai_result: Optional[Dict[str, Any]] = None,
+    ):
+        """Build a multi-platform expert report for one image.
+
+        Works without AI by default — designed for low-power machines
+        where Ollama isn't installed or shouldn't be invoked. The
+        heuristic pass reads existing IPTC metadata + does a cheap
+        PIL probe; the result is a fully-populated
+        :class:`ExpertMetadataReport` ready for CSV export or display.
+
+        ``use_ai=True`` requests an AI pass on top of the heuristic
+        baseline. If Ollama isn't available, we silently fall back to
+        heuristic-only — the user-facing posture of this app is "AI
+        is a nice-to-have, never a hard requirement".
+
+        Args:
+            file_path: Image to analyse.
+            use_ai: If True, attempt to enrich with vision-model output.
+            ai_result: Pre-computed AI dict (skips the Ollama call,
+                useful for tests and for re-running the export without
+                spending tokens).
+        """
+        # Lazy imports — keep the analysis subpackage out of the
+        # cold-start path of the GUI.
+        from .analysis.expert_report import (
+            build_expert_report,
+            enrich_with_ai_result,
+        )
+        from .analysis.platform_compliance import check_platform_compliance
+
+        file_path = Path(file_path)
+
+        # Compliance is computed first so the report has the size/MP
+        # context even if the IPTC read fails.
+        compliance = check_platform_compliance(file_path)
+
+        # Try to read existing IPTC; absence is fine (heuristic
+        # builder degrades gracefully).
+        image_metadata = None
+        if self.metadata_reader is not None:
+            try:
+                image_metadata = self.metadata_reader.read(file_path)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("read_metadata failed in build_expert_report: %s", exc)
+
+        report = build_expert_report(
+            file_path,
+            iptc=image_metadata.iptc if image_metadata else None,
+            image_metadata=image_metadata,
+            compliance=compliance,
+        )
+
+        # AI overlay — only when explicitly requested AND a result is
+        # either provided or obtainable from the vision analyzer.
+        if use_ai or ai_result is not None:
+            payload = ai_result
+            if payload is None and hasattr(self, "vision_analyzer"):
+                try:
+                    ai = self.analyze_image_ai(file_path)
+                    if ai.get("success"):
+                        payload = ai
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("AI enrichment failed, falling back: %s", exc)
+                    payload = None
+            if payload:
+                report = enrich_with_ai_result(report, payload)
+
+        return report
+
+    def build_expert_reports_batch(
+        self,
+        file_paths: List[Path],
+        *,
+        use_ai: bool = False,
+        on_progress: Callable[[int, int, str], None] = None,
+    ) -> List[Any]:
+        """Build reports for a batch of files (sequential, low-RAM)."""
+        reports = []
+        total = len(file_paths)
+        for idx, path in enumerate(file_paths, start=1):
+            try:
+                report = self.build_expert_report(path, use_ai=use_ai)
+                reports.append(report)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("build_expert_report failed for %s: %s", path, exc)
+            if on_progress:
+                try:
+                    on_progress(idx, total, Path(path).name)
+                except Exception:  # noqa: BLE001
+                    pass
+        return reports
+
+    def export_double_csv(
+        self,
+        reports: List[Any],
+        output_dir: Path,
+        *,
+        basename: str = "metadata",
+    ):
+        """Write Adobe + Shutterstock CSVs from a list of reports.
+
+        Returns an :class:`ExportResult` with both file paths.
+        """
+        from .export.csv_exporter import export_double_csv as _export
+
+        return _export(reports, Path(output_dir), basename=basename)
+
+    def export_batch(
+        self,
+        paths: List[Path],
+        output_dir: Path,
+        *,
+        platform: str = "both",
+        write_iptc: bool = False,
+        use_ai: bool = False,
+        basename: str = "metadata",
+        ftp_config: Optional[Any] = None,
+        on_progress: Optional[Callable[[Any], None]] = None,
+    ):
+        """End-to-end batch export: heuristic reports → CSV → IPTC → FTP.
+
+        Args:
+            paths: Images to process.
+            output_dir: Destination folder for the CSVs.
+            platform: ``"adobe"``, ``"shutterstock"`` or ``"both"``.
+            write_iptc: If True, writes the report back into each
+                file's IPTC. Requires ExifTool.
+            use_ai: If True AND vision_analyzer is available, runs
+                Ollama enrichment per file. Default False to keep the
+                pipeline cheap on low-power machines.
+            basename: Prefix for output CSV names.
+            ftp_config: Optional FtpConfig — pushes the produced CSVs
+                to the contributor portal after export.
+            on_progress: Optional callback fired at every per-file
+                lifecycle transition.
+
+        Returns:
+            BatchExportResult — never raises on per-file errors.
+        """
+        from .export.batch import Platform as _Platform
+        from .export.batch import run_export_batch
+
+        try:
+            platform_enum = _Platform(platform)
+        except ValueError:
+            platform_enum = _Platform.BOTH
+
+        ai_runner = None
+        if use_ai and hasattr(self, "vision_analyzer"):
+            def _ai_runner(p: Path) -> Dict[str, Any]:
+                res = self.vision_analyzer.analyze_image(p)
+                if not res.is_successful:
+                    return {}
+                return {
+                    "title": res.title,
+                    "description": res.description,
+                    "keywords": res.keywords,
+                    "categories": res.categories,
+                }
+            ai_runner = _ai_runner
+
+        return run_export_batch(
+            paths,
+            Path(output_dir),
+            platform=platform_enum,
+            write_iptc=write_iptc and self._exiftool_available,
+            use_ai=use_ai,
+            basename=basename,
+            iptc_writer=self.metadata_writer if write_iptc and self._exiftool_available else None,
+            ai_runner=ai_runner,
+            metadata_reader=self.metadata_reader,
+            ftp_config=ftp_config,
+            on_progress=on_progress,
+        )
+
+    def test_ftp_connection(self, ftp_config: Any) -> Tuple[bool, str]:
+        """Probe the FTP endpoint — used by the UI's « Tester » button."""
+        from .export.ftp_uploader import test_connection
+        return test_connection(ftp_config)
 
     # ==================== Cleanup ====================
 
