@@ -280,6 +280,25 @@ class WorkspaceView(BaseView):
         )
         self._deselect_all_btn.pack(side="left", padx=SPACE_XS)
 
+        # Bouton « Exporter… » — ouvre la modale ExportBatchView qui
+        # transforme la sélection courante en CSV Adobe/Shutterstock,
+        # avec option IPTC + push FTP. Désactivé tant que la sélection
+        # est vide (mis à jour par _refresh_action_states).
+        self._export_btn = ctk.CTkButton(
+            actions,
+            text="📤 Exporter…",
+            width=120,
+            height=26,
+            fg_color=palette_pair("accent"),
+            hover_color=palette_pair("accent_hover"),
+            text_color=palette_pair("accent_fg"),
+            font=get_font("body_strong"),
+            text_color_disabled=palette_pair("fg_subtle"),
+            state="disabled",
+            command=self._open_export_batch,
+        )
+        self._export_btn.pack(side="left", padx=(SPACE_MD, SPACE_XS))
+
         # Compteur permanent — désormais aligné à droite, sur la même
         # ligne que les boutons. Format demandé : "nombre de fichiers :
         # N · M sélectionné(s)". Visible dès le démarrage en gris doux,
@@ -674,10 +693,58 @@ class WorkspaceView(BaseView):
         ctk.CTkButton(actions, text="Effacer", width=70, height=26, command=self._editor_clear).pack(
             side="left", padx=SPACE_XS
         )
+        # Rapport expert microstock — utilise les nouvelles API
+        # backend (build_expert_report) qui tournent SANS IA par
+        # défaut. Conçu pour fonctionner sur les machines modestes
+        # où Ollama n'est pas installé / pas démarré.
+        ctk.CTkButton(
+            actions,
+            text="Rapport expert…",
+            width=140,
+            height=26,
+            fg_color=palette_pair("bg_hover"),
+            hover_color=palette_pair("bg_active"),
+            text_color=palette_pair("fg"),
+            border_width=1,
+            border_color=palette_pair("border"),
+            command=self._open_expert_report,
+        ).pack(side="left", padx=SPACE_XS)
         self._editor_status = ctk.CTkLabel(
             actions, text="", font=get_font("small"), text_color=palette_pair("fg_muted")
         )
         self._editor_status.pack(side="right")
+
+    def _open_expert_report(self) -> None:
+        """Push the current path into app_state and open the modal."""
+        if self._current_path is None:
+            self.app.toasts.show(
+                "Sélectionnez d'abord une image dans Sources (double-clic).",
+                kind="warning",
+            )
+            return
+        self.app.app_state.set("expert_report_path", str(self._current_path))
+        self.app.open_in_modal("expert_report")
+
+    def _open_export_batch(self) -> None:
+        """Open the batch-export modal on the current selection.
+
+        Reads ``selected_paths`` (already maintained by the Sources
+        DataTable) and opens the ExportBatchView modal. The modal
+        builds expert reports + CSV(s) + optional IPTC + optional
+        FTP push on its own thread; this method only needs to gate
+        on an non-empty selection.
+        """
+        selected = self.app.app_state.get("selected_paths") or []
+        if not selected:
+            self.app.toasts.show(
+                "Sélectionnez au moins un fichier dans Sources.",
+                kind="warning",
+            )
+            return
+        # Mirror selection into expert_report_paths so the modal
+        # picks it up without re-reading the DataTable.
+        self.app.app_state.set("expert_report_paths", list(selected))
+        self.app.open_in_modal("export_batch")
 
     def _toggle_editor_collapsed(self) -> None:
         """Show/hide the Editor IPTC body, keeping the title bar visible."""
@@ -779,30 +846,36 @@ class WorkspaceView(BaseView):
         #   que "Prêt", pour rendre l'état initial immédiatement
         #   compréhensible.
         section = self._panel(parent, row, "ANALYSE IA", icon="🧠", sticky="nsew", busy_id="analyze")
-        section.grid_rowconfigure(4, weight=1)
+        section.grid_rowconfigure(3, weight=1)
         section.grid_columnconfigure(0, weight=1)
 
-        opts = ctk.CTkFrame(section, fg_color="transparent")
-        opts.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-        self._skip_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(opts, text="Ignorer si méta", variable=self._skip_var, font=get_font("body")).pack(side="left")
-        self._write_var = ctk.BooleanVar(value=False)
-        ctk.CTkCheckBox(opts, text="Écrire les résultats", variable=self._write_var, font=get_font("body")).pack(
-            side="left", padx=SPACE_MD
-        )
-        self._analyze_summary = ctk.CTkLabel(
-            opts, text="Aucune image", font=get_font("small"), text_color=palette_pair("fg_muted")
-        )
-        self._analyze_summary.pack(side="right")
+        # Ligne 1 (compactée) — checkboxes + boutons Démarrer/Arrêter
+        # + label de progression "X / Y — état", tous alignés sur la
+        # même row. Évite les 3 lignes empilées de l'ancien layout et
+        # libère de la place pour le textbox de logs.
+        row1 = ctk.CTkFrame(section, fg_color="transparent")
+        row1.grid(row=1, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        row1.grid_columnconfigure(99, weight=1)
 
-        controls = ctk.CTkFrame(section, fg_color="transparent")
-        controls.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-        controls.grid_columnconfigure(2, weight=1)
+        self._skip_var = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(
+            row1, text="Ignorer si méta", variable=self._skip_var,
+            font=get_font("body"),
+        ).grid(row=0, column=0, sticky="w", padx=(0, SPACE_SM))
+
+        self._write_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(
+            row1, text="Écrire les résultats", variable=self._write_var,
+            font=get_font("body"),
+        ).grid(row=0, column=1, sticky="w", padx=SPACE_SM)
+
+        # Séparateur visuel léger entre options et boutons
+        ctk.CTkLabel(row1, text="│", text_color=palette_pair("border")).grid(
+            row=0, column=2, padx=SPACE_SM
+        )
+
         self._start_btn = ctk.CTkButton(
-            controls,
-            text="Démarrer",
-            width=110,
-            height=28,
+            row1, text="Démarrer", width=110, height=28,
             fg_color=palette_pair("accent"),
             hover_color=palette_pair("accent_hover"),
             text_color=palette_pair("accent_fg"),
@@ -811,53 +884,55 @@ class WorkspaceView(BaseView):
             state="disabled",
             command=self._analyze_start,
         )
-        self._start_btn.grid(row=0, column=0, padx=(0, SPACE_XS))
+        self._start_btn.grid(row=0, column=3, padx=(0, SPACE_XS))
+
         self._stop_btn = ctk.CTkButton(
-            controls,
-            text="Arrêter",
-            width=80,
-            height=28,
+            row1, text="Arrêter", width=80, height=28,
             fg_color=palette_pair("error"),
             text_color=palette_pair("error_fg"),
             text_color_disabled=palette_pair("fg_subtle"),
             state="disabled",
             command=self._analyze_stop,
         )
-        self._stop_btn.grid(row=0, column=1, padx=SPACE_XS)
+        self._stop_btn.grid(row=0, column=4, padx=SPACE_XS)
+
         self._analyze_status = ctk.CTkLabel(
-            controls,
-            text="0 / 0 — En attente",
+            row1, text="0 / 0 — En attente",
             font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         )
-        self._analyze_status.grid(row=0, column=2, padx=(SPACE_MD, 0), sticky="e")
+        self._analyze_status.grid(row=0, column=99, sticky="e", padx=(SPACE_MD, 0))
 
-        # Progress bar lives on its own row now — gives it a full-width
-        # band so it remains visible even when the window is narrow,
-        # and the label "Progression :" above resolves the visibility
-        # complaint in T-036 ("je ne sais pas où elle est").
-        progress_row = ctk.CTkFrame(section, fg_color="transparent")
-        progress_row.grid(row=3, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
-        progress_row.grid_columnconfigure(1, weight=1)
+        # ``_analyze_summary`` est conservé pour compatibilité avec le
+        # code de mise à jour existant, mais affiché en dessous, dans
+        # la même row que la progress bar (gain de place).
+        # Ligne 2 — barre de progression pleine largeur + résumé
+        # « Aucune image » à droite, sur la même ligne. Le label
+        # "Progression :" est court (icône ⏳) pour économiser la
+        # largeur.
+        row2 = ctk.CTkFrame(section, fg_color="transparent")
+        row2.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
+        row2.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(
-            progress_row,
-            text="Progression :",
-            font=get_font("small"),
+            row2, text="⏳",
+            font=get_font("body"),
             text_color=palette_pair("fg_muted"),
-            width=90,
-            anchor="w",
+            width=20, anchor="w",
         ).grid(row=0, column=0, sticky="w")
         self._analyze_progress = ctk.CTkProgressBar(
-            progress_row,
-            height=14,
-            corner_radius=RADIUS_SM,
+            row2, height=12, corner_radius=RADIUS_SM,
             progress_color=palette_pair("accent"),
             fg_color=palette_pair("bg_hover"),
             border_color=palette_pair("border"),
             border_width=1,
         )
         self._analyze_progress.set(0)
-        self._analyze_progress.grid(row=0, column=1, sticky="ew", padx=(SPACE_XS, 0))
+        self._analyze_progress.grid(row=0, column=1, sticky="ew", padx=SPACE_XS)
+        self._analyze_summary = ctk.CTkLabel(
+            row2, text="Aucune image", font=get_font("small"),
+            text_color=palette_pair("fg_muted"),
+        )
+        self._analyze_summary.grid(row=0, column=2, sticky="e", padx=(SPACE_SM, 0))
 
         self._analyze_results = ctk.CTkTextbox(
             section,
@@ -868,7 +943,7 @@ class WorkspaceView(BaseView):
             border_width=1,
             corner_radius=RADIUS_MD,
         )
-        self._analyze_results.grid(row=4, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
+        self._analyze_results.grid(row=3, column=0, sticky="nsew", padx=SPACE_SM, pady=(0, SPACE_SM))
         self._analyze_results.insert("1.0", "Les résultats apparaîtront ici en temps réel.\n")
         self._analyze_results.configure(state="disabled")
 
@@ -893,6 +968,13 @@ class WorkspaceView(BaseView):
             return  # called before _build_analyze_panel completes
         self._start_btn.configure(state="normal" if (n_sel > 0 and not processing) else "disabled")
         self._stop_btn.configure(state="normal" if processing else "disabled")
+        # Le bouton « Exporter… » dans Sources suit la même règle de
+        # gating : actif dès qu'au moins un fichier est sélectionné
+        # et qu'aucun traitement n'est en cours.
+        if hasattr(self, "_export_btn"):
+            self._export_btn.configure(
+                state="normal" if (n_sel > 0 and not processing) else "disabled"
+            )
 
     def _analyze_start(self) -> None:
         # Garde-fou double-clic (D-04 / T-221) : si un traitement est
@@ -1504,8 +1586,23 @@ class WorkspaceView(BaseView):
         if ai_status.get("available"):
             kind = "success"
             status_text = f"En ligne · {ai_status.get('version', '')}".strip()
-            current_model = ai_status.get("current_model") or "(aucun chargé)"
-            chip_label = "En ligne"
+            current_model = ai_status.get("current_model")
+            # Topbar chip — when a model is warmed in RAM, show its
+            # short name instead of the generic "En ligne" so the
+            # user knows at a glance which model will be used by the
+            # next AI call. Names like "llama3.2-vision:11b" get
+            # truncated to keep the chip narrow.
+            if current_model:
+                short = current_model.split(":", 1)[0]
+                chip_label = short[:18]
+            else:
+                chip_label = "En ligne (vide)"
+                # Soft visual cue : the server is up but nothing is
+                # warm yet — degrade to muted so the user knows they
+                # need to press "Charger" before launching an IA
+                # batch.
+                kind = "muted"
+            current_model = current_model or "(aucun chargé)"
         elif ai_status.get("status") == "not_initialized":
             kind = "muted"
             status_text = "Non initialisé"
