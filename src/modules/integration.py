@@ -50,6 +50,12 @@ class ShutterstockAIv2:
         # Load settings from database
         self._settings = self.database.get_all_settings()
 
+        # Load license (always succeeds — falls back to Community on
+        # any error). Stored as a plain attribute; the UI reads via the
+        # ``license`` property below.
+        from .licensing import load_license
+        self._license = load_license()
+
         # Initialize engines
         try:
             self.metadata_reader = MetadataReader(exiftool_path or self._settings.get("exiftool_path"))
@@ -1606,6 +1612,84 @@ class ShutterstockAIv2:
         """Probe the FTP endpoint — used by the UI's « Tester » button."""
         from .export.ftp_uploader import test_connection
         return test_connection(ftp_config)
+
+    # ==================== Licence ====================
+
+    @property
+    def license(self):  # noqa: A003 — public surface, intentional
+        """Currently active license — always a valid object.
+
+        Falls back to ``License.community()`` when no file is installed
+        or when verification fails. The UI uses
+        ``api.license.is_pro()`` and ``api.license.has_feature(name)``
+        for gating.
+        """
+        return self._license
+
+    def activate_license(self, payload_or_text: Any) -> Tuple[bool, str]:
+        """Install a license payload pasted by the user.
+
+        Args:
+            payload_or_text: A dict (parsed JSON) OR a string (raw text
+                pasted from the customer email). The string is JSON-
+                parsed first.
+
+        Returns:
+            ``(success, message)``. On success, the license file is
+            written to ``~/.shutterstock_ai/license.json`` and
+            ``self.license`` is refreshed.
+        """
+        import json as _json
+
+        from .licensing import (
+            DEFAULT_LICENSE_PATH,
+            load_license,
+            verify_license_payload,
+        )
+
+        if isinstance(payload_or_text, str):
+            text = payload_or_text.strip()
+            if not text:
+                return False, "Clé vide."
+            try:
+                payload = _json.loads(text)
+            except _json.JSONDecodeError as exc:
+                return False, f"JSON invalide : {exc}"
+        elif isinstance(payload_or_text, dict):
+            payload = payload_or_text
+        else:
+            return False, "Type de clé non supporté."
+
+        if not verify_license_payload(payload):
+            return False, "Signature de la clé invalide."
+
+        # Persist + reload via load_license to get the canonical
+        # validation path (expiration, tier enum coercion).
+        try:
+            DEFAULT_LICENSE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            DEFAULT_LICENSE_PATH.write_text(
+                _json.dumps(payload, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            return False, f"Écriture impossible : {exc}"
+
+        self._license = load_license()
+        if not self._license.is_pro():
+            return False, "La clé est valide mais ne donne pas accès au Pro."
+        return True, f"Licence activée : {self._license.tier.value} ({self._license.email})"
+
+    def deactivate_license(self) -> Tuple[bool, str]:
+        """Remove the local license file → back to Community."""
+        from .licensing import DEFAULT_LICENSE_PATH, load_license
+
+        try:
+            if DEFAULT_LICENSE_PATH.exists():
+                DEFAULT_LICENSE_PATH.unlink()
+        except OSError as exc:
+            return False, f"Suppression impossible : {exc}"
+        self._license = load_license()
+        return True, "Licence retirée — mode Community actif."
 
     # ==================== Cleanup ====================
 

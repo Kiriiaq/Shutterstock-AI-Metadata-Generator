@@ -5,6 +5,51 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Pro tier groundwork
+
+> Targets release as **v2.1.0** once the Gumroad listing is live and a
+> couple of Pro features (FTP scheduling, multi-account) are shipped.
+
+### Added
+- **Licensing module** (`src/modules/licensing/`) — HMAC-SHA256-signed
+  license payloads, ed25519 hardening path documented. Schema:
+  `{email, tier, features, issued_at, expires_at, signature}`.
+- **Four subscription tiers** — `community` (default), `pro_solo`,
+  `pro_studio`, `lifetime` — with feature-level gating via
+  ``License.has_feature(name)``.
+- **Six gated features** registered: `batch_unlimited`, `ftp_scheduling`,
+  `ftp_multi_account`, `iptc_templates`, `prompt_profiles`,
+  `priority_support`.
+- **Facade API** (`ShutterstockAIv2`): `.license` property,
+  `.activate_license(payload_or_text)`, `.deactivate_license()`.
+- **Admin generator**: `tools/generate_license.py` — CLI that produces
+  signed JSON payloads from `--email`, `--tier`, `--days` for Gumroad
+  fulfilment. Reads `SSA_LICENSE_SECRET` from env.
+- **UI**: new « Licence » section in Settings — shows current tier +
+  email + expiration, textbox to paste a key, « Activer » / « Retirer »
+  buttons, « Acheter Pro → » link (placeholder Gumroad URL).
+- **First enforced gate**: ExportBatchView caps batch at 50 images in
+  Community; > 50 surfaces a non-blocking toast + Gumroad CTA. Pro
+  bypasses the cap via `batch_unlimited`.
+
+### Tests
+- 21 new tests for the licensing layer (community default, key
+  generation, HMAC verify, tamper resistance, expiration, feature
+  gating, facade integration). Total suite: **111 passing**.
+
+### Documentation
+- All steps documented in `LAUNCH_PROCEDURE.html` (section E) with
+  ready-to-paste Gumroad description, prompt to extend Pro features,
+  and pricing rationale.
+
+### Security notes
+- Current HMAC is symmetric → secret is reachable by anyone with a
+  copy of the EXE. This is **honour-system licensing**, acceptable
+  for a 29 €/an product. Hardening to ed25519 (PyNaCl, asymmetric)
+  is on the v2.2.0 roadmap.
+
+---
+
 ## [2.0.0] — 2026-05-19
 
 Major release — pipeline becomes **multi-platform** (Adobe Stock + Shutterstock)

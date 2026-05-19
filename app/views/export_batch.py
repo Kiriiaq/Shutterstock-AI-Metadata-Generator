@@ -635,9 +635,34 @@ class ExportBatchView(BaseView):
     # Start / worker
     # ------------------------------------------------------------------
 
+    # Cap batch size in Community edition. Pro tiers lift it via the
+    # `batch_unlimited` feature. Anything ≤ this number runs the
+    # standard path; above it, we surface a blocking toast + Gumroad
+    # link instead of silently truncating the user's selection.
+    COMMUNITY_BATCH_CAP = 50
+
     def _start(self) -> None:
         if self._running:
             return
+
+        # --- Pro gating : batch > 50 -----------------------------
+        api = self.app.api
+        lic = getattr(api, "license", None)
+        is_pro = bool(lic and lic.has_feature("batch_unlimited"))
+        if len(self._files) > self.COMMUNITY_BATCH_CAP and not is_pro:
+            self.app.toasts.show(
+                f"Édition Community : maximum {self.COMMUNITY_BATCH_CAP} images "
+                f"par export (vous en avez {len(self._files)}). "
+                f"Passez en Pro pour le batch illimité.",
+                kind="warning",
+                timeout_ms=6000,
+            )
+            self._status_label.configure(
+                text=f"⛔ Pro requis pour > {self.COMMUNITY_BATCH_CAP} images",
+                text_color=palette_pair("warning"),
+            )
+            return
+
         out_dir = Path(self._out_var.get().strip() or self._files[0].parent)
         try:
             out_dir.mkdir(parents=True, exist_ok=True)
