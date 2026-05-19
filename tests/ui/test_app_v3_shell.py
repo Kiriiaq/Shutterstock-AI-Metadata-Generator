@@ -98,8 +98,8 @@ def _check_workspace_panels(app) -> None:
 
 
 def _check_open_in_modal(app) -> None:
-    """All 5 detail views open in a Toplevel and close cleanly."""
-    for view_id in ("settings", "audit", "ai_control", "validate"):
+    """All detail views open in a Toplevel and close cleanly."""
+    for view_id in ("settings", "audit", "ai_control", "validate", "expert_report"):
         before = len(app._open_modals)
         app.open_in_modal(view_id)
         app.update_idletasks()

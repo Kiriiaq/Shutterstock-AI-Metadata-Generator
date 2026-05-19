@@ -1,0 +1,16 @@
+﻿Filename,Description,Keywords,Categories,Editorial,Mature,Illustration
+photo n°1.jpg,Image dans chemin avec accents et espaces,"test, unicode, chemin, accent, espace, robustesse, filesystem",,No,No,No
+input_brands.jpg,Sport scene with brand references in keywords.,"running, sport, outdoor, fitness, training, athlete",,No,No,No
+input_cmyk.jpg,Input Cmyk,,,No,No,No
+input_corrompu.jpg,Input Corrompu,,,No,No,No
+input_low_mp.jpg,Low resolution test image,"nature, test, small, landscape, scene, outdoor",,No,No,No
+input_many_keywords.jpg,Image with 80 keywords (should cap at 50),"keyword00, keyword01, keyword02, keyword03, keyword04, keyword05, keyword06, keyword07, keyword08, keyword09, keyword10, keyword11, keyword12, keyword13, keyword14, keyword15, keyword16, keyword17, keyword18, keyword19, keyword20, keyword21, keyword22, keyword23, keyword24, keyword25, keyword26, keyword27, keyword28, keyword29, keyword30, keyword31, keyword32, keyword33, keyword34, keyword35, keyword36, keyword37, keyword38, keyword39, keyword40, keyword41, keyword42, keyword43, keyword44, keyword45, keyword46, keyword47, keyword48, keyword49",,No,No,No
+input_mauvais_format.png,Input Mauvais Format,,,No,No,No
+input_no_keywords.jpg,Used to test the missing-keywords blocker.,,,No,No,No
+input_no_title.jpg,"Description only, no title.","scene, abstract, design, minimal, clean, neutral",,No,No,No
+input_nominal.jpg,Diverse colleagues collaborate on a digital marketing strategy.,"business, team, office, brainstorm, modern, diverse, marketing, strategy, collaboration, meeting, professional, corporate",Business/Finance,No,No,No
+input_stuffing.jpg,Calm evening light over a remote mountain lake.,"sunset, lake, mountain, nature",,No,No,No
+input_stuffing_in_title.jpg,Lake photography practice with classic golden hour light.,"photo, lake, sunset, landscape, nature, outdoor, calm, water, reflection",,No,No,No
+input_utf8.jpg,Test caractères spéciaux : Çà éü öß äÖ — symboles : ° ± µ O 8,"température, caméra, précision, instrument, mesure, industriel, technique, métrologie",Industrial,No,No,No
+input_vide.jpg,Input Vide,,,No,No,No
+input_volumineux.jpg,Input Volumineux,,,No,No,No
