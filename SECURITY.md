@@ -1,0 +1,116 @@
+# Security policy
+
+## What this app handles
+
+ShutterstockAnalyzer runs **entirely locally**. There is no telemetry, no
+cloud API call, no remote analytics. The only network operations are:
+
+| Channel | Purpose | Endpoint |
+|---|---|---|
+| HTTP localhost | Ollama vision models | `http://localhost:11434/api/*` (configurable) |
+| FTP / FTPS | Push CSV exports to the contributor portal | User-supplied host + credentials |
+| ExifTool subprocess | Read / write IPTC metadata | Local binary only |
+
+Everything else (analysis, scoring, IPTC, database) is local-only.
+
+---
+
+## Credentials handling
+
+### FTP / FTPS
+
+- **Username, host, remote directory** are persisted between sessions in the
+  local SQLite settings table (`~/.shutterstock_ai/shutterstock_ai.db`).
+  This file lives in your user profile, not in the repo.
+- **Password is never persisted.** You re-enter it at each session.
+  See `app/views/export_batch.py` (search for « NB: password intentionally
+  NOT persisted »).
+- The password field uses `show="*"` masking on screen.
+- The password is **never logged** — `FtpConfig.safe_summary()` returns the
+  connection string without the password (used in INFO-level logs).
+- The control channel uses **FTPS (TLS) by default** (`use_tls=True`).
+  Plain FTP requires explicitly unchecking the « FTPS (TLS) » checkbox.
+- When FTPS is enabled, the **data channel is also protected** via
+  `prot_p()` — without this, files would go in clear even on a TLS
+  control channel.
+
+### Ollama
+
+- No authentication. The client talks to `http://localhost:11434` by
+  default — ensure your Ollama server isn't exposed to the network.
+
+### ExifTool
+
+- Invoked as a subprocess. No credentials involved.
+
+---
+
+## What's NOT in the repo
+
+The `.gitignore` blocks:
+
+- `.env*` (any environment file)
+- `dist/`, `build/`, `*.spec`, `__pycache__/` (build artefacts)
+- `htmlcov/`, `.benchmarks/`, `.pytest_cache/`, `.ruff_cache/` (caches)
+- The local SQLite database (lives in `~/.shutterstock_ai/`, never in the
+  project tree)
+
+The Phase 1 audit (see `AUDIT.md`) confirmed **no secrets** are checked in.
+
+---
+
+## Reporting a vulnerability
+
+If you find a security issue (credential leak, injection, code execution,
+DoS, dependency CVE):
+
+1. **Do not open a public GitHub issue.**
+2. Email the author at the address listed in `pyproject.toml`'s `authors`
+   field, with subject `[ShutterstockAnalyzer Security] …`.
+3. Include:
+   - Affected version (run `python main.py` and check the topbar / about).
+   - Minimal reproduction steps.
+   - Suspected severity (low / medium / high / critical).
+4. You should get an acknowledgement within 7 days.
+
+There is no formal bounty programme. Reporters who responsibly disclose
+significant issues will be credited in `CHANGELOG.md`.
+
+---
+
+## Dependency surface
+
+Runtime dependencies (intentionally minimal):
+
+```
+customtkinter  >= 5.2  < 6.0
+Pillow         >= 10   < 12
+requests       >= 2.31 < 3.0
+urllib3        >= 2.0  < 3.0
+```
+
+Plus Python 3.11+ stdlib (`ftplib`, `ssl`, `sqlite3`, `tkinter`,
+`subprocess`, `pathlib`, etc.).
+
+Optional binary dependencies (not bundled):
+
+- ExifTool — read/write IPTC metadata
+- Ollama — vision AI enrichment
+
+Run `pip-audit` (or equivalent) periodically. The CI does not yet wire
+this in but is a tracked improvement.
+
+---
+
+## Threat model — known limits
+
+- **Local user account compromise**: if an attacker has read access to your
+  user profile, they can read the SQLite settings (FTP host + username +
+  IPTC history) but **not the FTP password**.
+- **Malicious image file**: Pillow `verify()` is called on every input —
+  malformed JPEGs raise contained errors, no code execution.
+- **Malicious Ollama response**: the parser is defensive (tolerates broken
+  JSON, falls back to heuristic). No code is exec'd from AI output.
+- **Malicious FTP server certificate**: FTPS uses `ssl.create_default_context()`
+  with hostname + cert verification. The `FtpConfig.verify_cert=False`
+  knob exists for **self-signed test servers only** — don't ship with it.
