@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procédure de lancement — ShutterstockAnalyzer v2.0.0</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --border: #d4d8df;
+    --text: #1a1d24; --muted: #6b7280; --subtle: #9ca3af;
+    --primary: #1f4e78; --accent: #2563eb;
+    --ok: #16a34a; --ok-bg: #f0fdf4;
+    --warn: #d97706; --warn-bg: #fff7ed;
+    --nok: #dc2626; --nok-bg: #fef2f2;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 24px 80px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    max-width: 1100px; margin-left: auto; margin-right: auto;
+  }
+  header { margin-bottom: 28px; }
+  h1 { margin: 0 0 4px; font-size: 28px; color: var(--primary); }
+  .lead { color: var(--muted); margin: 0 0 12px; font-size: 15px; max-width: 760px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .badge { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+           border: 1px solid var(--border); background: var(--card); }
+
+  /* --- Progress sticky --- */
+  .progress-sticky {
+    position: sticky; top: 0; z-index: 50; background: rgba(247,248,250,0.97);
+    backdrop-filter: blur(10px); padding: 12px 0; margin: 0 -24px 16px;
+    padding-left: 24px; padding-right: 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .progress-sticky .label { font-size: 13px; color: var(--muted); }
+  .progress-sticky .label strong { font-size: 18px; color: var(--text); margin-right: 4px; }
+  .progress-bar {
+    flex: 1; min-width: 200px; height: 8px; background: var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar > div { height: 100%; background: linear-gradient(90deg, var(--ok), #22c55e); transition: width 0.3s ease; }
+  .progress-sticky button {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--card); color: var(--text); cursor: pointer; font-size: 12px;
+  }
+  .progress-sticky button.danger { color: var(--nok); border-color: var(--nok); }
+
+  /* --- Step block --- */
+  details.step {
+    background: var(--card); border-radius: 8px; margin-bottom: 14px;
+    box-shadow: var(--shadow); overflow: hidden;
+    border-left: 4px solid var(--border);
+  }
+  details.step[open] { border-left-color: var(--accent); }
+  details.step.done { border-left-color: var(--ok); }
+  details.step.done summary { background: var(--ok-bg); }
+  details.step summary {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; cursor: pointer; user-select: none;
+    list-style: none;
+  }
+  details.step summary::-webkit-details-marker { display: none; }
+  summary input[type="checkbox"] {
+    flex-shrink: 0; width: 22px; height: 22px; cursor: pointer;
+    accent-color: var(--ok);
+  }
+  summary .step-num {
+    font-family: 'Cascadia Code', monospace; font-weight: 700;
+    color: var(--muted); min-width: 28px;
+  }
+  summary .step-title { flex: 1; font-weight: 600; font-size: 15px; }
+  summary .step-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px;
+          font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .pill.p0 { background: var(--nok-bg); color: var(--nok); }
+  .pill.p1 { background: var(--warn-bg); color: var(--warn); }
+  .pill.p2 { background: #f1f5f9; color: var(--muted); }
+  .pill.auto { background: #ddd6fe; color: #6d28d9; }
+  .pill.manual { background: #fef3c7; color: #d97706; }
+  .pill.optional { background: #f1f5f9; color: var(--muted); }
+
+  /* --- Step body --- */
+  .step-body { padding: 0 18px 18px; }
+  .step-body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;
+                  color: var(--muted); margin: 16px 0 6px; border-bottom: 1px solid var(--border);
+                  padding-bottom: 4px; }
+  .step-body p { margin: 6px 0; }
+  .step-body ul, .step-body ol { padding-left: 22px; }
+
+  /* --- Code block + copy button --- */
+  .code-wrap { position: relative; margin: 8px 0; }
+  pre.code {
+    background: #1a1d24; color: #e5e7eb; padding: 14px 18px;
+    border-radius: 6px; overflow-x: auto; font-size: 13px;
+    font-family: 'Cascadia Code', 'Consolas', monospace; line-height: 1.45;
+    margin: 0;
+  }
+  pre.code .cmt { color: #6b7280; }
+  pre.code .kw { color: #fbbf24; }
+  .copy-btn {
+    position: absolute; top: 6px; right: 6px; padding: 4px 10px;
+    background: rgba(255,255,255,0.1); color: #e5e7eb;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 4px;
+    cursor: pointer; font-size: 11px;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); }
+  .copy-btn.copied { background: var(--ok); border-color: var(--ok); }
+
+  /* --- Prompt blocks (LinkedIn / Gumroad / etc.) --- */
+  .prompt {
+    background: #fef3c7; border-left: 4px solid var(--warn); border-radius: 4px;
+    padding: 12px 14px; margin: 8px 0; position: relative;
+    font-size: 13px; white-space: pre-wrap; line-height: 1.55;
+  }
+  .prompt .prompt-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    color: var(--warn); letter-spacing: 0.5px; display: block; margin-bottom: 6px;
+  }
+
+  /* --- Tables (input requis) --- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th { text-align: left; padding: 8px 10px; background: var(--bg);
+       color: var(--muted); font-weight: 600; font-size: 11px;
+       text-transform: uppercase; letter-spacing: 0.3px;
+       border-bottom: 1px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td input[type="text"] {
+    width: 100%; padding: 4px 8px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 13px; font-family: inherit;
+    background: var(--bg);
+  }
+
+  /* --- Callouts --- */
+  .info, .warn, .danger {
+    padding: 10px 14px; border-radius: 6px; margin: 10px 0;
+    border-left: 4px solid var(--accent); background: #eff6ff;
+    font-size: 13px;
+  }
+  .warn { border-left-color: var(--warn); background: var(--warn-bg); }
+  .danger { border-left-color: var(--nok); background: var(--nok-bg); }
+
+  /* --- Section dividers --- */
+  h2.section {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--primary); margin: 28px 0 10px;
+    border-top: 2px solid var(--primary); padding-top: 10px;
+  }
+  h2.section .num {
+    background: var(--primary); color: white; padding: 2px 10px;
+    border-radius: 4px; margin-right: 8px; font-family: 'Cascadia Code', monospace;
+    font-size: 12px;
+  }
+
+  footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border);
+           color: var(--muted); font-size: 12px; text-align: center; }
+
+  @media print {
+    body { background: white; }
+    details.step { box-shadow: none; }
+    details.step summary { background: transparent !important; }
+    details.step { open: true; }
+    .progress-sticky { position: static; background: transparent; }
+    .copy-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Procédure de lancement — ShutterstockAnalyzer v2.0.0</h1>
+  <p class="lead">
+    Tout ce qu'il reste à faire pour passer du « repo propre » au « projet
+    commercialisable ». Chaque étape contient les commandes copy-paste,
+    les prompts à utiliser et les informations qu'on doit te demander.
+    Persistance dans le navigateur — tu peux reprendre où tu t'es arrêté.
+  </p>
+  <div class="badges">
+    <span class="badge" style="color:#1f4e78">ShutterstockAnalyzer v2.0.0</span>
+    <span class="badge" style="color:#16a34a">Code prêt</span>
+    <span class="badge" style="color:#16a34a">90 tests verts</span>
+    <span class="badge" style="color:#16a34a">2 EXE buildés</span>
+    <span class="badge" style="color:#d97706">Lancement à initier</span>
+  </div>
+</header>
+
+<div class="progress-sticky">
+  <div class="label"><strong id="done-count">0</strong> / <strong id="total-count">14</strong> étapes</div>
+  <div class="progress-bar"><div id="progress-fill" style="width: 0%"></div></div>
+  <div class="label"><strong id="time-left">~4 h</strong>restantes</div>
+  <button onclick="resetAll()" class="danger">↻ Réinitialiser</button>
+  <button onclick="window.print()">🖨 Imprimer</button>
+</div>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">A</span> Pré-vol — vérifications (5 min)</h2>
+
+<details class="step" data-id="a1" data-time="2">
+  <summary>
+    <input type="checkbox" data-step="a1">
+    <span class="step-num">A1</span>
+    <span class="step-title">Vérifier que tout est vert localement</span>
+    <span class="step-meta">2 min</span>
+    <span class="pill auto">AUTO</span>
+  </summary>
+  <div class="step-body">
+    <p>Avant tout, on confirme que rien n'est cassé localement.</p>
+    <div class="code-wrap">
+      <pre class="code"><span class="cmt"># Suite de tests (90 tests, ~5 s)</span>
+python -m pytest tests/ -q
+
+<span class="cmt"># Lint</span>
+python -m ruff check app/ src/ main.py build.py tests/
+
+<span class="cmt"># Régression E2E cell-for-cell</span>
+python test/scripts/run_tests.py
+python test/scripts/compare_outputs.py</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+    <div class="info">
+      <strong>Attendu :</strong> <code>90 passed</code> · <code>All checks passed!</code> ·
+      <code>outputs_reels match outputs_reference cell-for-cell</code>.
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="a2" data-time="3">
+  <summary>
+    <input type="checkbox" data-step="a2">
+    <span class="step-num">A2</span>
+    <span class="step-title">Commiter les changements en cours</span>
+    <span class="step-meta">3 min</span>
+    <span class="pill manual">MANUEL</span>
+  </summary>
+  <div class="step-body">
+    <p>Cette session a produit un gros lot de modifs. Avant le tag v2.0.0, on commite tout.</p>
+    <div class="code-wrap">
+      <pre class="code"><span class="cmt"># Voir ce qui change</span>
+git status
+
+<span class="cmt"># Commit du nettoyage Phase 2 (déjà staged via git mv / git rm)</span>
+git commit -m "chore(phase-2): purge _archive, move *.md to audit/, harmonize author"
+
+<span class="cmt"># Commit des nouvelles features v2 backend</span>
+git add src/modules/analysis/ src/modules/export/ src/modules/integration.py src/modules/models/metadata_models.py
+git commit -m "feat: Adobe Stock + Shutterstock dual CSV, FTP push, expert report (heuristic-first)"
+
+<span class="cmt"># Commit UI</span>
+git add app/views/expert_report.py app/views/export_batch.py app/views/workspace.py app/app.py
+git commit -m "feat(ui): expert report modal + export batch modal + workspace compaction"
+
+<span class="cmt"># Commit tests + qualif</span>
+git add tests/test_core/ test/
+git commit -m "test: 28 new tests + Edvance qualification dossier"
+
+<span class="cmt"># Commit docs Phase 3-7</span>
+git add README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md CLAUDE.md AUDIT.md PROJECT_OVERVIEW.html LAUNCH_PROCEDURE.html LINKEDIN_DRAFTS.md docs/ tools/release.ps1 tools/take_screenshots.py
+git commit -m "docs(v2): README v2, CHANGELOG, monetization, LinkedIn drafts, procedure"</pre>
+      <button class="copy-btn">Copier tout</button>
+    </div>
+    <div class="warn">
+      <strong>Adapte les commits</strong> selon ton style préféré (un seul gros commit, ou plusieurs petits). L'important est que tout soit commité avant le tag.
+    </div>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">B</span> Tag + Release GitHub (20 min)</h2>
+
+<details class="step" data-id="b1" data-time="10">
+  <summary>
+    <input type="checkbox" data-step="b1">
+    <span class="step-num">B1</span>
+    <span class="step-title">Lancer le script de release automatisé</span>
+    <span class="step-meta">10 min · Recommandé</span>
+    <span class="pill auto">SEMI-AUTO</span>
+  </summary>
+  <div class="step-body">
+    <p>Le script <code>tools/release.ps1</code> enchaîne : tests → ruff → E2E → build → smoke → tag.</p>
+    <h3>Option 1 — Dry run (recommandé d'abord)</h3>
+    <div class="code-wrap">
+      <pre class="code">powershell -ExecutionPolicy Bypass -File .\tools\release.ps1 -Version v2.0.0</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+    <p>Vérifie tout localement <strong>sans pousser</strong>. Le tag est créé en local seulement.</p>
+
+    <h3>Option 2 — Release complète avec push GitHub</h3>
+    <div class="code-wrap">
+      <pre class="code"><span class="cmt"># Nécessite : gh CLI installée + authentifiée (gh auth status)</span>
+powershell -ExecutionPolicy Bypass -File .\tools\release.ps1 -Version v2.0.0 -Release</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+    <p>Lance tout, pousse le tag, crée la GitHub Release avec les 2 EXE attachés et les notes du CHANGELOG.</p>
+
+    <div class="info">
+      <strong>Pré-requis pour -Release :</strong> <a href="https://cli.github.com/" target="_blank">gh CLI</a> installée
+      et authentifiée. Vérifie avec <code>gh auth status</code>.
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="b2" data-time="10">
+  <summary>
+    <input type="checkbox" data-step="b2">
+    <span class="step-num">B2</span>
+    <span class="step-title">Alternative : tag + release à la main</span>
+    <span class="step-meta">10 min · Si tu préfères</span>
+    <span class="pill manual">MANUEL</span>
+  </summary>
+  <div class="step-body">
+    <div class="code-wrap">
+      <pre class="code"><span class="cmt"># Tag annoté</span>
+git tag -a v2.0.0 -m "Release v2.0.0 — Adobe + Shutterstock + FTP + Ollama optional"
+git push origin v2.0.0
+
+<span class="cmt"># Release via gh (si installée)</span>
+gh release create v2.0.0 dist\ShutterstockAnalyzer.exe dist\ShutterstockAnalyzer-debug.exe \
+    --title "v2.0.0 — Multi-platform microstock export" \
+    --notes-file CHANGELOG.md \
+    --verify-tag
+
+<span class="cmt"># Sinon : créer la release manuellement</span>
+<span class="cmt"># https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/new?tag=v2.0.0</span></pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">C</span> Assets visuels (2 h)</h2>
+
+<details class="step" data-id="c1" data-time="20">
+  <summary>
+    <input type="checkbox" data-step="c1">
+    <span class="step-num">C1</span>
+    <span class="step-title">Capturer les 4 screenshots</span>
+    <span class="step-meta">20 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p0">P0</span>
+  </summary>
+  <div class="step-body">
+    <p>Helper interactif fourni :</p>
+    <div class="code-wrap">
+      <pre class="code">python tools\take_screenshots.py</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+    <p>Le script t'ouvre une mini-fenêtre qui te guide pour 4 captures :</p>
+    <ul>
+      <li><code>docs/media/workspace.png</code> — vue principale, thème light</li>
+      <li><code>docs/media/workspace_dark.png</code> — vue principale, thème dark</li>
+      <li><code>docs/media/expert_report.png</code> — modale Rapport expert ouverte</li>
+      <li><code>docs/media/export_batch.png</code> — modale Export Batch (avec bandeau IA + FTP révélés)</li>
+    </ul>
+    <div class="info">
+      Pour chaque screenshot : positionne la fenêtre app où tu veux, clique « Capturer maintenant » dans la mini-fenêtre, attends 3 sec, c'est fait. Tu peux aussi sauter une capture si elle est déjà OK.
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="c2" data-time="60">
+  <summary>
+    <input type="checkbox" data-step="c2">
+    <span class="step-num">C2</span>
+    <span class="step-title">Enregistrer la GIF hero (storyboard prêt)</span>
+    <span class="step-meta">60 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p0">P0</span>
+  </summary>
+  <div class="step-body">
+    <p><strong>Outil recommandé :</strong> <a href="https://www.screentogif.com/" target="_blank">ScreenToGif</a> (gratuit, Windows).</p>
+    <h3>Storyboard 25-30 secondes</h3>
+    <ol>
+      <li><strong>0–4 s</strong> : fenêtre app vide, scan d'un dossier de 12 photos (utilise <code>test/inputs/</code>)</li>
+      <li><strong>4–8 s</strong> : DataTable se remplit, multi-sélection de 5 fichiers (Ctrl+clic)</li>
+      <li><strong>8–12 s</strong> : clic <em>📤 Exporter…</em> → modale s'ouvre</li>
+      <li><strong>12–18 s</strong> : choix <em>Les deux</em> (Adobe + Shutterstock), IPTC laissé OFF, clic <em>▶ Lancer l'export</em></li>
+      <li><strong>18–25 s</strong> : barre de progression, badges <em>⏳ → ✅</em> par fichier, toast succès</li>
+      <li><strong>25–30 s</strong> : fenêtre Explorer Windows ouverte sur les 2 CSV produits</li>
+    </ol>
+
+    <h3>Réglages capture</h3>
+    <ul>
+      <li>Résolution capture : <strong>1100 × 720</strong> (zone fixe autour de l'app)</li>
+      <li>FPS : <strong>12</strong> (compromis taille / fluidité)</li>
+      <li>Export : <code>docs/media/demo_v2.gif</code> · format GIF · taille cible ≤ 8 Mo</li>
+    </ul>
+
+    <h3>Compression post-capture (si > 8 Mo)</h3>
+    <div class="code-wrap">
+      <pre class="code"><span class="cmt"># Avec ffmpeg installé</span>
+ffmpeg -i raw.gif -vf "fps=12,scale=1100:-1:flags=lanczos" -loop 0 docs\media\demo_v2.gif
+
+<span class="cmt"># Avec gifsicle</span>
+gifsicle -O3 --lossy=80 docs\media\demo_v2.gif -o docs\media\demo_v2_opt.gif</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="c3" data-time="20">
+  <summary>
+    <input type="checkbox" data-step="c3">
+    <span class="step-num">C3</span>
+    <span class="step-title">Insérer les images dans le README</span>
+    <span class="step-meta">20 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p0">P0</span>
+  </summary>
+  <div class="step-body">
+    <p>Remplace le placeholder « <em>Demo GIF placeholder</em> » dans <code>README.md</code> par :</p>
+    <div class="code-wrap">
+      <pre class="code">![ShutterstockAnalyzer demo](docs/media/demo_v2.gif)
+
+## Screenshots
+
+| Workspace (light) | Workspace (dark) |
+|---|---|
+| ![](docs/media/workspace.png) | ![](docs/media/workspace_dark.png) |
+
+| Rapport expert | Export batch |
+|---|---|
+| ![](docs/media/expert_report.png) | ![](docs/media/export_batch.png) |</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+    <p>Puis :</p>
+    <div class="code-wrap">
+      <pre class="code">git add README.md docs/media/
+git commit -m "docs: add demo GIF + 4 screenshots"
+git push</pre>
+      <button class="copy-btn">Copier</button>
+    </div>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">D</span> Communication (1 h)</h2>
+
+<details class="step" data-id="d1" data-time="15">
+  <summary>
+    <input type="checkbox" data-step="d1">
+    <span class="step-num">D1</span>
+    <span class="step-title">Préparer les variables (1 fois, tout réutilise)</span>
+    <span class="step-meta">15 min</span>
+    <span class="pill manual">INFO REQUISE</span>
+  </summary>
+  <div class="step-body">
+    <p>Remplis ces champs <strong>une fois</strong> — ils servent dans tous les posts ci-dessous. Les valeurs sont stockées dans ton navigateur.</p>
+    <table>
+      <tr><th>Variable</th><th>Valeur</th><th>Détail</th></tr>
+      <tr><td><code>{lien_release}</code></td>
+          <td><input type="text" data-var="lien_release" placeholder="https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/tag/v2.0.0"></td>
+          <td>Lien direct de la GitHub Release v2.0.0 (créé en étape B)</td></tr>
+      <tr><td><code>{lien_repo}</code></td>
+          <td><input type="text" data-var="lien_repo" placeholder="https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator"></td>
+          <td>Lien du repo GitHub</td></tr>
+      <tr><td><code>{prenom}</code></td>
+          <td><input type="text" data-var="prenom" placeholder="Emmanuel"></td>
+          <td>Ton prénom pour la signature LinkedIn</td></tr>
+      <tr><td><code>{linkedin_profil}</code></td>
+          <td><input type="text" data-var="linkedin_profil" placeholder="linkedin.com/in/emmanuelgrolleau"></td>
+          <td>Ton profil LinkedIn (pour mention dans le post storytelling)</td></tr>
+      <tr><td><code>{kofi}</code></td>
+          <td><input type="text" data-var="kofi" placeholder="https://ko-fi.com/kiriiaq" value="https://ko-fi.com/kiriiaq"></td>
+          <td>Lien Ko-fi (pré-rempli)</td></tr>
+    </table>
+  </div>
+</details>
+
+<details class="step" data-id="d2" data-time="10">
+  <summary>
+    <input type="checkbox" data-step="d2">
+    <span class="step-num">D2</span>
+    <span class="step-title">Publier le post LinkedIn court (J+0)</span>
+    <span class="step-meta">10 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p0">P0</span>
+  </summary>
+  <div class="step-body">
+    <p>Format : post LinkedIn standard (~ 1 000 caractères) avec GIF en pièce jointe.</p>
+    <p><strong>Quand :</strong> jour du tag v2.0.0, idéalement mardi/jeudi 10h-12h heure FR.</p>
+
+    <div class="prompt" data-template="post-court">
+<span class="prompt-label">📝 Texte à copier-coller dans LinkedIn (PJ : <code>docs/media/demo_v2.gif</code>)</span>
+🏷 ShutterstockAnalyzer v2.0 — générer des métadonnées microstock en local, sans cloud.
+
+Le problème : un contributeur Adobe Stock / Shutterstock passe 5-10 minutes par image à écrire titre, description, mots-clés, catégories. Pour 50 photos par semaine, c'est 4-8 heures de saisie répétitive.
+
+Ma solution :
+✅ Pipeline heuristique qui produit titre + 30-50 keywords + scores commercial/SEO/risque rejet en ~200ms par image. Sans IA.
+✅ Enrichissement IA optionnel via Ollama local (LLaMA 3.2 Vision, LLaVA). Pas de clé API, pas de coût récurrent, pas de fuite IP.
+✅ Export CSV double Adobe + Shutterstock en un clic, avec push FTP intégré vers le portail contributeur.
+
+Stack : Python 3.11 + CustomTkinter, ~20 000 LOC, 90 tests verts, EXE PyInstaller 25 Mo.
+
+1 enseignement : la posture « heuristique d'abord » fait gagner 80% de la valeur avec 20% de la complexité — l'IA reste un enrichisseur, pas un prérequis. Mon laptop bas-de-gamme génère un rapport en 3 secondes pour 15 images.
+
+👉 Code + EXE : {lien_release}
+
+#Python #Microstock #IndieDev
+    </div>
+
+    <h3>Checklist avant publication</h3>
+    <ul>
+      <li>✓ GIF hero attaché en pièce jointe (boost engagement × 3)</li>
+      <li>✓ Lien GitHub canonique (release v2.0.0 publiée — étape B faite)</li>
+      <li>✓ Publier mardi/jeudi 10h-12h pour pic d'engagement</li>
+      <li>✓ Activer les notifications pour répondre aux commentaires dans les 2 h</li>
+    </ul>
+  </div>
+</details>
+
+<details class="step" data-id="d3" data-time="30">
+  <summary>
+    <input type="checkbox" data-step="d3">
+    <span class="step-num">D3</span>
+    <span class="step-title">Préparer le carousel 8 slides (J+7)</span>
+    <span class="step-meta">30 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p1">P1</span>
+  </summary>
+  <div class="step-body">
+    <p>Format : 8 PNG 1080×1350, agrégés en PDF puis uploadés sur LinkedIn comme « Document ».</p>
+    <p><strong>Outil :</strong> Canva (gratuit) ou Figma.</p>
+    <p>Le texte de chaque slide est dans <a href="LINKEDIN_DRAFTS.md">LINKEDIN_DRAFTS.md</a> section « Format 2 ».</p>
+
+    <div class="info">
+      <strong>Astuce design :</strong> utilise le template Canva « 1080 × 1350 LinkedIn carousel ». Charte couleurs : primary <code>#1f4e78</code>, OK <code>#16a34a</code>, font Segoe UI / sans-serif.
+    </div>
+
+    <p>Une fois le PDF prêt :</p>
+    <ol>
+      <li>LinkedIn → Démarrer un post → Document (icône 📄)</li>
+      <li>Upload du PDF</li>
+      <li>Titre : « ShutterstockAnalyzer v2 — 8 slides pour comprendre »</li>
+      <li>Description courte (max 3 lignes) :
+        <div class="prompt" data-template="carousel-caption" style="margin-top: 6px;">
+Le concentré tech + produit de ShutterstockAnalyzer v2 — outil microstock multi-plateforme avec IA locale optionnelle.
+
+Code OS : {lien_repo}
+
+#Python #Microstock
+        </div>
+      </li>
+    </ol>
+  </div>
+</details>
+
+<details class="step" data-id="d4" data-time="15">
+  <summary>
+    <input type="checkbox" data-step="d4">
+    <span class="step-num">D4</span>
+    <span class="step-title">Post storytelling LinkedIn (J+21)</span>
+    <span class="step-meta">15 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p1">P1</span>
+  </summary>
+  <div class="step-body">
+    <p>Format long (~ 1 900 caractères), 3 leçons tech, CTA double (GitHub + freelance).</p>
+
+    <div class="prompt" data-template="post-storytelling">
+<span class="prompt-label">📝 Texte à copier-coller dans LinkedIn</span>
+J'ai écrit un outil pour me débarrasser des 4 heures de saisie par semaine que me coûtaient mes uploads Adobe Stock et Shutterstock. Trois leçons valent le partage.
+
+Le contexte : pour chaque image envoyée sur Adobe Stock ou Shutterstock, le contributeur doit fournir un titre descriptif, une description orientée acheteur, 7 à 50 keywords classés, une ou deux catégories, et flagger éditorial / mature / illustration. À 5-10 minutes par image, 50 images par semaine = 5h50 de saisie répétitive qui ne génère aucun revenu direct.
+
+Première leçon : avant de coller de l'IA partout, regarder ce que les heuristiques peuvent faire. J'ai écrit un builder qui combine les métadonnées IPTC existantes du fichier, les propriétés techniques (résolution, espace colorimétrique, poids), et des règles métier (filtres anti-marques, anti-stuffing, top 10 keywords commerciaux prioritaires). Résultat : un rapport en 8 sections, 4 scores 0-10, généré en 200 ms par image. Zéro appel HTTP, zéro modèle chargé en RAM. Sur un laptop modeste, 15 images = 3 secondes. L'IA en option enrichit le résultat, elle n'est pas un prérequis.
+
+Deuxième leçon : la posture lax bat la posture stricte sur ce type de produit. Adobe et Shutterstock ont leurs propres reviewers humains. Mon outil émet des warnings (résolution sous 4 MP, espace CMYK, plus de 50 keywords) mais ne bloque jamais l'export. Les utilisateurs préfèrent un outil qui les laisse décider à un outil qui refuse de produire le CSV.
+
+Troisième leçon : l'IA locale change le rapport coût-bénéfice. Ollama + LLaMA 3.2 Vision tournent sur n'importe quel PC moderne, sans clé API, sans télémétrie, sans qu'aucune photo ne quitte le disque. Pour un photographe pro qui traite des images sous NDA, c'est non-négociable.
+
+Stack : Python 3.11, CustomTkinter, SQLite local, ftplib stdlib pour le push FTP direct, PyInstaller pour packager en EXE 25 Mo.
+
+Code + EXE : {lien_repo}
+
+Si tu fais du microstock ou si tu shipes des outils desktop en Python : je suis preneur de retours ou d'idées d'extension. Et si tu cherches un freelance pour un projet similaire (UI desktop, pipeline data, intégration AI locale), DM ouvert.
+
+#Python #IndieDev #FreelanceTech
+    </div>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">E</span> Monétisation (≥ 7 j, à étaler)</h2>
+
+<details class="step" data-id="e1" data-time="60">
+  <summary>
+    <input type="checkbox" data-step="e1">
+    <span class="step-num">E1</span>
+    <span class="step-title">Créer compte Gumroad + listing Pro</span>
+    <span class="step-meta">60 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p1">P1</span>
+  </summary>
+  <div class="step-body">
+    <h3>Étapes Gumroad</h3>
+    <ol>
+      <li>Crée un compte sur <a href="https://gumroad.com/" target="_blank">gumroad.com</a> (gratuit, prélèvement 10% sur ventes).</li>
+      <li>Renseigne ton IBAN pour les paiements (transferts mensuels).</li>
+      <li>Nouvelle product → <strong>Software</strong> → <strong>Subscription</strong> pour la formule annuelle.</li>
+      <li>Trois tiers à créer (peux faire en 1 produit avec variations) :</li>
+    </ol>
+
+    <table>
+      <tr><th>Tier</th><th>Prix</th><th>Subscription</th><th>Fichier livré</th></tr>
+      <tr><td>Pro Solo</td><td>29 €/an</td><td>Annuelle</td><td>EXE + clé licence</td></tr>
+      <tr><td>Pro Studio</td><td>89 €/an</td><td>Annuelle</td><td>EXE + clé licence (5 postes)</td></tr>
+      <tr><td>Lifetime</td><td>79 €</td><td>One-shot</td><td>EXE + clé perpétuelle</td></tr>
+    </table>
+
+    <h3>Description Gumroad (prête à coller)</h3>
+    <div class="prompt" data-template="gumroad-desc">
+<span class="prompt-label">📝 Description produit Gumroad</span>
+# ShutterstockAnalyzer Pro
+
+The microstock metadata tool that respects your time AND your photos.
+
+## What you get
+
+✅ Everything in the Community edition (Adobe Stock + Shutterstock CSV export, local AI via Ollama, FTP push, expert report with scores)
+✅ **Unlimited batch** — process more than 50 images per run (Community is capped)
+✅ **FTP scheduling** — push to the contributor portal on a fire-and-forget schedule
+✅ **Multi-account FTP** — Adobe + Shutterstock + custom servers in parallel
+✅ **Custom IPTC templates** — save/reuse your branding presets
+✅ **Category-aware AI prompt profiles** (Business, Nature, Food, Tech…)
+✅ **Priority support** — answer within 48 business hours
+
+## Why local, why no cloud?
+
+Your photos never leave your machine. No API costs. No subscription to a SaaS that might pivot or die. Just a Windows EXE that does the work.
+
+## Specs
+
+- Windows 10/11, ~25 MB EXE
+- Python 3.11 inside (PyInstaller bundle)
+- Optional Ollama for AI (free, local)
+- ExifTool external for IPTC (free)
+
+## License
+
+Single user / single machine for Pro Solo. Up to 5 users for Pro Studio. Lifetime = no renewal, lifetime updates.
+
+After purchase you receive : Pro EXE + activation key + setup guide.
+
+## Try the free version first
+
+The Community edition is on GitHub : {lien_repo}
+
+If it solves 80% of your problem there, the Pro 20% is what justifies the price.
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="e2" data-time="120">
+  <summary>
+    <input type="checkbox" data-step="e2">
+    <span class="step-num">E2</span>
+    <span class="step-title">Implémenter la mécanique de licence (Pro)</span>
+    <span class="step-meta">2 j (étalé)</span>
+    <span class="pill manual">DEV</span>
+    <span class="pill p1">P1</span>
+  </summary>
+  <div class="step-body">
+    <p>Préalable à la vente : gating Pro / Community via une clé de licence.</p>
+    <h3>Approche minimaliste</h3>
+    <ul>
+      <li>Génération d'une clé de licence signée (HMAC-SHA256) avec ta clé secrète + email acheteur.</li>
+      <li>Stockage clé dans <code>~/.shutterstock_ai/license.json</code>.</li>
+      <li>Au démarrage : vérifier la signature, lire la liste de features autorisées.</li>
+      <li>Dans le code : <code>if license.has_feature("batch_unlimited"): ...</code></li>
+    </ul>
+    <h3>Spec à donner à Claude Code (prompt prêt)</h3>
+    <div class="prompt" data-template="prompt-license">
+<span class="prompt-label">🤖 Prompt à donner à Claude Code pour implémenter la licence</span>
+Implémente la mécanique de licence Pro / Community pour ShutterstockAnalyzer.
+
+Contraintes :
+1. Pas de dépendance réseau (vérif offline, signature HMAC-SHA256)
+2. Clé secrète stockée côté serveur (chez moi), jamais dans l'EXE
+3. Format clé licence : JSON signé avec champs {email, tier, features, expires_at, signature}
+4. Au démarrage de l'app, charger ~/.shutterstock_ai/license.json
+5. Exposer api.license dans la facade ShutterstockAIv2 avec méthodes :
+   - is_pro() -> bool
+   - has_feature(name: str) -> bool
+   - tier() -> str  # "community" | "pro_solo" | "pro_studio" | "lifetime"
+   - expires_at() -> datetime | None
+6. UI : sous Paramètres → onglet « Licence » avec :
+   - Affichage du tier actuel + date d'expiration
+   - Champ « Coller votre clé » → bouton « Activer »
+   - Lien « Acheter Pro » (vers Gumroad)
+7. Features pro à gater dans le code (priorité ordre) :
+   - batch > 50 images dans export_batch
+   - FTP scheduling (nouveau worker background)
+   - Multi-comptes FTP (UI multi-tabs dans bandeau FTP)
+   - Templates IPTC customs (save/load)
+   - Profils prompts IA par catégorie
+8. Tests :
+   - Vérif clé valide vs invalide vs expirée
+   - Mock license.has_feature en tests existants
+   - Le mode Community doit rester 100% fonctionnel sans licence
+
+Génère également un script tools/generate_license.py côté admin qui produit
+une clé signée à partir d'un email + tier, à donner aux clients Gumroad.
+
+Tag final v2.1.0.
+    </div>
+    <div class="warn">
+      <strong>Effort estimé :</strong> 2 jours dev. Voir <code>docs/MONETIZATION.md</code> §2.3 pour le découpage complet (mécanique + features Pro + UI + page Gumroad + communication).
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="e3" data-time="240">
+  <summary>
+    <input type="checkbox" data-step="e3">
+    <span class="step-num">E3</span>
+    <span class="step-title">Implémenter les features Pro</span>
+    <span class="step-meta">2 j (étalé)</span>
+    <span class="pill manual">DEV</span>
+    <span class="pill p2">P2</span>
+  </summary>
+  <div class="step-body">
+    <p>Une fois la licence en place (E2), ajoute les features qui justifient le tier Pro. Spec détaillée dans <a href="docs/MONETIZATION.md">docs/MONETIZATION.md</a> §2.1.</p>
+    <div class="prompt" data-template="prompt-pro-features">
+<span class="prompt-label">🤖 Prompt à donner à Claude Code pour les features Pro</span>
+Implémente les features Pro listées dans docs/MONETIZATION.md §2.1.
+
+Priorité :
+1. Batch illimité (Community = 50, Pro = ∞)
+   - Dans ExportBatchView, si selection.length > 50 et !license.is_pro() :
+     affiche un toast bloquant « Pro requis » avec lien Gumroad
+   - Sinon, lance normalement
+
+2. FTP scheduling (Pro only)
+   - Nouveau panneau dans Paramètres → onglet « Planificateur FTP »
+   - Liste de tâches récurrentes : path source, heure, FTP cible, format CSV
+   - Worker background (apscheduler ou worker_pool persistant)
+   - Stockage : nouvelle table SQLite scheduled_tasks
+
+3. Multi-comptes FTP (Pro only)
+   - Dans bandeau FTP de ExportBatchView, dropdown « Profil »
+     listant les profils FTP sauvegardés (Adobe, Shutterstock, custom)
+   - CRUD profils dans Paramètres → « Profils FTP »
+   - Stockage : nouvelle table SQLite ftp_profiles (host, user, password
+     chiffré localement avec clé dérivée de la licence)
+
+Tests requis pour chaque feature. Pas de régression sur les 90 tests
+actuels. Mettre à jour CHANGELOG (v2.1.0). Tag v2.1.0 quand tout est vert.
+    </div>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">F</span> Suivi (en continu)</h2>
+
+<details class="step" data-id="f1" data-time="30">
+  <summary>
+    <input type="checkbox" data-step="f1">
+    <span class="step-num">F1</span>
+    <span class="step-title">Hacker News « Show HN » (J+10)</span>
+    <span class="step-meta">30 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p2">P2</span>
+  </summary>
+  <div class="step-body">
+    <p>Soumets à <a href="https://news.ycombinator.com/submit" target="_blank">Hacker News</a> :</p>
+    <table>
+      <tr><th>Champ</th><th>Valeur</th></tr>
+      <tr><td>Title</td>
+          <td><code>Show HN: ShutterstockAnalyzer – local microstock metadata, AI-optional</code></td></tr>
+      <tr><td>URL</td>
+          <td><code>{lien_repo}</code></td></tr>
+      <tr><td>Text (optionnel)</td>
+          <td>—</td></tr>
+    </table>
+    <div class="info">
+      <strong>Premier commentaire à poster toi-même</strong> immédiatement après soumission, version courte du post LinkedIn (sans hashtags, ton plus tech).
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="f2" data-time="15">
+  <summary>
+    <input type="checkbox" data-step="f2">
+    <span class="step-num">F2</span>
+    <span class="step-title">Reddit r/stockphotography (J+14)</span>
+    <span class="step-meta">15 min</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p2">P2</span>
+  </summary>
+  <div class="step-body">
+    <p>Post Reddit dans <a href="https://reddit.com/r/stockphotography" target="_blank">r/stockphotography</a> :</p>
+    <div class="prompt" data-template="post-reddit">
+<span class="prompt-label">📝 Titre + corps Reddit</span>
+TITRE : I built a free tool to generate Shutterstock + Adobe Stock metadata locally (AI optional)
+
+CORPS :
+Hi all, fellow contributor here. Tired of spending 5-10 minutes per image writing titles, descriptions, keywords, categories before upload — so I built a desktop tool to automate it.
+
+Key features :
+- Works WITHOUT AI (heuristic-first, ~200 ms per image)
+- Optional AI enrichment via local Ollama (no cloud, no API keys)
+- Exports CSV for both Adobe Stock AND Shutterstock in one click
+- Built-in FTP/FTPS push to the contributor portal
+- Anti-stuffing keyword filters (brands, generic terms)
+- Free, open-source (MIT), Windows EXE ~25 MB
+
+Not affiliated with Shutterstock or Adobe.
+
+Code + EXE : {lien_repo}
+
+Looking for feedback from active contributors — what's missing for your daily workflow?
+    </div>
+    <div class="warn">
+      <strong>Règle Reddit :</strong> attends 2-3 jours après le post LinkedIn pour pas cross-poster trop vite. Réponds aux commentaires dans les 4 h pour rester en haut du subreddit.
+    </div>
+  </div>
+</details>
+
+<details class="step" data-id="f3" data-time="30">
+  <summary>
+    <input type="checkbox" data-step="f3">
+    <span class="step-num">F3</span>
+    <span class="step-title">Product Hunt launch (J+14, un mardi)</span>
+    <span class="step-meta">30 min préparation</span>
+    <span class="pill manual">MANUEL</span>
+    <span class="pill p2">P2</span>
+  </summary>
+  <div class="step-body">
+    <p>Product Hunt → <a href="https://www.producthunt.com/posts/new" target="_blank">Post a product</a>.</p>
+    <p><strong>Quand :</strong> mardi à <strong>00:01 PST</strong> (9h heure FR). Préparer la veille.</p>
+    <table>
+      <tr><th>Champ</th><th>Valeur</th></tr>
+      <tr><td>Name</td><td><code>ShutterstockAnalyzer</code></td></tr>
+      <tr><td>Tagline</td><td><code>Local microstock metadata. AI optional. FTP push built-in.</code></td></tr>
+      <tr><td>Description</td><td>Reprends la description Gumroad sans la partie « Why local »</td></tr>
+      <tr><td>Topics</td><td><code>Developer Tools, Photography, Productivity, Open Source</code></td></tr>
+      <tr><td>Media</td><td>GIF hero + 4 screenshots + une vidéo 30-60 s</td></tr>
+      <tr><td>First comment (toi-même)</td><td>Pourquoi tu as construit ça, en 2 paragraphes</td></tr>
+    </table>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<h2 class="section"><span class="num">G</span> Informations dont j'ai besoin de toi</h2>
+
+<div class="warn" style="margin-bottom: 18px;">
+  Ces points <strong>nécessitent une action humaine</strong> que je ne peux pas faire pour toi. Renseigne-les ou décide pour valider avant de continuer.
+</div>
+
+<details class="step" data-id="g1" data-time="0">
+  <summary>
+    <input type="checkbox" data-step="g1">
+    <span class="step-num">G1</span>
+    <span class="step-title">Décider : nom commercial Gumroad (anti-trademark)</span>
+    <span class="step-meta">Décision</span>
+    <span class="pill optional">DÉCISION</span>
+  </summary>
+  <div class="step-body">
+    <p>Le nom <code>ShutterstockAnalyzer</code> contient « Shutterstock » qui est une marque déposée. Pour le repo GitHub OS, c'est acceptable (usage purement descriptif). Pour la version commerciale Gumroad, mieux vaut un nom distinct.</p>
+    <h3>Propositions</h3>
+    <table>
+      <tr><th>Option</th><th>Avantage</th></tr>
+      <tr><td><strong>MicrostockKit</strong></td><td>Générique, anti-trademark, mémorable</td></tr>
+      <tr><td><strong>StockMeta Pro</strong></td><td>Focus produit, clair sur la valeur</td></tr>
+      <tr><td><strong>KeywordCraft</strong></td><td>Met l'accent sur le SEO/keywords</td></tr>
+      <tr><td><strong>StockForge</strong></td><td>Évoque la fabrication, communauté indie</td></tr>
+      <tr><td><strong>Autre</strong></td><td><input type="text" data-var="nom_commercial" placeholder="Ton choix"></td></tr>
+    </table>
+  </div>
+</details>
+
+<details class="step" data-id="g2" data-time="0">
+  <summary>
+    <input type="checkbox" data-step="g2">
+    <span class="step-num">G2</span>
+    <span class="step-title">Vérifier statut juridique (micro-entreprise / EI)</span>
+    <span class="step-meta">Si revenu réel > 0</span>
+    <span class="pill optional">DÉCISION</span>
+  </summary>
+  <div class="step-body">
+    <p>Pour encaisser les ventes Gumroad → l'argent arrive sur ton IBAN perso. Implications :</p>
+    <ul>
+      <li><strong>Si revenu mensuel &lt; 50 €</strong> : pas d'urgence, déclaration possible sur l'année.</li>
+      <li><strong>Si revenu mensuel ≥ 100 €</strong> : créer une micro-entreprise BIC (15 min en ligne sur autoentrepreneur.urssaf.fr), gratuit, prélèvement social ~ 21 % du CA.</li>
+      <li><strong>TVA</strong> : franchise en base jusqu'à 85 800 € CA / an pour micro-BIC. En dessous, pas de TVA à collecter.</li>
+    </ul>
+    <p>Voir <a href="docs/MONETIZATION.md">docs/MONETIZATION.md</a> §4 pour la check-list légale.</p>
+  </div>
+</details>
+
+<details class="step" data-id="g3" data-time="0">
+  <summary>
+    <input type="checkbox" data-step="g3">
+    <span class="step-num">G3</span>
+    <span class="step-title">Acheter (ou pas) un nom de domaine</span>
+    <span class="step-meta">Optionnel · ~ 10 €/an</span>
+    <span class="pill optional">DÉCISION</span>
+  </summary>
+  <div class="step-body">
+    <p>Pour une landing page (page produit hors GitHub Pages), un domaine type <code>microstockkit.com</code> coûte ~ 10 €/an chez OVH/Gandi/Cloudflare.</p>
+    <p>Pas indispensable au lancement — GitHub Pages (<code>kiriiaq.github.io/Shutterstock-AI-Metadata-Generator</code>) suffit pour les premiers mois.</p>
+  </div>
+</details>
+
+<!-- ============================================================== -->
+<footer>
+  ShutterstockAnalyzer v2.0.0 · Procédure générée 2026-05-19 ·
+  Page autonome (HTML+JS inline, persistance localStorage).
+  Reset si tu repars de zéro : bouton « Réinitialiser » dans la barre du haut.
+</footer>
+
+<script>
+const KEY = 'ssa_launch_proc_v1';
+const TIME_PER_STEP = { /* en minutes */
+  a1: 2, a2: 3, b1: 10, b2: 10, c1: 20, c2: 60, c3: 20,
+  d1: 15, d2: 10, d3: 30, d4: 15, e1: 60, e2: 120, e3: 240,
+  f1: 30, f2: 15, f3: 30, g1: 0, g2: 0, g3: 0
+};
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function saveState(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+
+function recompute() {
+  const s = loadState();
+  const all = Array.from(document.querySelectorAll('input[type="checkbox"][data-step]'));
+  let done = 0, totalLeft = 0, totalAll = 0;
+  all.forEach(cb => {
+    const id = cb.dataset.step;
+    const time = TIME_PER_STEP[id] || 0;
+    totalAll += time;
+    if (s[id] === true) {
+      done++;
+      cb.checked = true;
+      cb.closest('details.step').classList.add('done');
+    } else {
+      totalLeft += time;
+      cb.closest('details.step').classList.remove('done');
+    }
+  });
+  document.getElementById('done-count').textContent = done;
+  document.getElementById('total-count').textContent = all.length;
+  const pct = all.length ? Math.round(done / all.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  const hours = Math.floor(totalLeft / 60), mins = totalLeft % 60;
+  let timeText;
+  if (hours > 0) timeText = '~' + hours + 'h' + (mins > 0 ? mins + 'm' : '');
+  else timeText = '~' + mins + ' min';
+  document.getElementById('time-left').textContent = timeText;
+}
+
+function resetAll() {
+  if (!confirm('Réinitialiser toutes les cases ?')) return;
+  localStorage.removeItem(KEY);
+  document.querySelectorAll('input[type="checkbox"][data-step]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('input[type="text"][data-var]').forEach(i => i.value = '');
+  recompute();
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.matches('input[type="checkbox"][data-step]')) {
+    const s = loadState();
+    s[e.target.dataset.step] = e.target.checked;
+    saveState(s);
+    recompute();
+  } else if (e.target.matches('input[type="text"][data-var]')) {
+    const s = loadState();
+    s['_vars'] = s['_vars'] || {};
+    s['_vars'][e.target.dataset.var] = e.target.value;
+    saveState(s);
+    substituteVars();
+  }
+});
+
+// Prevent checkbox click from toggling the details open/close
+document.querySelectorAll('summary input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('click', (e) => e.stopPropagation());
+});
+
+// Copy buttons
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pre = btn.previousElementSibling;
+    const text = pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copié';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copier';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  });
+});
+
+// Variable substitution in prompts
+function substituteVars() {
+  const s = loadState();
+  const vars = (s['_vars'] || {});
+  document.querySelectorAll('[data-template]').forEach(el => {
+    if (!el.dataset.originalText) {
+      el.dataset.originalText = el.innerHTML;
+    }
+    let text = el.dataset.originalText;
+    Object.entries(vars).forEach(([k, v]) => {
+      if (v) text = text.replaceAll('{' + k + '}', v);
+    });
+    el.innerHTML = text;
+  });
+}
+
+// Restore variable inputs
+function restoreVars() {
+  const s = loadState();
+  const vars = s['_vars'] || {};
+  document.querySelectorAll('input[type="text"][data-var]').forEach(i => {
+    if (vars[i.dataset.var]) i.value = vars[i.dataset.var];
+  });
+  substituteVars();
+}
+
+restoreVars();
+recompute();
+</script>
+
+</body>
+</html>

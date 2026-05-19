@@ -1,314 +1,270 @@
-# Shutterstock AI Metadata Generator
+# ShutterstockAnalyzer
 
-> **Automate your stock photography workflow with AI-powered image analysis and metadata generation for Shutterstock**
+> **Generate Adobe Stock & Shutterstock metadata locally — AI optional, FTP push built-in.**
 
-[![Release](https://img.shields.io/badge/release-v1.0.1-blue.svg)](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](CHANGELOG.md)
+[![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Ollama](https://img.shields.io/badge/AI-Ollama%20Vision-orange.svg)](https://ollama.ai)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Me-ff5e5b?logo=ko-fi)](https://ko-fi.com/kiriiaq)
+[![Tests](https://img.shields.io/badge/tests-90%20passing-success.svg)](tests/)
+[![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
+
+> _Demo GIF placeholder — see [`docs/MEDIA.md`](docs/MEDIA.md) for the asset list to produce._
 
 ---
 
-## The Problem
+## What it does
 
-Stock photographers spend **hours manually writing descriptions, keywords, and categories** for each image before uploading to Shutterstock. This repetitive task is:
-- Time-consuming (5-10 minutes per image)
-- Error-prone (inconsistent keywords, missing categories)
-- Frustrating (takes time away from actual photography)
+Stock photographers spend **5–10 minutes per image** writing titles, descriptions,
+keywords and categories before upload. ShutterstockAnalyzer collapses that
+loop to **a few seconds per image**, fully offline:
 
-## The Solution
+- **Heuristic metadata builder** — generates an 8-section expert report
+  (scores, keywords, risks, marketing uses) from the **existing IPTC + image
+  properties only**. No AI required — runs instantly on any PC.
+- **Optional AI enrichment** via local [Ollama](https://ollama.ai) vision
+  models (LLaMA 3.2 Vision, LLaVA, Moondream). Off by default.
+- **Dual-platform CSV export** — Adobe Stock (`Filename,Title,Keywords,
+  Category,Releases`) and Shutterstock (`Filename,Description,Keywords,
+  Categories,Editorial,Mature,Illustration`) with UTF-8 BOM, ready for
+  the contributor portals.
+- **Direct FTP / FTPS push** to the contributor portal after export.
+- **IPTC write-back** (opt-in) — files unchanged if the checkbox stays off.
 
-**Shutterstock AI Metadata Generator** uses local AI vision models (via Ollama) to automatically:
-- **Analyze your images** and understand their content
-- **Generate SEO-optimized descriptions** (max 200 characters)
-- **Create relevant keywords** (7-50 per image)
-- **Assign Shutterstock categories** automatically
-- **Detect editorial/illustration flags**
-- **Export everything to CSV** ready for Shutterstock upload
-
-**No cloud API costs** - Everything runs locally on your computer!
-
----
-
-## Features
-
-### AI-Powered Analysis
-- Uses Ollama vision models (LLaMA 3.2 Vision, LLaVA, Moondream)
-- Automatic GPU detection and optimization (NVIDIA CUDA)
-- Generates Shutterstock-compliant metadata in seconds
-
-### Smart Image Management
-- **Pre-filtering**: Validates images meet Shutterstock requirements (4+ MP, correct format)
-- **Batch processing**: Organizes images into folders of 50 (Shutterstock limit)
-- **Resume capability**: Continue interrupted processing sessions
-- **Duplicate detection**: Avoids reprocessing already analyzed images
-
-### Built-in Ollama Management
-- One-click Ollama server start/stop
-- **Auto-repair**: Fixes common Ollama issues (zombie processes, port conflicts)
-- Model download and loading from the GUI
-- Real-time GPU/VRAM status display
-
-### Validation & Upload
-- Checklist validator (photos vs metadata matching)
-- Metadata completeness verification
-- FTPS upload to Shutterstock servers with progress tracking
+No cloud API costs · no telemetry · everything stays on your machine.
 
 ---
 
-## Quick Start
+## Quick start
 
-### Prerequisites
-1. **Windows 10/11** (64-bit)
-2. **[Ollama](https://ollama.ai/download)** installed
-3. **GPU recommended** (NVIDIA with 4GB+ VRAM)
+### Option 1 — Download the EXE (recommended)
 
-### Installation
+1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases) page (~25 MB).
+2. Double-click. Done.
 
-#### Option 1: Download Executable (Recommended)
-1. Download from [Releases](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases):
-   - `ShutterstockAI-MetadataGenerator-v1.0.1.exe` (Release)
-   - `ShutterstockAI-MetadataGenerator-v1.0.1_debug.exe` (Debug with console)
-2. Double-click to run - no installation needed!
+### Option 2 — Run from source
 
-#### Option 2: Run from Source
 ```bash
 git clone https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator.git
 cd Shutterstock-AI-Metadata-Generator
 pip install -r requirements.txt
-python main.py            # launcher (root entry point)
-# ou de manière équivalente :
-python -m app.main        # entrée explicite dans la couche UI v3
+python main.py
 ```
-
-> Le code est organisé en deux couches : le backend (`src/modules/`) reste
-> stable, l'UI v3 vit dans `app/` avec CustomTkinter uniquement. Voir
-> `docs/architecture.md` pour la cartographie complète.
-
-### First Run
-1. **Start Ollama** - Click "Start" or let auto-repair handle it
-2. **Download a model** - Select `llama3.2-vision:11b` and click "Download"
-3. **Select your photo folder** - Browse to your images
-4. **Click "Start Analysis"** - Watch the AI work!
-5. **Find your CSV** in the `Shutterstock/` folder
 
 ---
 
 ## Workflow
 
 ```
-1. Photos Folder    →  2. Pre-filter     →  3. AI Analysis
-   (your images)        (Valid/Invalid)       (metadata.csv)
-                                                   ↓
-4. Validation       ←  5. Shutterstock/  ←  Batch folders
-   (Checklist tab)       (organized)         (max 50 images)
+Photos folder  ──►  Scan + select  ──►  Expert report  ──►  Export CSV  ──►  FTP push
+                       │                     │              (Adobe       (optional)
+                       │                     │               +/or SH)
+                       │                     │
+                       ▼                     ▼
+                   IPTC editor          AI enrichment
+                   (manual)             (optional, opt-in)
 ```
 
-### Folder Structure After Processing
-```
-Your_Photos/
-├── Valid/              # Pre-filtered valid images
-├── Invalid/            # Rejected images (too small, wrong format)
-├── Shutterstock/       # Batch 1 (up to 50 images + metadata.csv)
-├── Shutterstock_2/     # Batch 2 (if needed)
-└── Shutterstock_3/     # And so on...
-```
+1. **Sources & tri**: scan a folder, add files incrementally, multi-select.
+2. **Rapport expert…**: 8-section report (4 scores, dual titles, keywords with
+   top-10 highlighted, categories Adobe + Shutterstock, rejection risks,
+   improvements, marketing uses, buyer profiles, trends).
+3. **📤 Exporter…**:
+   - Pick platform: Adobe / Shutterstock / both.
+   - Toggle « Écrire IPTC dans le fichier » (off by default — files stay
+     untouched, results are in the CSV).
+   - Toggle « Enrichir avec IA » (off by default — heuristic only).
+   - Pick output folder and basename.
+   - Toggle « Pousser en FTP » with credentials + test button.
+4. CSV files dropped in your output folder, optionally pushed to FTP.
 
 ---
 
-## Supported Models
+## Optional AI setup (Ollama)
 
-| Model | VRAM | Speed | Quality | Best For |
-|-------|------|-------|---------|----------|
-| `moondream:1.8b` | 2GB | Fast | Basic | CPU or low VRAM |
-| `llava:7b` | 4GB | Fast | Good | Budget GPUs |
-| `llama3.2-vision:11b` | 7GB | Medium | Excellent | **Recommended** |
-| `llava:34b` | 20GB | Slow | Best | High-end GPUs |
+The default heuristic mode works **without Ollama**. To enable AI enrichment:
+
+1. Install [Ollama](https://ollama.ai/download).
+2. Pull a vision model:
+   ```bash
+   ollama pull llama3.2-vision:11b      # 7 GB VRAM, recommended
+   ollama pull llava:7b                 # 4 GB VRAM, faster
+   ollama pull moondream:1.8b           # 2 GB VRAM, CPU OK
+   ```
+3. In the **Export Batch** modal, check « Enrichir avec IA » → use the
+   « 🔌 Tester » button to probe the server, pick a model in the dropdown,
+   click « ⬇ Charger » to warm it up.
+4. The topbar chip turns green and shows the loaded model name.
+
+Without Ollama, the « Enrichir avec IA » checkbox is harmless: the pipeline
+falls back to the heuristic builder transparently.
 
 ---
 
-## System Requirements
+## Features
+
+| Feature | Detail |
+|---|---|
+| **Multi-platform export** | Adobe Stock + Shutterstock CSVs, UTF-8 BOM, comma-separated keywords (Shutterstock-compliant) |
+| **Expert report** | 4 scores (commercial / technique / SEO / risque rejet), dual titles, top-10 keywords, rejection risks, marketing uses |
+| **Heuristic-first** | All scores + reports work without AI. Runs in ~3 s on 15 images. |
+| **AI optional** | Ollama vision models for enrichment. Falls back gracefully when Ollama is absent. |
+| **FTP / FTPS push** | Direct upload to contributor portal after export. Credentials never persisted by default. |
+| **IPTC editor** | Read/write IPTC headline, caption, keywords, byline, copyright. |
+| **Validation pre-upload** | Per-image checks (resolution, format, file size, keyword count). |
+| **Theme** | Light / dark / system, persisted between sessions. |
+| **History** | All operations logged to local SQLite, filterable + exportable. |
+| **Cross-platform compliance** | Adobe (4–100 MP, 45 MB, sRGB) + Shutterstock (4 MP min, 50 MB) checks as warnings, not blockers. |
+
+---
+
+## Anti-stuffing built in
+
+The keyword pipeline silently filters:
+
+- **Brand names** (`apple`, `nike`, `coca-cola`, `bmw`…) — auto-stripped.
+- **Stuffing keywords** (`stock`, `image`, `photo`, `wallpaper`…) — stripped
+  unless they appear in the title (where they describe the image).
+- **Duplicates** + lowercase normalization.
+- Hard cap at **50 keywords** (Adobe + Shutterstock limit).
+- **Top 10 are commercial priority** — the rest is searchable padding.
+
+---
+
+## Architecture
+
+```
+ShutterstockAnalyzer/
+├── main.py              ← thin entry point
+├── app/                 ← UI v3 (CustomTkinter)
+│   ├── app.py           ← shell + router + modal manager
+│   ├── components/      ← 8 reusable widgets
+│   ├── config/          ← theme, shortcuts
+│   ├── core/            ← events, state, navigation
+│   ├── views/           ← workspace + 6 modal views
+│   ├── i18n/fr.py       ← all UI strings (French)
+│   └── utils/           ← formatters
+└── src/                 ← Backend (UI-agnostic)
+    ├── core/            ← params, config_manager, logger
+    ├── modules/
+    │   ├── ai/          ← Ollama client + vision analyzer
+    │   ├── analysis/    ← expert_report + platform_compliance
+    │   ├── engines/     ← metadata_reader + metadata_writer (ExifTool)
+    │   ├── export/      ← csv_exporter + batch + ftp_uploader
+    │   ├── models/      ← dataclasses (IPTC, Expert, Shutterstock)
+    │   ├── storage/     ← SQLite database
+    │   ├── workers/     ← worker_pool
+    │   └── integration.py  ← ShutterstockAIv2 facade (UI entry point)
+    └── utils/           ← validators, file helpers
+```
+
+Full cartography in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). UI and
+backend talk through **one facade** (`src.modules.integration.ShutterstockAIv2`).
+
+---
+
+## System requirements
 
 | Component | Minimum | Recommended |
-|-----------|---------|-------------|
+|---|---|---|
 | OS | Windows 10 64-bit | Windows 11 |
-| CPU | Intel i5 / AMD Ryzen 5 | Intel i7 / AMD Ryzen 7 |
-| RAM | 8 GB | 16 GB |
-| GPU | None (CPU mode) | NVIDIA RTX 3060+ (8GB VRAM) |
-| Storage | 500 MB | 20 GB (for AI models) |
+| Python (source) | 3.11 | 3.11 |
+| RAM | 4 GB (heuristic mode) | 16 GB (AI mode) |
+| GPU | None | NVIDIA RTX 3060+ (8 GB VRAM) for `llama3.2-vision:11b` |
+| Storage | 100 MB (EXE only) | 20 GB (AI models) |
+| ExifTool | optional (IPTC read/write) | recommended |
+| Ollama | optional (AI enrichment) | optional |
+
+macOS / Linux are not actively tested. The code itself is portable; only
+the bundled EXE and the AppUserModelID are Windows-specific.
 
 ---
-
-## Troubleshooting
-
-### Ollama Won't Start
-Click the **"Repair"** button - it automatically:
-- Kills zombie processes
-- Frees port 11434
-- Cleans temp files
-- Restarts the server
-
-### "No connection" Error
-1. Check if Ollama is installed: `ollama --version`
-2. Try manual start: `ollama serve`
-3. Check Windows Firewall settings
-
-### Slow Performance
-- Use a lighter model (`moondream:1.8b`)
-- Increase cooldown time between images
-- Close other GPU-intensive applications
-
----
-
-## Known Limitations
-
-- Windows only (macOS/Linux support planned)
-- Requires Ollama to be installed separately
-- Large images (>100MP) are automatically rejected
-- Processing speed depends on GPU/model choice
-
----
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Author
-
-**Emmanuel Grolleau**
-
-## Acknowledgments
-
-- [Ollama](https://ollama.ai) - Local AI model server
-- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) - Modern GUI framework
-- [Pillow](https://python-pillow.org/) - Image processing
-
----
-
-## Keywords
-
-`shutterstock metadata generator` `stock photography automation` `AI image analyzer` `photo keywording tool` `Ollama vision` `image description generator` `automatic photo tagging` `Shutterstock CSV generator` `stock photo workflow`
-
----
-
-## Build Executables
-
-```bash
-pip install -e ".[dev]"
-
-python build.py debug     # debug profile (console + import trace)
-python build.py release   # release profile (windowed, no console)
-python build.py all       # both
-python build.py clean     # purge build/, dist/, *.spec
-```
-
-Output: `dist/ShutterstockAnalyzer.exe` (release) and
-`dist/ShutterstockAnalyzer-debug.exe` (debug).
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
+
+# Run
+python main.py
+
+# Tests (90 tests, ~5 s)
+pytest tests/ -q
+
+# Lint
 ruff check app/ src/ main.py build.py tests/
 ruff format app/ src/ main.py build.py tests/
-pytest tests/ -q
+
+# Build EXEs (debug + release)
+python build.py all
 ```
+
+Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
 
 ---
 
 ## Project structure
 
-```
-ShutterstockAnalyzer/
-├── main.py                 # 5-line wrapper -> app.main:main
-├── build.py                # PyInstaller (debug | release | all | clean)
-├── pyproject.toml
-├── docs/
-│   └── architecture.md     # full UI v3 cartography
-├── app/                    # UI v3 — CustomTkinter + stdlib only
-│   ├── main.py             # bootstrap (logging, theme, backend, mainloop)
-│   ├── app.py              # App(CTk) shell + Router + shortcuts wiring
-│   ├── config/             # theme.py + shortcuts.py
-│   ├── core/               # events.py + state.py + navigation.py
-│   ├── components/         # 10 reusable widgets (sidebar, topbar, palette,
-│   │                       #   data_table, form_field, empty_state, toast,
-│   │                       #   tooltip, confirm_dialog, context_panel)
-│   ├── views/              # 9 business views (home, sources, analyze,
-│   │                       #   editor, audit, ai_control, settings,
-│   │                       #   validate, upload)
-│   ├── i18n/fr.py          # every visible string keyed here
-│   └── utils/formatters.py # FR number / date / size / duration
-├── src/                    # Backend (untouched by UI work)
-│   ├── core/               # ShutterstockParams, ConfigManager, logger
-│   ├── modules/            # AI client, engines, models, storage, workers
-│   │                       # All accessed via the ShutterstockAIv2 facade.
-│   └── utils/              # validators, file helpers, splash
-├── tests/
-│   ├── test_core/          # backend unit tests
-│   ├── test_utils/         # backend unit tests
-│   ├── smoke/              # baseline: 13 backend smokes (audit safety net)
-│   └── ui/                 # 1 consolidated end-to-end UI smoke
-└── _archive/               # legacy code preserved (ALLOW_DELETE=false)
-    ├── legacy_ui_v1/       # ShutterstockApp + 6 page_*.py from v1
-    └── legacy_ui_v2/ui/    # 5 active pages from the audit campaign
-```
+| Folder | Purpose |
+|---|---|
+| `app/` | UI v3 — CustomTkinter, French locale |
+| `src/` | Backend — UI-agnostic, single facade entry point |
+| `tests/` | Automated suite (pytest, 90 tests) |
+| `test/` | Qualification dossier (Edvance methodology) — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
+| `docs/` | ARCHITECTURE, MEDIA, MONETIZATION |
+| `audit/` | Internal audit history + screenshots |
+| `assets/icons/` | Windows ICO |
+| `tools/` | Standalone scripts (WCAG colour checker) |
+| `.github/workflows/` | CI (lint + test) + Release (tag-triggered) |
 
-The UI layer (`app/`) and the backend (`src/`) talk through one facade
-(`src.modules.integration.ShutterstockAIv2`). Vues never import from
-`src.modules.storage.database`, `src.modules.engines.*`, etc. directly —
-this is what made the v2 → v3 swap surgical.
+---
 
-## Coding conventions
+## Roadmap
 
-- Python 3.11+. Type hints everywhere on public APIs; docstrings on
-  classes and public methods.
-- Functions ≤ 50 lines, classes ≤ 300 lines (App shell justified).
-- `logging` stdlib (`logger = logging.getLogger(__name__)`); never
-  `print()` in production code.
-- Every visible string passes through `app.i18n.fr.t(key)` — no
-  literal user-facing strings inside views/components.
-- French-locale formatting via `app.utils.formatters` (NBSP separator,
-  decimal comma, JJ/MM/AAAA dates).
-- All widgets accessible by keyboard (Tab/Enter/Esc); no info conveyed
-  by colour alone (always paired with icon or text).
-- Every operation > 300 ms runs in a `threading.Thread(daemon=True)`
-  with results posted to the UI via `widget.after(0, callback)`.
-- Use `grid()` everywhere for layout. Mixing `pack` and `grid` inside
-  the same parent will raise — the App root is grid, so child
-  containers in tests must also be grid'd.
+- ✅ Adobe Stock CSV export (v2.0.0)
+- ✅ FTP / FTPS push (v2.0.0)
+- ✅ Ollama model selection + preload (v2.0.0)
+- ✅ Heuristic-only expert report (no AI required) (v2.0.0)
+- 🟡 Pro features — batch >50, advanced FTP scheduling (dual-license plan)
+- 🟡 macOS / Linux EXE
+- 🟡 Built-in demo GIF + screencast
+- 🟡 Drag & drop into Sources panel
+- ⚪ Custom prompt templates per category
 
-## Adding a new view
+---
 
-1. **Pick a slug** (e.g. `reports`) and an icon glyph.
-2. **Add an `i18n` entry** in `app/i18n/fr.py`:
-   `"nav.reports": "Rapports"`.
-3. **Append to** `app/components/sidebar.py::NAV_ENTRIES`:
-   `("reports", "📊", "nav.reports", "system")`.
-4. **Create the view** in `app/views/reports.py`, subclass `BaseView`:
-   ```python
-   class ReportsView(BaseView):
-       view_id = "reports"
-       def __init__(self, master, *, app):
-           super().__init__(master)
-           self.app = app
-           self._build()
-       def _build(self): ...
-       def on_enter(self, **kwargs): ...   # optional, called by Router
-       def on_leave(self): ...             # optional, called by Router
-   ```
-5. **Register the factory** in `app/app.py::App._register_views`:
-   ```python
-   factories = {
-       ...,
-       "reports": lambda parent: ReportsView(parent, app=self),
-   }
-   ```
-6. **(Optional) Add a smoke check** in
-   `tests/ui/test_app_v3_shell.py` — the existing navigation loop
-   already exercises any newly-registered view automatically; only
-   add explicit assertions if the view exposes new public API worth
-   guarding against regression.
+## Security
+
+Credentials (FTP password) are **never persisted** by default. See
+[`SECURITY.md`](SECURITY.md) for the full handling policy.
+
+---
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). This is a personal project; PRs
+are welcome but not the primary distribution channel — for major
+changes, open an issue first.
+
+---
+
+## License
+
+[MIT](LICENSE) © 2024-2026 Emmanuel Grolleau.
+
+Free for personal and commercial use. A **pro version** with advanced
+batch features (>50 images, scheduled FTP, premium support) is on the
+roadmap under a separate commercial license — see
+[`docs/MONETIZATION.md`](docs/MONETIZATION.md) (Phase 5+).
+
+---
+
+## Acknowledgments
+
+- [Ollama](https://ollama.ai) — local AI model server
+- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) — modern GUI framework
+- [Pillow](https://python-pillow.org/) — image processing
+- [ExifTool](https://exiftool.org/) — IPTC read/write engine
 
 ---
 
@@ -318,4 +274,4 @@ If this tool saves you time, consider supporting the project:
 
 [![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kiriiaq)
 
-**Star this repository if it helps your stock photography workflow!**
+**Star the repo** if it helps your stock photography workflow.
