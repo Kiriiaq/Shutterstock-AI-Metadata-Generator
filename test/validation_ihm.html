@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validation IHM — ShutterstockAnalyzer v2.0.0</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --border: #d4d8df;
+    --border-strong: #b3bac4;
+    --text: #1a1d24;
+    --muted: #6b7280;
+    --subtle: #9ca3af;
+    --primary: #1f4e78;
+    --ok: #16a34a;
+    --ok-bg: #f0fdf4;
+    --nok: #dc2626;
+    --nok-bg: #fef2f2;
+    --na: #94a3b8;
+    --na-bg: #f1f5f9;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 24px 80px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  h1 { margin: 0 0 4px; font-size: 24px; color: var(--primary); }
+  h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  /* --- Meta & summary ----------------------------------------- */
+  .info-grid {
+    display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px 16px;
+    background: var(--card); padding: 16px; border-radius: 6px;
+    box-shadow: var(--shadow); margin-bottom: 24px; align-items: center;
+  }
+  .info-grid label { font-weight: 600; color: var(--muted); font-size: 13px; }
+  .info-grid input {
+    border: 1px solid var(--border); padding: 6px 10px;
+    border-radius: 4px; font-size: 13px; max-width: 320px;
+    background: var(--bg);
+  }
+  .summary-bar {
+    background: var(--card); border-radius: 6px; padding: 14px 18px;
+    margin-bottom: 16px; box-shadow: var(--shadow);
+    display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
+  }
+  .summary-bar .item { font-size: 13px; color: var(--muted); }
+  .summary-bar .item strong { font-size: 20px; margin-right: 6px; color: var(--text); }
+  .summary-bar .ok strong { color: var(--ok); }
+  .summary-bar .nok strong { color: var(--nok); }
+  .global-progress {
+    flex: 1; min-width: 220px; height: 8px; background: var(--na-bg);
+    border-radius: 4px; overflow: hidden; position: relative;
+  }
+  .global-progress > div { height: 100%; background: linear-gradient(90deg, var(--ok), #22c55e); transition: width 0.3s ease; }
+
+  /* --- Toolbar ------------------------------------------------ */
+  .toolbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(247,248,250,0.95); backdrop-filter: blur(8px);
+    padding: 12px 0; margin: 0 -24px 16px; padding-left: 24px; padding-right: 24px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar button {
+    padding: 8px 14px; border-radius: 4px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text);
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: all 0.15s ease;
+  }
+  .toolbar button:hover { filter: brightness(0.97); transform: translateY(-1px); }
+  .toolbar button.primary {
+    background: var(--primary); color: white; border-color: var(--primary);
+  }
+  .toolbar button.success {
+    background: var(--ok); color: white; border-color: var(--ok);
+  }
+  .toolbar button.danger {
+    background: white; color: var(--nok); border-color: var(--nok);
+  }
+  .toolbar input[type="search"] {
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 13px; min-width: 240px;
+    background: var(--card);
+  }
+  .toolbar select {
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 13px; background: var(--card);
+  }
+
+  /* --- Sections ----------------------------------------------- */
+  .section {
+    background: var(--card); border-radius: 8px; margin-bottom: 18px;
+    box-shadow: var(--shadow); overflow: hidden;
+    border-left: 4px solid var(--accent);
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 18px; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent-soft), transparent 80%);
+    user-select: none;
+  }
+  .section-header:hover { filter: brightness(0.98); }
+  .section-header .icon { font-size: 22px; }
+  .section-header .name { font-weight: 600; color: var(--accent); font-size: 16px; flex: 1; }
+  .section-header .count {
+    font-size: 13px; color: var(--muted);
+    background: var(--card); padding: 3px 10px; border-radius: 99px;
+    border: 1px solid var(--border);
+  }
+  .section-header .count.complete { color: var(--ok); border-color: var(--ok); }
+  .section-progress {
+    width: 140px; height: 6px; background: var(--na-bg);
+    border-radius: 3px; overflow: hidden;
+  }
+  .section-progress > div {
+    height: 100%; background: var(--accent); transition: width 0.3s ease;
+  }
+  .section-actions { display: flex; gap: 6px; }
+  .section-actions button {
+    padding: 4px 10px; font-size: 12px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--card);
+    cursor: pointer; font-weight: 500;
+  }
+  .section-actions button.all-ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+  .section-actions button.reset { color: var(--muted); }
+  .section-actions button:hover { filter: brightness(0.95); }
+  .chevron { transition: transform 0.2s ease; color: var(--subtle); }
+  details[open] .chevron { transform: rotate(90deg); }
+
+  /* --- Test cards --------------------------------------------- */
+  .section-body { padding: 0 18px 18px; }
+  .test-card {
+    padding: 14px 16px; margin-top: 8px;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: var(--card);
+    display: grid;
+    grid-template-columns: 90px 1fr 250px;
+    gap: 16px;
+    align-items: start;
+    transition: all 0.15s ease;
+  }
+  .test-card.status-OK { background: var(--ok-bg); border-color: var(--ok); }
+  .test-card.status-NOK { background: var(--nok-bg); border-color: var(--nok); }
+  .test-card.status-NA { background: var(--card); }
+
+  /* Striping inside section (alternance subtile). */
+  .test-card.alt { background-color: rgba(0,0,0,0.012); }
+  .test-card.status-OK.alt { background: var(--ok-bg); }
+  .test-card.status-NOK.alt { background: var(--nok-bg); }
+
+  .test-id-block { display: flex; flex-direction: column; gap: 4px; }
+  .test-id {
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-weight: 700; font-size: 14px; color: var(--text);
+  }
+  .severity {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; width: fit-content;
+  }
+  .severity.critique { background: #fef2f2; color: var(--nok); }
+  .severity.majeure { background: #fff7ed; color: #ea580c; }
+  .severity.mineure { background: #f1f5f9; color: var(--muted); }
+  .req {
+    font-size: 10px; color: var(--subtle);
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+  }
+
+  .test-body { display: flex; flex-direction: column; gap: 6px; }
+  .test-feat { font-weight: 600; font-size: 14px; color: var(--text); }
+  .micro {
+    background: rgba(0,0,0,0.025); border-radius: 4px;
+    padding: 8px 10px; font-size: 12px; color: var(--text);
+    border-left: 3px solid var(--accent); margin-top: 2px;
+  }
+  .micro dt {
+    display: inline-block; font-weight: 700; color: var(--accent);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+    width: 76px; vertical-align: top;
+  }
+  .micro dd { display: inline; margin: 0; }
+  .micro div { margin-bottom: 3px; }
+  .micro div:last-child { margin-bottom: 0; }
+
+  .status-block { display: flex; flex-direction: column; gap: 6px; }
+  .status-buttons { display: flex; gap: 4px; }
+  .status-buttons button {
+    flex: 1; padding: 8px 0; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--card);
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--muted); transition: all 0.1s ease;
+  }
+  .status-buttons button:hover { filter: brightness(0.95); transform: scale(0.98); }
+  .status-buttons button.btn-OK.active { background: var(--ok); color: white; border-color: var(--ok); }
+  .status-buttons button.btn-NOK.active { background: var(--nok); color: white; border-color: var(--nok); }
+  .status-buttons button.btn-NA.active { background: var(--na); color: white; border-color: var(--na); }
+  .status-buttons button.btn-OK:hover:not(.active) { color: var(--ok); border-color: var(--ok); }
+  .status-buttons button.btn-NOK:hover:not(.active) { color: var(--nok); border-color: var(--nok); }
+  .status-buttons button.btn-NA:hover:not(.active) { color: var(--na); border-color: var(--na); }
+  textarea.comment {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 12px; font-family: inherit;
+    resize: vertical; min-height: 36px; max-height: 100px;
+    background: var(--card);
+  }
+
+  /* --- Export panel ------------------------------------------ */
+  details.export-section {
+    background: var(--card); padding: 14px 18px; border-radius: 6px;
+    margin: 16px 0; box-shadow: var(--shadow);
+  }
+  summary { font-weight: 600; cursor: pointer; }
+  pre.export {
+    background: #1a1d24; color: #e5e7eb; padding: 16px;
+    border-radius: 4px; overflow-x: auto; font-size: 12px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    max-height: 400px; overflow-y: auto;
+    margin-top: 8px;
+  }
+
+  /* --- Toast ------------------------------------------------- */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    background: var(--text); color: white; padding: 10px 18px;
+    border-radius: 6px; box-shadow: var(--shadow-md);
+    font-size: 13px; opacity: 0;
+    transform: translateY(20px); transition: all 0.25s ease;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* --- Print ------------------------------------------------- */
+  @media print {
+    body { background: white; padding: 0; }
+    .toolbar, .toast { display: none; }
+    .section { box-shadow: none; break-inside: avoid; }
+    .test-card { break-inside: avoid; }
+    details { open: true; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+  }
+
+  /* --- Responsive -------------------------------------------- */
+  @media (max-width: 900px) {
+    .test-card { grid-template-columns: 1fr; }
+    .test-id-block { flex-direction: row; gap: 12px; align-items: center; }
+    .info-grid { grid-template-columns: auto 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Validation IHM — ShutterstockAnalyzer</h1>
+<p class="meta">
+  Outil : <strong>ShutterstockAnalyzer</strong> ·
+  Version : <strong id="meta-version">v2.0.0</strong> ·
+  Persistance navigateur (<code>localStorage</code>) ·
+  49 tests répartis en 8 sections.
+</p>
+
+<div class="info-grid">
+  <label for="testeur">Testeur</label>
+  <input type="text" id="testeur" placeholder="Nom du testeur">
+  <label for="env">Environnement</label>
+  <input type="text" id="env" placeholder="Windows 11 — i7 — sans Ollama">
+  <label for="date">Date</label>
+  <input type="date" id="date">
+  <label for="build">Build EXE</label>
+  <input type="text" id="build" placeholder="dist/ShutterstockAnalyzer.exe — 24,7 Mo">
+</div>
+
+<div class="summary-bar">
+  <div class="item ok"><strong id="count-ok">0</strong>OK</div>
+  <div class="item nok"><strong id="count-nok">0</strong>NOK</div>
+  <div class="item"><strong id="count-na">0</strong>NA</div>
+  <div class="item">/ <strong id="count-total">0</strong> tests</div>
+  <div class="global-progress" title="Taux d'avancement (OK+NOK / Total)">
+    <div id="global-progress-bar" style="width: 0%"></div>
+  </div>
+  <div class="item">Taux OK : <strong id="count-rate">0%</strong></div>
+</div>
+
+<div class="toolbar">
+  <input type="search" id="search" placeholder="🔍 Filtrer ID, fonctionnalité, description…">
+  <select id="filter-status">
+    <option value="">Tous statuts</option>
+    <option value="OK">OK uniquement</option>
+    <option value="NOK">NOK uniquement</option>
+    <option value="NA">NA uniquement</option>
+  </select>
+  <select id="filter-severity">
+    <option value="">Toutes sévérités</option>
+    <option value="critique">Critique</option>
+    <option value="majeure">Majeure</option>
+    <option value="mineure">Mineure</option>
+  </select>
+  <button id="btn-expand-all">⊞ Tout déplier</button>
+  <button id="btn-collapse-all">⊟ Tout replier</button>
+  <button id="btn-all-ok-global" class="success">✓ Tout valider OK</button>
+  <button id="btn-reset-global" class="danger">↻ Réinitialiser</button>
+  <button id="btn-export-json" class="primary">📥 Exporter JSON</button>
+  <button id="btn-export-md">📝 Générer Markdown</button>
+  <button onclick="window.print()">🖨 Imprimer</button>
+</div>
+
+<details class="export-section" id="export-section">
+  <summary>Export (JSON / Markdown)</summary>
+  <pre class="export" id="export-output">(Clique sur un bouton Exporter pour générer)</pre>
+</details>
+
+<div id="sections-container"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================================
+// Test list — generated from test/scripts/_make_matrix.py::TESTS
+// ============================================================================
+const TESTS = [{"id": "T-001", "categorie": "IHM", "exigence": "REQ-IHM-01", "fonctionnalite": "Topbar / Theme", "description": "Toggle theme 3× (light→dark→system→light)", "prerequis": "App lancée", "donnee": "3 clics sur 🌙/☀/⚙", "attendu": "La fenêtre garde sa taille, palette change, aucune erreur log", "severite": "mineure"}, {"id": "T-002", "categorie": "IHM", "exigence": "REQ-IHM-02", "fonctionnalite": "Topbar / Aide", "description": "Bouton Aide → modal raccourcis", "prerequis": "App lancée", "donnee": "Clic ? ou Ctrl+?", "attendu": "Modal listant tous les raccourcis, fermable par Esc", "severite": "mineure"}, {"id": "T-003", "categorie": "IHM", "exigence": "REQ-IHM-03", "fonctionnalite": "Sources / Scanner", "description": "Scanner un dossier de 10 images JPEG valides", "prerequis": "Dossier test préparé", "donnee": "Sélectionner dossier puis cliquer Scanner", "attendu": "DataTable affiche 10 lignes, compteur = « 10 fichiers : 10 »", "severite": "majeure"}, {"id": "T-004", "categorie": "IHM", "exigence": "REQ-IHM-04", "fonctionnalite": "Sources / + Fichiers", "description": "Ajouter 5 fichiers via le bouton + Fichiers…", "prerequis": "Liste déjà peuplée", "donnee": "Multi-sélection 5 jpg dans le dialogue", "attendu": "Ajout sans doublons, compteur incrémenté", "severite": "mineure"}, {"id": "T-005", "categorie": "IHM", "exigence": "REQ-IHM-05", "fonctionnalite": "Sources / Supprimer", "description": "Supprimer une sélection via clavier (Suppr) ou bouton", "prerequis": "1 ligne sélectionnée", "donnee": "Touche Suppr", "attendu": "Ligne retirée, compteur −1, focus voisin", "severite": "mineure"}, {"id": "T-006", "categorie": "IHM", "exigence": "REQ-IHM-06", "fonctionnalite": "Sources / Vider", "description": "Bouton Vider — action destructive avec confirmation", "prerequis": "Liste non vide", "donnee": "Clic Vider → Confirmer", "attendu": "Liste vide après confirmation, refus si Annuler", "severite": "mineure"}, {"id": "T-007", "categorie": "IHM", "exigence": "REQ-IHM-07", "fonctionnalite": "Sources / Tout-Aucun", "description": "Boutons Tout / Aucun pour la sélection", "prerequis": "Liste non vide", "donnee": "Clic Tout puis clic Aucun", "attendu": "Sélection complète puis vidée", "severite": "mineure"}, {"id": "T-008", "categorie": "IHM", "exigence": "REQ-IHM-08", "fonctionnalite": "Éditeur / Collapse", "description": "Toggle ▼/▶ masque/affiche le corps", "prerequis": "App lancée", "donnee": "Clic flèche", "attendu": "Corps masqué/visible, état conservé pendant la session", "severite": "mineure"}, {"id": "T-009", "categorie": "IHM", "exigence": "REQ-IHM-09", "fonctionnalite": "Éditeur / Lire", "description": "Double-clic ligne → 5 champs remplis depuis IPTC", "prerequis": "Image scannée avec IPTC", "donnee": "Double-clic ligne Sources", "attendu": "Titre/Description/Mots-clés/Auteur/Copyright remplis", "severite": "majeure"}, {"id": "T-010", "categorie": "IHM", "exigence": "REQ-IHM-10", "fonctionnalite": "Éditeur / Écrire", "description": "Modifier titre + cliquer Écrire", "prerequis": "Image scannée", "donnee": "Modifier puis clic Écrire", "attendu": "Toast succès, IPTC du fichier modifié sur disque (vérif avec exiftool)", "severite": "majeure"}, {"id": "T-011", "categorie": "IHM", "exigence": "REQ-IHM-11", "fonctionnalite": "Éditeur / Rapport expert sans sélection", "description": "Cliquer Rapport expert sans avoir sélectionné de fichier", "prerequis": "App lancée", "donnee": "Clic Rapport expert…", "attendu": "Toast warning « Sélectionnez d'abord une image »", "severite": "majeure"}, {"id": "T-012", "categorie": "IHM", "exigence": "REQ-IHM-12", "fonctionnalite": "Éditeur / Rapport expert avec sélection", "description": "Cliquer Rapport expert après double-clic sur ligne", "prerequis": "Image scannée + double-clic", "donnee": "Clic Rapport expert…", "attendu": "Modal s'ouvre, mode « Rapide (sans IA) », 8 sections affichées", "severite": "critique"}, {"id": "T-013", "categorie": "IHM", "exigence": "REQ-IHM-13", "fonctionnalite": "Analyse / Démarrer désactivé", "description": "Démarrer grisé tant que sélection vide", "prerequis": "Liste vide ou rien sélectionné", "donnee": "Vérifier visuel + tentative clic", "attendu": "Bouton désactivé, clic sans effet", "severite": "majeure"}, {"id": "T-014", "categorie": "IHM", "exigence": "REQ-IHM-14", "fonctionnalite": "Analyse / Arrêter via Esc", "description": "Esc annule le batch en cours", "prerequis": "Batch en cours", "donnee": "Appui Esc", "attendu": "Toast « Annulation demandée… », batch s'arrête à l'image suivante", "severite": "majeure"}, {"id": "T-015", "categorie": "IHM", "exigence": "REQ-IHM-15", "fonctionnalite": "Modaux / Ouverture-fermeture", "description": "Ouvrir/fermer 5 modaux (settings, audit, ai_control, validate, expert_report)", "prerequis": "App lancée", "donnee": "Détail… × 5 + Esc à chaque fois", "attendu": "Chaque modal s'ouvre puis se ferme proprement, fenêtre principale OK", "severite": "majeure"}, {"id": "T-020", "categorie": "Paramètres", "exigence": "REQ-PARAM-01", "fonctionnalite": "Mode sans IA (défaut)", "description": "Rapport expert avec checkbox IA décochée (défaut)", "prerequis": "Aucun Ollama requis", "donnee": "Ouvrir Rapport expert sur une image", "attendu": "Source = « heuristic », aucune trace d'appel HTTP Ollama dans les logs", "severite": "critique"}, {"id": "T-021", "categorie": "Paramètres", "exigence": "REQ-PARAM-02", "fonctionnalite": "Use_AI=True sans Ollama", "description": "Cocher IA + Régénérer alors qu'Ollama est absent", "prerequis": "Ollama service stoppé", "donnee": "Cocher case puis Régénérer", "attendu": "Fallback heuristique transparent, pas de crash, mode reste « heuristic »", "severite": "majeure"}, {"id": "T-022", "categorie": "Paramètres", "exigence": "REQ-PARAM-03", "fonctionnalite": "Use_AI=True avec Ollama", "description": "Cocher IA + Régénérer avec Ollama démarré", "prerequis": "Ollama serve + modèle llama3.2-vision installé", "donnee": "Cocher case puis Régénérer", "attendu": "Source = « hybrid », scores enrichis, titres potentiellement reformulés", "severite": "majeure"}, {"id": "T-030", "categorie": "Entrées", "exigence": "REQ-IN-01", "fonctionnalite": "JPEG nominal", "description": "Image 12 MP, sRGB, ~3 Mo, IPTC complet", "prerequis": "input_nominal.jpg dans test/inputs/", "donnee": "Analyse + Rapport expert", "attendu": "Rapport complet, scores commercial≥6 / technique≥8 / SEO≥5, 0 risque blocker", "severite": "critique"}, {"id": "T-031", "categorie": "Entrées", "exigence": "REQ-IN-02", "fonctionnalite": "Fichier vide", "description": "Fichier 0 octet renommé .jpg", "prerequis": "input_vide.jpg dans test/inputs/", "donnee": "Tenter scan / analyse", "attendu": "Filtre rejette proprement (Invalid), log erreur, pas de crash UI", "severite": "majeure"}, {"id": "T-032", "categorie": "Entrées", "exigence": "REQ-IN-03", "fonctionnalite": "Sous-résolution", "description": "Image 1600×1250 (2 MP) — sous le minimum 4 MP", "prerequis": "input_low_mp.jpg", "donnee": "Rapport expert", "attendu": "RejectionRisk severity=blocker « < 4 MP », score technique ≤7", "severite": "majeure"}, {"id": "T-033", "categorie": "Entrées", "exigence": "REQ-IN-04", "fonctionnalite": "Fichier volumineux", "description": "JPEG > 50 Mo (au-dessus du plafond Shutterstock)", "prerequis": "input_volumineux.jpg (~52 Mo)", "donnee": "Rapport expert", "attendu": "Warnings Adobe + Shutterstock (poids), pas bloqué, scores OK", "severite": "majeure"}, {"id": "T-034", "categorie": "Entrées", "exigence": "REQ-IN-05", "fonctionnalite": "Mauvais format", "description": "PNG renommé / vrai PNG", "prerequis": "input_mauvais_format.png", "donnee": "Rapport expert", "attendu": "Warning « format JPEG recommandé » sur les deux plateformes", "severite": "mineure"}, {"id": "T-035", "categorie": "Entrées", "exigence": "REQ-IN-06", "fonctionnalite": "Espace CMYK", "description": "JPEG en mode CMYK", "prerequis": "input_cmyk.jpg", "donnee": "Rapport expert", "attendu": "Warning « espace CMJN détecté (sRGB attendu) », score tech −1", "severite": "mineure"}, {"id": "T-036", "categorie": "Entrées", "exigence": "REQ-IN-07", "fonctionnalite": "UTF-8 / accents / symboles I&C", "description": "IPTC contient « Çà éü ° ± μ Ω 🎨 »", "prerequis": "input_utf8.jpg avec IPTC riche", "donnee": "Lire IPTC dans l'éditeur", "attendu": "Tous caractères préservés à l'écriture, encoding utf-8 OK", "severite": "majeure"}, {"id": "T-037", "categorie": "Entrées", "exigence": "REQ-IN-08", "fonctionnalite": "Fichier corrompu", "description": "Header JPEG tronqué (premiers 200 octets seulement)", "prerequis": "input_corrompu.jpg", "donnee": "Scanner le dossier", "attendu": "Erreur PIL contenue, ligne marquée Invalid, app stable", "severite": "majeure"}, {"id": "T-038", "categorie": "Entrées", "exigence": "REQ-IN-09", "fonctionnalite": "Chemin avec espaces + accents", "description": "Image placée dans « Dossier été/photo n°1.jpg »", "prerequis": "Sous-dossier `Dossier été/`", "donnee": "Scanner + analyser", "attendu": "Chemins gérés correctement (pas de UnicodeError, pas de quoting cassé)", "severite": "mineure"}, {"id": "T-040", "categorie": "Sorties", "exigence": "REQ-OUT-01", "fonctionnalite": "CSV Adobe — colonnes", "description": "Export CSV Adobe après un rapport expert", "prerequis": "Rapport expert calculé", "donnee": "Bouton Exporter CSV…", "attendu": "Fichier `*_adobe.csv` avec BOM UTF-8, colonnes Filename,Title,Keywords,Category,Releases", "severite": "critique"}, {"id": "T-041", "categorie": "Sorties", "exigence": "REQ-OUT-02", "fonctionnalite": "CSV Shutterstock — colonnes", "description": "Export CSV Shutterstock après un rapport expert", "prerequis": "Rapport expert calculé", "donnee": "Bouton Exporter CSV…", "attendu": "Fichier `*_shutterstock.csv` colonnes Filename,Description,Keywords,Categories,Editorial,Mature,Illustration", "severite": "critique"}, {"id": "T-042", "categorie": "Sorties", "exigence": "REQ-OUT-03", "fonctionnalite": "Keywords séparateur virgule (fix P0)", "description": "Vérifier que Keywords est `kw1, kw2, kw3` (virgule), PAS `kw1 kw2 kw3` (espace)", "prerequis": "Au moins 3 keywords dans le rapport", "donnee": "Ouvrir le CSV produit", "attendu": "Cellule Keywords contient au moins une « , » entre chaque mot-clé", "severite": "critique"}, {"id": "T-043", "categorie": "Sorties", "exigence": "REQ-OUT-04", "fonctionnalite": "Mapping catégorie SH→Adobe", "description": "Input catégorie SH = « Business/Finance » → output Adobe Category = « Business »", "prerequis": "Image avec catégorie SH", "donnee": "Export Adobe", "attendu": "Colonne Category = « Business » dans le CSV Adobe", "severite": "majeure"}, {"id": "T-044", "categorie": "Sorties", "exigence": "REQ-OUT-05", "fonctionnalite": "Export batch 50 lignes", "description": "Sélection multiple de 50 images → 1 export", "prerequis": "50 images scannées et sélectionnées", "donnee": "Export double CSV", "attendu": "Chaque CSV contient exactement 50 lignes + 1 ligne d'en-tête", "severite": "majeure"}, {"id": "T-050", "categorie": "Cas limites", "exigence": "REQ-LIM-01", "fonctionnalite": "0 keyword", "description": "Image avec IPTC sans keywords", "prerequis": "input_no_keywords.jpg", "donnee": "Rapport expert", "attendu": "RejectionRisk severity=blocker « minimum 7 »", "severite": "majeure"}, {"id": "T-051", "categorie": "Cas limites", "exigence": "REQ-LIM-02", "fonctionnalite": ">50 keywords", "description": "Image avec 80 keywords dans IPTC", "prerequis": "input_many_keywords.jpg", "donnee": "Rapport expert", "attendu": "Tronqué à 50, pas d'erreur, warning éventuel", "severite": "mineure"}, {"id": "T-052", "categorie": "Cas limites", "exigence": "REQ-LIM-03", "fonctionnalite": "Titre vide", "description": "IPTC sans headline ni object_name", "prerequis": "input_no_title.jpg", "donnee": "Rapport expert", "attendu": "Fallback titre depuis nom de fichier, ou RejectionRisk « Titre absent »", "severite": "mineure"}, {"id": "T-053", "categorie": "Cas limites", "exigence": "REQ-LIM-04", "fonctionnalite": "Marques filtrées", "description": "Keywords contiennent `apple`, `nike`, `coca-cola`", "prerequis": "input_brands.jpg", "donnee": "Rapport expert", "attendu": "Aucune marque ne survit dans report.keywords", "severite": "majeure"}, {"id": "T-054", "categorie": "Cas limites", "exigence": "REQ-LIM-05", "fonctionnalite": "Stuffing hors titre filtré", "description": "Keywords contiennent `stock`, `image`, `wallpaper`, titre = « Sunset »", "prerequis": "input_stuffing.jpg", "donnee": "Rapport expert", "attendu": "Ces mots-clés filtrés silencieusement", "severite": "mineure"}, {"id": "T-055", "categorie": "Cas limites", "exigence": "REQ-LIM-06", "fonctionnalite": "Stuffing dans titre conservé", "description": "Keywords contiennent `photo`, titre = « Lake Photo »", "prerequis": "input_stuffing_in_title.jpg", "donnee": "Rapport expert", "attendu": "« photo » est conservé (présent dans le titre)", "severite": "mineure"}, {"id": "T-060", "categorie": "Performance", "exigence": "REQ-PERF-01", "fonctionnalite": "Heuristique 50 images", "description": "Construire 50 rapports sans IA", "prerequis": "50 images scannées", "donnee": "Chronométrer batch heuristique", "attendu": "P95 < 5 s, P99 < 8 s sur machine de référence", "severite": "mineure"}, {"id": "T-061", "categorie": "Performance", "exigence": "REQ-PERF-02", "fonctionnalite": "Export 500 lignes", "description": "Export double CSV de 500 rapports", "prerequis": "500 rapports calculés", "donnee": "Chronométrer export_double_csv", "attendu": "Total < 2 s", "severite": "mineure"}, {"id": "T-062", "categorie": "Performance", "exigence": "REQ-PERF-03", "fonctionnalite": "Ouverture modal expert", "description": "Latence d'ouverture modal Rapport expert", "prerequis": "Image sélectionnée", "donnee": "Chronométrer entre clic et premier widget visible", "attendu": "< 500 ms (rendu) + worker thread asynchrone", "severite": "mineure"}, {"id": "T-070", "categorie": "Robustesse", "exigence": "REQ-ROB-01", "fonctionnalite": "Backend api=None", "description": "Lancer l'app sans backend", "prerequis": "Démarrage forcé api=None", "donnee": "Ouvrir Rapport expert + Validation", "attendu": "EmptyState propre sur chaque modal, pas de crash", "severite": "majeure"}, {"id": "T-071", "categorie": "Robustesse", "exigence": "REQ-ROB-02", "fonctionnalite": "ExifTool absent", "description": "ExifTool désinstallé / chemin invalide", "prerequis": "PATH sans exiftool", "donnee": "Tenter Lire/Écrire IPTC", "attendu": "Toast warning « ExifTool absent », lecture/écriture désactivées proprement", "severite": "majeure"}, {"id": "T-072", "categorie": "Robustesse", "exigence": "REQ-ROB-03", "fonctionnalite": "Ollama absent + Use_AI=True", "description": "Use_AI coché alors qu'Ollama n'est pas installé", "prerequis": "Service Ollama stoppé", "donnee": "Régénérer rapport en mode IA", "attendu": "Fallback heuristique transparent, log warning, pas de crash", "severite": "majeure"}, {"id": "T-073", "categorie": "Robustesse", "exigence": "REQ-ROB-04", "fonctionnalite": "Disque plein à l'export", "description": "Tenter export CSV vers chemin sans espace", "prerequis": "Disque/dossier en lecture seule", "donnee": "Export double CSV", "attendu": "Erreur OS contenue, toast d'erreur clair, app stable", "severite": "mineure"}, {"id": "T-074", "categorie": "Robustesse", "exigence": "REQ-ROB-05", "fonctionnalite": "Permission refusée écriture IPTC", "description": "Fichier en lecture seule", "prerequis": "chmod 444", "donnee": "Cliquer Écrire dans l'éditeur", "attendu": "Erreur contenue, toast d'erreur, fichier inchangé", "severite": "mineure"}, {"id": "T-080", "categorie": "Régression", "exigence": "REQ-REG-01", "fonctionnalite": "Mode Shutterstock legacy", "description": "vision_analyzer.analyze_image() doit retourner le même schéma qu'avant la refonte", "prerequis": "Ollama présent + image", "donnee": "Appeler l'API legacy directement", "attendu": "AnalysisResult avec title/description/keywords/categories — non régressé", "severite": "critique"}, {"id": "T-081", "categorie": "Régression", "exigence": "REQ-REG-02", "fonctionnalite": "Suite pytest existante", "description": "62 tests doivent rester verts", "prerequis": "—", "donnee": "pytest tests/ -q", "attendu": "62 passed, 0 failed", "severite": "critique"}, {"id": "T-082", "categorie": "Régression", "exigence": "REQ-REG-03", "fonctionnalite": "Build PyInstaller", "description": "build.py debug + release sortent un EXE qui démarre", "prerequis": "—", "donnee": "python build.py all", "attendu": "2 EXE produits, smoke test mainloop OK, exit code 0", "severite": "critique"}];
+const CATEGORY_COLORS = {"IHM": "#1f4e78", "Paramètres": "#7c3aed", "Entrées": "#ea580c", "Sorties": "#16a34a", "Cas limites": "#ca8a04", "Performance": "#0891b2", "Robustesse": "#dc2626", "Régression": "#475569"};
+const CATEGORY_ICONS = {"IHM": "🖥️", "Paramètres": "⚙️", "Entrées": "📥", "Sorties": "📤", "Cas limites": "⚠️", "Performance": "⏱️", "Robustesse": "🛡️", "Régression": "🔁"};
+const STORAGE_KEY = 'ssanalyzer_qa_ihm_v2';
+
+// ----------------------------------------------------------------------------
+// Persistence
+// ----------------------------------------------------------------------------
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ----------------------------------------------------------------------------
+// Group + filter
+// ----------------------------------------------------------------------------
+function groupByCategory(tests) {
+  const out = {};
+  tests.forEach(t => {
+    out[t.categorie] = out[t.categorie] || [];
+    out[t.categorie].push(t);
+  });
+  return out;
+}
+
+function passesFilter(t) {
+  const s = document.getElementById('search').value.toLowerCase();
+  const st = document.getElementById('filter-status').value;
+  const sev = document.getElementById('filter-severity').value;
+  const state = loadState();
+  const status = (state[t.id] || {}).status || 'NA';
+  if (s && ![t.id, t.fonctionnalite, t.description, t.attendu]
+      .some(x => (x || '').toLowerCase().includes(s))) return false;
+  if (st && status !== st) return false;
+  if (sev && t.severite !== sev) return false;
+  return true;
+}
+
+// ----------------------------------------------------------------------------
+// Light helpers
+// ----------------------------------------------------------------------------
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+// ----------------------------------------------------------------------------
+// Render
+// ----------------------------------------------------------------------------
+function render() {
+  const container = document.getElementById('sections-container');
+  container.innerHTML = '';
+  const state = loadState();
+  const grouped = groupByCategory(TESTS);
+
+  Object.entries(grouped).forEach(([cat, tests]) => {
+    const filtered = tests.filter(passesFilter);
+    if (filtered.length === 0) return;
+
+    const color = CATEGORY_COLORS[cat] || '#475569';
+    const icon = CATEGORY_ICONS[cat] || '📋';
+
+    const okCount = tests.filter(t => (state[t.id] || {}).status === 'OK').length;
+    const nokCount = tests.filter(t => (state[t.id] || {}).status === 'NOK').length;
+    const naCount = tests.length - okCount - nokCount;
+    const done = okCount + nokCount;
+    const pct = tests.length > 0 ? Math.round(done / tests.length * 100) : 0;
+    const complete = naCount === 0 && tests.length > 0;
+
+    const section = document.createElement('details');
+    section.open = true;
+    section.className = 'section';
+    section.style.setProperty('--accent', color);
+    section.style.setProperty('--accent-soft', hexToRgba(color, 0.10));
+    section.dataset.category = cat;
+
+    section.innerHTML = `
+      <summary class="section-header">
+        <span class="chevron">▶</span>
+        <span class="icon">${icon}</span>
+        <span class="name">${escapeHtml(cat)}</span>
+        <span class="count ${complete ? 'complete' : ''}">
+          ${okCount}/${tests.length} OK${nokCount ? ' · ' + nokCount + ' NOK' : ''}
+        </span>
+        <div class="section-progress"><div style="width: ${pct}%"></div></div>
+        <div class="section-actions">
+          <button class="all-ok" data-action="all-ok" data-cat="${escapeHtml(cat)}">✓ Tout OK</button>
+          <button class="reset" data-action="reset" data-cat="${escapeHtml(cat)}">↻ Reset</button>
+        </div>
+      </summary>
+      <div class="section-body">
+        ${filtered.map((t, i) => renderTestCard(t, state, i)).join('')}
+      </div>
+    `;
+    container.appendChild(section);
+  });
+
+  updateSummary();
+}
+
+function renderTestCard(t, state, idx) {
+  const s = state[t.id] || { status: 'NA', comment: '' };
+  const altClass = idx % 2 === 1 ? ' alt' : '';
+  return `
+    <div class="test-card status-${s.status}${altClass}" data-id="${t.id}">
+      <div class="test-id-block">
+        <span class="test-id">${t.id}</span>
+        <span class="severity ${t.severite}">${t.severite}</span>
+        <span class="req">${escapeHtml(t.exigence)}</span>
+      </div>
+      <div class="test-body">
+        <div class="test-feat">${escapeHtml(t.fonctionnalite)}</div>
+        <div class="micro">
+          <div><dt>Pré-requis</dt><dd>${escapeHtml(t.prerequis || '—')}</dd></div>
+          <div><dt>Donnée</dt><dd>${escapeHtml(t.donnee || '—')}</dd></div>
+          <div><dt>Action</dt><dd>${escapeHtml(t.description)}</dd></div>
+          <div><dt>Attendu</dt><dd>${escapeHtml(t.attendu)}</dd></div>
+        </div>
+      </div>
+      <div class="status-block">
+        <div class="status-buttons">
+          <button class="btn-OK ${s.status === 'OK' ? 'active' : ''}" data-id="${t.id}" data-status="OK">OK</button>
+          <button class="btn-NOK ${s.status === 'NOK' ? 'active' : ''}" data-id="${t.id}" data-status="NOK">NOK</button>
+          <button class="btn-NA ${s.status === 'NA' ? 'active' : ''}" data-id="${t.id}" data-status="NA">NA</button>
+        </div>
+        <textarea class="comment" data-id="${t.id}" placeholder="Commentaire / observation…">${escapeHtml(s.comment || '')}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function updateSummary() {
+  const state = loadState();
+  let ok = 0, nok = 0, na = 0;
+  TESTS.forEach(t => {
+    const s = (state[t.id] || {}).status || 'NA';
+    if (s === 'OK') ok++;
+    else if (s === 'NOK') nok++;
+    else na++;
+  });
+  document.getElementById('count-ok').textContent = ok;
+  document.getElementById('count-nok').textContent = nok;
+  document.getElementById('count-na').textContent = na;
+  document.getElementById('count-total').textContent = TESTS.length;
+  const done = ok + nok;
+  const pct = TESTS.length > 0 ? Math.round(done / TESTS.length * 100) : 0;
+  document.getElementById('global-progress-bar').style.width = pct + '%';
+  document.getElementById('count-rate').textContent = done > 0
+    ? Math.round(ok / done * 100) + '%' : '—';
+}
+
+// ----------------------------------------------------------------------------
+// Actions
+// ----------------------------------------------------------------------------
+function setStatus(id, status) {
+  const state = loadState();
+  state[id] = state[id] || {};
+  state[id].status = status;
+  saveState(state);
+}
+function setComment(id, comment) {
+  const state = loadState();
+  state[id] = state[id] || {};
+  state[id].comment = comment;
+  saveState(state);
+}
+
+function allOkSection(cat) {
+  const state = loadState();
+  TESTS.filter(t => t.categorie === cat).forEach(t => {
+    state[t.id] = state[t.id] || {};
+    state[t.id].status = 'OK';
+  });
+  saveState(state);
+  render();
+  showToast(`Section « ${cat} » : tous les tests validés OK`);
+}
+
+function resetSection(cat) {
+  if (!confirm(`Remettre tous les tests de la section « ${cat} » à NA ?`)) return;
+  const state = loadState();
+  TESTS.filter(t => t.categorie === cat).forEach(t => {
+    state[t.id] = state[t.id] || {};
+    state[t.id].status = 'NA';
+  });
+  saveState(state);
+  render();
+}
+
+function allOkGlobal() {
+  if (!confirm(`Valider OK l'intégralité des ${TESTS.length} tests ?`)) return;
+  const state = loadState();
+  TESTS.forEach(t => {
+    state[t.id] = state[t.id] || {};
+    state[t.id].status = 'OK';
+  });
+  saveState(state);
+  render();
+  showToast('Tous les tests validés OK');
+}
+
+function resetGlobal() {
+  if (!confirm('Réinitialiser tous les statuts et commentaires ?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ----------------------------------------------------------------------------
+// Export
+// ----------------------------------------------------------------------------
+function buildPayload() {
+  const state = loadState();
+  return {
+    tool: 'ShutterstockAnalyzer',
+    version: document.getElementById('meta-version').textContent,
+    testeur: document.getElementById('testeur').value,
+    environnement: document.getElementById('env').value,
+    date: document.getElementById('date').value,
+    build: document.getElementById('build').value,
+    generated_at: new Date().toISOString(),
+    tests: TESTS.map(t => {
+      const row = state[t.id] || { status: 'NA', comment: '' };
+      return { ...t, statut: row.status || 'NA', commentaire: row.comment || '' };
+    })
+  };
+}
+
+function exportJson() {
+  const data = buildPayload();
+  document.getElementById('export-output').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('export-section').open = true;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `validation_ihm_${data.testeur || 'anonymous'}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportMarkdown() {
+  const data = buildPayload();
+  const lines = [];
+  lines.push(`# Validation IHM — ${data.tool} ${data.version}`);
+  lines.push(``);
+  lines.push(`- **Testeur** : ${data.testeur || '_(non renseigné)_'}`);
+  lines.push(`- **Environnement** : ${data.environnement || '_(non renseigné)_'}`);
+  lines.push(`- **Date** : ${data.date || data.generated_at.slice(0,10)}`);
+  lines.push(`- **Build** : ${data.build || '_(non renseigné)_'}`);
+  lines.push(``);
+  const ok = data.tests.filter(t => t.statut === 'OK').length;
+  const nok = data.tests.filter(t => t.statut === 'NOK').length;
+  const na = data.tests.filter(t => t.statut === 'NA').length;
+  const done = ok + nok;
+  lines.push(`## Synthèse`);
+  lines.push(``);
+  lines.push(`| Total | OK | NOK | NA | Taux OK |`);
+  lines.push(`|---|---|---|---|---|`);
+  lines.push(`| ${data.tests.length} | ${ok} | ${nok} | ${na} | ${done > 0 ? Math.round(ok/done*100)+'%' : '—'} |`);
+  lines.push(``);
+
+  // Group by category
+  const byCat = {};
+  data.tests.forEach(t => { (byCat[t.categorie] = byCat[t.categorie] || []).push(t); });
+  Object.entries(byCat).forEach(([cat, tests]) => {
+    const co = tests.filter(t => t.statut === 'OK').length;
+    lines.push(`## ${cat} (${co}/${tests.length} OK)`);
+    lines.push(``);
+    lines.push(`| ID | Fonctionnalité | Sévérité | Statut | Commentaire |`);
+    lines.push(`|---|---|---|---|---|`);
+    tests.forEach(t => {
+      lines.push(`| ${t.id} | ${t.fonctionnalite} | ${t.severite} | ${t.statut} | ${(t.commentaire || '').replace(/\|/g, '\\|').replace(/\n/g, ' ')} |`);
+    });
+    lines.push(``);
+  });
+
+  if (nok > 0) {
+    lines.push(`## Anomalies détectées (NOK)`);
+    data.tests.filter(t => t.statut === 'NOK').forEach(t => {
+      lines.push(``);
+      lines.push(`### ${t.id} — ${t.fonctionnalite} (${t.severite})`);
+      lines.push(`- **Pré-requis** : ${t.prerequis}`);
+      lines.push(`- **Action** : ${t.description}`);
+      lines.push(`- **Attendu** : ${t.attendu}`);
+      lines.push(`- **Commentaire** : ${t.commentaire || '_(à compléter)_'}`);
+    });
+  }
+
+  document.getElementById('export-output').textContent = lines.join('\n');
+  document.getElementById('export-section').open = true;
+}
+
+// ----------------------------------------------------------------------------
+// Event delegation
+// ----------------------------------------------------------------------------
+function init() {
+  // Restore meta
+  const state = loadState();
+  if (state._meta) {
+    document.getElementById('testeur').value = state._meta.testeur || '';
+    document.getElementById('env').value = state._meta.env || '';
+    document.getElementById('date').value = state._meta.date || '';
+    document.getElementById('build').value = state._meta.build || '';
+  }
+  if (!document.getElementById('date').value) {
+    document.getElementById('date').value = new Date().toISOString().slice(0,10);
+  }
+  ['testeur','env','date','build'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const s = loadState();
+      s._meta = s._meta || {};
+      s._meta[id] = document.getElementById(id).value;
+      saveState(s);
+    });
+  });
+
+  // Delegated clicks for status / section actions
+  document.getElementById('sections-container').addEventListener('click', (e) => {
+    const status = e.target.dataset.status;
+    if (status && e.target.dataset.id) {
+      setStatus(e.target.dataset.id, status);
+      render();
+      return;
+    }
+    const action = e.target.dataset.action;
+    if (action === 'all-ok') {
+      e.preventDefault(); e.stopPropagation();
+      allOkSection(e.target.dataset.cat);
+    } else if (action === 'reset') {
+      e.preventDefault(); e.stopPropagation();
+      resetSection(e.target.dataset.cat);
+    }
+  });
+
+  // Comment inputs
+  document.getElementById('sections-container').addEventListener('input', (e) => {
+    if (e.target.matches('textarea.comment')) {
+      setComment(e.target.dataset.id, e.target.value);
+      updateSummary();
+    }
+  });
+
+  // Toolbar
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('filter-status').addEventListener('change', render);
+  document.getElementById('filter-severity').addEventListener('change', render);
+  document.getElementById('btn-expand-all').addEventListener('click', () => {
+    document.querySelectorAll('.section').forEach(s => s.open = true);
+  });
+  document.getElementById('btn-collapse-all').addEventListener('click', () => {
+    document.querySelectorAll('.section').forEach(s => s.open = false);
+  });
+  document.getElementById('btn-all-ok-global').addEventListener('click', allOkGlobal);
+  document.getElementById('btn-reset-global').addEventListener('click', resetGlobal);
+  document.getElementById('btn-export-json').addEventListener('click', exportJson);
+  document.getElementById('btn-export-md').addEventListener('click', exportMarkdown);
+
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

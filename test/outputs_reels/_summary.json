@@ -1,0 +1,234 @@
+{
+  "total": 15,
+  "items": [
+    {
+      "file": "test\\inputs\\Dossier été\\photo n°1.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 7,
+        "technical": 10,
+        "seo": 5,
+        "rejection_risk": 0
+      },
+      "keywords_count": 7,
+      "rejection_risks": 0,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_brands.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 6,
+        "technical": 10,
+        "seo": 2,
+        "rejection_risk": 2
+      },
+      "keywords_count": 6,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_cmyk.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 4,
+        "technical": 9,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 0,
+      "rejection_risks": 1,
+      "adobe_warnings": 1,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_corrompu.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 4,
+        "technical": 10,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 0,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_low_mp.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 6,
+        "technical": 7,
+        "seo": 1,
+        "rejection_risk": 5
+      },
+      "keywords_count": 6,
+      "rejection_risks": 2,
+      "adobe_warnings": 1,
+      "shutterstock_warnings": 1
+    },
+    {
+      "file": "test\\inputs\\input_many_keywords.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 7,
+        "technical": 10,
+        "seo": 7,
+        "rejection_risk": 0
+      },
+      "keywords_count": 50,
+      "rejection_risks": 0,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_mauvais_format.png",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 4,
+        "technical": 8,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 0,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 1
+    },
+    {
+      "file": "test\\inputs\\input_no_keywords.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 4,
+        "technical": 10,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 0,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_no_title.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 6,
+        "technical": 10,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 6,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_nominal.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 10,
+        "technical": 10,
+        "seo": 8,
+        "rejection_risk": 0
+      },
+      "keywords_count": 12,
+      "rejection_risks": 0,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_stuffing.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 6,
+        "technical": 10,
+        "seo": 2,
+        "rejection_risk": 2
+      },
+      "keywords_count": 4,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_stuffing_in_title.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 6,
+        "technical": 10,
+        "seo": 4,
+        "rejection_risk": 0
+      },
+      "keywords_count": 9,
+      "rejection_risks": 0,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_utf8.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 7,
+        "technical": 10,
+        "seo": 7,
+        "rejection_risk": 0
+      },
+      "keywords_count": 8,
+      "rejection_risks": 0,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_vide.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 4,
+        "technical": 10,
+        "seo": 1,
+        "rejection_risk": 2
+      },
+      "keywords_count": 0,
+      "rejection_risks": 1,
+      "adobe_warnings": 0,
+      "shutterstock_warnings": 0
+    },
+    {
+      "file": "test\\inputs\\input_volumineux.jpg",
+      "status": "ok",
+      "source": "heuristic",
+      "scores": {
+        "commercial": 5,
+        "technical": 8,
+        "seo": 1,
+        "rejection_risk": 3
+      },
+      "keywords_count": 0,
+      "rejection_risks": 2,
+      "adobe_warnings": 1,
+      "shutterstock_warnings": 1
+    }
+  ],
+  "adobe_csv": "test\\outputs_reels\\reels_adobe.csv",
+  "shutterstock_csv": "test\\outputs_reels\\reels_shutterstock.csv",
+  "row_count": 15,
+  "duration_s": 3.345
+}
