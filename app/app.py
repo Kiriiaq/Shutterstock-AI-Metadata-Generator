@@ -171,6 +171,8 @@ class App(ctk.CTk):
         """
         from app.views.ai_control import AIControlView
         from app.views.audit import AuditView
+        from app.views.expert_report import ExpertReportView
+        from app.views.export_batch import ExportBatchView
         from app.views.settings import SettingsView
         from app.views.validate import ValidateView
         from app.views.workspace import WorkspaceView
@@ -183,12 +185,16 @@ class App(ctk.CTk):
             "audit": lambda parent: AuditView(parent, app=self),
             "ai_control": lambda parent: AIControlView(parent, app=self),
             "validate": lambda parent: ValidateView(parent, app=self),
+            "expert_report": lambda parent: ExpertReportView(parent, app=self),
+            "export_batch": lambda parent: ExportBatchView(parent, app=self),
         }
         self._modal_titles = {
             "settings": "Paramètres",
             "audit": "Historique",
             "ai_control": "Modèle IA",
             "validate": "Validation",
+            "expert_report": "Rapport expert",
+            "export_batch": "Exporter le lot",
         }
 
     def show_details(self, title: str, builder: Callable[[ctk.CTkFrame], None]) -> None:
