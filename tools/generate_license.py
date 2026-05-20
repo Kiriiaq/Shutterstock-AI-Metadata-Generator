@@ -44,6 +44,20 @@ if str(ROOT) not in sys.path:
 from src.modules.licensing import Tier, generate_license_key  # noqa: E402
 
 
+def _read_dot_env_secret() -> str | None:
+    """Look for SSA_LICENSE_SECRET in the project root .env file."""
+    env_file = ROOT / ".env"
+    if not env_file.exists():
+        return None
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("SSA_LICENSE_SECRET=") and not line.startswith("#"):
+            value = line.split("=", 1)[1].strip().strip('"').strip("'")
+            if value and value != "replace-with-secrets-token_urlsafe-32-output":
+                return value
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate a signed license key for ShutterstockAnalyzer Pro.",
@@ -67,16 +81,47 @@ def main() -> int:
         default=None,
         help="Write the JSON to this file. Default: stdout.",
     )
+    parser.add_argument(
+        "--allow-dev-secret",
+        action="store_true",
+        help=(
+            "Allow signing with the bundled DEV secret. Required for issuing "
+            "non-prod test keys when SSA_LICENSE_SECRET is not configured. "
+            "DO NOT use for keys you actually sell to customers — they'll be "
+            "trivially forgeable by anyone reading the source code."
+        ),
+    )
     args = parser.parse_args()
 
-    if os.environ.get("SSA_LICENSE_SECRET") is None:
+    # If env var isn't set, fall back to .env file at repo root (same
+    # source the runtime uses). If neither is set, we refuse to sign
+    # unless --allow-dev-secret is explicitly passed — better to fail
+    # loudly than ship sellable keys signed with a public secret.
+    env_secret = os.environ.get("SSA_LICENSE_SECRET", "").strip() or _read_dot_env_secret()
+    if env_secret:
+        os.environ["SSA_LICENSE_SECRET"] = env_secret
+        masked = env_secret[:6] + "…" + env_secret[-3:] if len(env_secret) > 10 else "***"
+        print(f"[ok] Using production secret ({masked}).", file=sys.stderr)
+    elif args.allow_dev_secret:
         print(
-            "[warn] SSA_LICENSE_SECRET env var not set — using the bundled dev secret.\n"
-            "       Keys signed this way ARE compatible with the current EXE\n"
-            "       but anyone reading the source can forge keys. For production,\n"
-            "       set SSA_LICENSE_SECRET to a random secret and re-build the EXE.",
+            "[warn] --allow-dev-secret enabled — signing with the bundled DEV\n"
+            "       value. Keys generated are FOR TESTING ONLY. They WILL be\n"
+            "       forgeable by anyone reading the source.",
             file=sys.stderr,
         )
+    else:
+        print(
+            "[error] No production secret found.\n"
+            "        Either:\n"
+            "        - set SSA_LICENSE_SECRET in your environment, OR\n"
+            "        - put SSA_LICENSE_SECRET=... in a .env file at repo root, OR\n"
+            "        - pass --allow-dev-secret (test keys only).\n"
+            "\n"
+            "        Generate a secret with:\n"
+            "        python -c \"import secrets; print(secrets.token_urlsafe(32))\"",
+            file=sys.stderr,
+        )
+        return 2
 
     # Default validity by tier
     if args.days is None and args.tier in {"pro_solo", "pro_studio"}:

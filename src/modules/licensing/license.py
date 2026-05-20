@@ -162,8 +162,68 @@ def _canonical_payload(payload: dict) -> bytes:
 
 
 def _secret() -> bytes:
-    """Read the signing secret from env, fallback to the dev placeholder."""
-    return os.environ.get("SSA_LICENSE_SECRET", DEFAULT_DEV_SECRET).encode("utf-8")
+    """Read the signing secret. Sources in priority order:
+
+    1. ``SSA_LICENSE_SECRET`` env var (CI / dev override / build hook).
+    2. ``_secret_compiled.PROD_SECRET`` constant — populated by
+       ``build.py`` at PyInstaller time so the EXE ships with the real
+       secret embedded. The file is gitignored.
+    3. ``.env`` file at repo root with a ``SSA_LICENSE_SECRET=…`` line
+       (dev convenience, ignored if absent).
+    4. ``DEFAULT_DEV_SECRET`` — bundled fallback. Logs a one-time
+       WARNING because licenses signed/verified with this secret are
+       trivially forgeable.
+
+    Returns:
+        UTF-8 encoded bytes ready to hand to ``hmac.new``.
+    """
+    # 1) env var
+    env = os.environ.get("SSA_LICENSE_SECRET")
+    if env:
+        return env.encode("utf-8")
+
+    # 2) compiled-in constant (set by build.py before PyInstaller runs)
+    try:
+        from . import _secret_compiled  # type: ignore[attr-defined]
+        prod = getattr(_secret_compiled, "PROD_SECRET", "")
+        if prod:
+            return str(prod).encode("utf-8")
+    except ImportError:
+        pass  # not built yet — that's fine, we have fallbacks
+
+    # 3) .env file at repo root
+    try:
+        env_file = Path(__file__).resolve().parents[3] / ".env"
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("SSA_LICENSE_SECRET=") and not line.startswith("#"):
+                    value = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if value and value != "replace-with-secrets-token_urlsafe-32-output":
+                        return value.encode("utf-8")
+    except (OSError, IndexError):
+        pass
+
+    # 4) DEFAULT_DEV_SECRET fallback (logged once for visibility)
+    _warn_dev_secret_once()
+    return DEFAULT_DEV_SECRET.encode("utf-8")
+
+
+_dev_secret_warned = False
+
+
+def _warn_dev_secret_once() -> None:
+    """Log the dev-secret warning at most once per Python process."""
+    global _dev_secret_warned
+    if _dev_secret_warned:
+        return
+    _dev_secret_warned = True
+    logger.warning(
+        "License secret falling back to the bundled DEV value — "
+        "keys signed this way are trivially forgeable. "
+        "Set SSA_LICENSE_SECRET in your .env or environment before "
+        "shipping production builds."
+    )
 
 
 def _sign(payload: dict, secret: Optional[bytes] = None) -> str:
