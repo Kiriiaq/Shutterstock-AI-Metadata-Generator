@@ -62,7 +62,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Validation IHM — ShutterstockAnalyzer v2.0.0</title>
+<title>Validation IHM — ShutterstockAnalyzer v2.1.0</title>
 <style>
   :root {
     --bg: #f7f8fa;
@@ -322,7 +322,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <h1>Validation IHM — ShutterstockAnalyzer</h1>
 <p class="meta">
   Outil : <strong>ShutterstockAnalyzer</strong> ·
-  Version : <strong id="meta-version">v2.0.0</strong> ·
+  Version : <strong id="meta-version">v2.1.0</strong> ·
   Persistance navigateur (<code>localStorage</code>) ·
   __NB_TESTS__ tests répartis en __NB_SECTIONS__ sections.
 </p>

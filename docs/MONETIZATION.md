@@ -16,8 +16,9 @@
 - **Public payeur identifié** : photographes pro / semi-pro de microstock
   (Adobe Stock contributors, Shutterstock contributors), agences générant
   100+ images/semaine.
-- **Tech mature** : 90 tests, EXE PyInstaller, doc, architecture propre
-  — niveau « shippable » atteint.
+- **Tech mature** : 120 tests verts, EXE PyInstaller 25,2 Mo (PROD secret
+  embedded), doc, architecture propre — niveau « shippable » atteint,
+  mécanique de licence + gates UI livrés (v2.1.0).
 - **Différenciation forte** : IA **locale** (Ollama), donc pas d'API key,
   pas de coût récurrent, pas de fuite de propriété intellectuelle vers
   un fournisseur tiers.
@@ -186,9 +187,9 @@ Ordre de publication (ne pas tout sortir le même jour, étaler sur 3-4 semaines
 
 ### J0 — Préparation (avant tout lancement)
 
-- [ ] Tag `git tag v2.0.0 && git push --tags`
-- [ ] Capture GIF hero + 3 screenshots
-- [ ] GitHub Release v2.0.0 avec EXEs attachés
+- [x] Tag local `git tag v2.1.0` (fait — reste à pousser : `git push origin v2.1.0`)
+- [ ] Capture GIF hero + 3 screenshots (dont **1 montrant le quota Community + 1 montrant l'écran upsell** — voir `docs/MEDIA.md`)
+- [ ] GitHub Release v2.1.0 avec EXEs attachés (`dist/ShutterstockAnalyzer.exe` + `dist/ShutterstockAnalyzer-debug.exe`, **25,2 Mo chacun, PROD secret embedded**)
 - [ ] Mettre à jour README avec liens images réels
 
 ### Semaine 1 — Distribution gratuite (community)
@@ -208,7 +209,7 @@ Ordre de publication (ne pas tout sortir le même jour, étaler sur 3-4 semaines
 | **r/stockphotography** | Show post avec GIF | ~ 30k membres, axé revenue |
 | **r/AdobeStock** | Annonce outil | ~ 15k membres, plus restrictif sur l'auto-promo |
 | **r/learnpython** | Show & tell technique | Bon pour découverte tech, pas pour les ventes |
-| **Indie Hackers** | Milestone post « Launched v2.0 of [pitch] » | Audience makers, retour qualitatif |
+| **Indie Hackers** | Milestone post « Launched v2.1 of [pitch] » | Audience makers, retour qualitatif |
 | **Discord microstock** | Annonce dans les Discords contributeurs (Adobe Stock, Shutterstock) | Plus organique, moins viral |
 
 ### Semaine 3 — Lancement médiatique
@@ -265,13 +266,13 @@ Ordre de publication (ne pas tout sortir le même jour, étaler sur 3-4 semaines
 
 | Élément | Valeur |
 |---|---|
-| **Voie principale** | Freemium dual-license MIT + Pro 29-89 €/an |
+| **Voie principale** | Freemium dual-license MIT + Pro 29-89 €/an (pivot v2.1.0 : Pro = évaluation qualité) |
 | **Voie fallback** | Lead magnet portfolio (open-source pur, focus visibilité freelance) |
-| **Effort amorce** | ~ 7-8 j-h |
+| **Effort amorce restant** | ~ 3,5 j-h (assets visuels + Gumroad listing, code 100 % livré) |
 | **Revenu réaliste 12 mois** | 3 500–4 500 € (~ 25-30 customers actifs) |
-| **Risque principal** | Marché microstock en saturation IA — la différenciation est l'usage *local* sans cloud |
-| **Différenciation forte** | Seul outil microstock multi-plateforme avec IA locale + FTP intégré |
-| **Premier livrable** | Tag v2.0.0 + GitHub Release + 3 posts LinkedIn |
+| **Risque principal** | Marché microstock en saturation IA — la différenciation est l'usage *local* sans cloud + l'évaluation qualité automatique |
+| **Différenciation forte** | Seul outil microstock qui *évalue* la qualité (4 scores + risques + améliorations) en local, sans cloud |
+| **Premier livrable** | Tag v2.1.0 + GitHub Release + 3 posts LinkedIn |
 | **Premier ROI mesurable** | Mois 3 — premiers 4-5 customers payants |
 
 ---

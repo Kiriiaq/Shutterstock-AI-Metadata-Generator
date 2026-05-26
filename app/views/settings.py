@@ -320,8 +320,9 @@ class SettingsView(BaseView):
         else:
             text = (
                 "🆓  Édition Community (gratuite)\n"
-                "     Batch jusqu'à 50 images · FTP simple · IA optionnelle\n"
-                "     Pro débloque : batch illimité, FTP scheduling, multi-comptes, templates IPTC"
+                "     Scan + IPTC + export CSV mono-plateforme + FTP · 2 aperçus gratuits du rapport expert\n"
+                "     Pro débloque : rapport expert illimité, dual CSV Adobe+Shutterstock, IA Ollama,\n"
+                "     anti-stuffing automatique, batch > 50 images"
             )
             self._license_status.configure(text=text, text_color=palette_pair("fg"))
 

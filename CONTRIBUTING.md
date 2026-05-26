@@ -40,7 +40,7 @@ python main.py
 
 | Check | Command | Required |
 |---|---|---|
-| Tests | `pytest tests/ -q` | All 90+ tests must pass |
+| Tests | `pytest tests/ -q` | All 120+ tests must pass |
 | Lint | `ruff check app/ src/ main.py build.py tests/` | 0 errors |
 | Format | `ruff format app/ src/ main.py build.py tests/` | Apply before commit |
 | E2E pipeline | `python test/scripts/run_tests.py && python test/scripts/compare_outputs.py` | Cell-for-cell match |

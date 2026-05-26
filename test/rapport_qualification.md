@@ -11,12 +11,13 @@
 | Champ | Valeur |
 |---|---|
 | **Outil** | ShutterstockAnalyzer |
-| **Version** | v2.0.0 |
-| **Date génération** | _(à compléter)_ |
+| **Version** | v2.1.0 (pivot Pro = évaluation qualité) |
+| **Date génération** | 2026-05-27 |
 | **Testeur principal** | _(à compléter)_ |
 | **Environnement** | Windows 10/11 — Python 3.11 — sans Ollama |
 | **Stack** | Python 3.11 + CustomTkinter + ExifTool + Ollama (optionnel) |
-| **Build EXE** | `dist/ShutterstockAnalyzer.exe` — 24,7 Mo |
+| **Build EXE** | `dist/ShutterstockAnalyzer.exe` — 25,2 Mo (PROD secret embedded) |
+| **Édition testée** | Community **et** Pro (les deux modes doivent être couverts — voir § 2.4) |
 
 **Dépendances critiques :** Pillow, openpyxl, customtkinter, requests, ExifTool (externe).
 
@@ -45,6 +46,24 @@
 - Upload FTPS vers Shutterstock (legacy, non couvert)
 - Worker pool multi-processus (config par défaut = threads)
 
+### 2.4 Gating Pro / Community (pivot v2.1.0)
+
+Tester chaque chemin dans **les deux modes** (Community sans licence active +
+Pro avec une clé `pro_solo` ou `lifetime` injectée via Settings → Licence) :
+
+| Surface | Community attendu | Pro attendu |
+|---|---|---|
+| Settings → Licence | « 🆓 Édition Community… 2 aperçus gratuits » | « ✅ Édition Pro Solo · email · expire JJ/MM/AAAA » |
+| Rapport expert (1ᵉʳ / 2ᵉ image) | Bandeau « 🎁 il reste N/2 » | Pas de bandeau |
+| Rapport expert (3ᵉ image) | Écran upsell (benefits + Acheter Pro + J'ai déjà une clé) | Rapport rendu normalement |
+| Rapport expert — bouton « Exporter CSV double » | Disabled, label « 🔒 Exporter CSV double — Pro » | Enabled, export OK |
+| Rapport expert — case « Enrichir avec IA » | Disabled, label « 🔒 Enrichir avec IA — Pro » | Enabled |
+| Export Batch — radio Plateforme | « 🔒 Les deux — Pro », défaut Adobe | « Les deux », défaut both |
+| Export Batch — case « Enrichir avec IA » | Disabled, label « 🔒 Enrichir avec IA — Pro » | Enabled |
+| Export Batch — Start avec « Les deux » coché | Toast « Pro requis pour export double » | Démarre |
+| Export Batch — Start avec IA coché | Toast « Pro requis pour enrichissement IA » | Démarre |
+| Export Batch — Start avec > 50 fichiers | Toast « Pro requis pour > 50 images » | Démarre |
+
 ---
 
 ## 3. Synthèse chiffrée
@@ -53,16 +72,20 @@
 
 | Item | Valeur |
 |---|---|
-| **Total tests automatisés** | 62 |
-| **Verts** | 62 |
+| **Total tests automatisés** | 120 |
+| **Verts** | 120 |
 | **Rouges** | 0 |
-| **Durée** | ~8 s |
+| **Durée** | ~7 s |
 | **Commande** | `pytest tests/ -q` |
 
 Détail par module :
 - `tests/test_core/test_expert_report.py` — 16 tests (builder heuristique, IA optionnelle, sérialisation, filtres anti-marques/anti-stuffing)
 - `tests/test_core/test_csv_exporter.py` — 4 tests (CSV Adobe, CSV Shutterstock, double export, fix P0)
 - `tests/test_core/test_platform_compliance.py` — 10 tests (Adobe, Shutterstock, posture lâche)
+- `tests/test_core/test_export_batch.py` — 10 tests (pipeline batch, IPTC write-back, FTP)
+- `tests/test_core/test_ftp_uploader.py` — 8 tests (FTPS, échec partiel)
+- `tests/test_core/test_ollama_facade.py` — 9 tests (Ollama probe, preload, fallback)
+- `tests/test_core/test_licensing.py` — **30 tests** : community default (3), key generation (6), tamper resistance (5), feature gating (3), expiration (2), facade integration (2), **TestPivotFeatures (4) + TestCommunityExpertReportQuota (5)** ← nouveautés v2.1.0
 - `tests/test_core/test_config.py` — 3 tests (ShutterstockParams)
 - `tests/test_utils/test_validators.py` — 28 tests existants
 - `tests/smoke/test_smoke.py` — 1 test
@@ -105,7 +128,7 @@ Suivi dans [`matrice_tests.xlsx`](matrice_tests.xlsx) (feuille **Synthèse**) et
 |---|---|---|---|---|
 | _(vide pour l'instant)_ | | | | |
 
-### 4.1 Anomalies connues (déjà corrigées dans v2.0.0)
+### 4.1 Anomalies connues (déjà corrigées dans v2.0.0 / v2.1.0)
 
 | Issue | Statut | Référence |
 |---|---|---|
