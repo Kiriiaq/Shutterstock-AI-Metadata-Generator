@@ -267,8 +267,8 @@ TESTS = [
      "AnalysisResult avec title/description/keywords/categories — non régressé",
      "critique"),
     ("T-081", "Régression", "REQ-REG-02", "Suite pytest existante",
-     "62 tests doivent rester verts", "—", "pytest tests/ -q",
-     "62 passed, 0 failed", "critique"),
+     "120 tests doivent rester verts (90 v2.0 + 30 licensing v2.1)", "—", "pytest tests/ -q",
+     "120 passed, 0 failed", "critique"),
     ("T-082", "Régression", "REQ-REG-03", "Build PyInstaller",
      "build.py debug + release sortent un EXE qui démarre",
      "—", "python build.py all",
@@ -353,7 +353,7 @@ def _make_summary_sheet(wb: Workbook) -> None:
 
     info = [
         ("Outil", "ShutterstockAnalyzer"),
-        ("Version", "v2.0.0"),
+        ("Version", "v2.1.0"),
         ("Date génération", datetime.now().strftime("%Y-%m-%d %H:%M")),
         ("Nombre de tests", len(TESTS)),
         ("Environnement", "Windows 10/11 — Python 3.11"),

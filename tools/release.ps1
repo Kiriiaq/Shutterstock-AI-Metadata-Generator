@@ -17,7 +17,7 @@
       8. (optional) Push tag and create GitHub Release with EXE assets.
 
 .PARAMETER Version
-    Version to release, e.g. "v2.0.0". Required.
+    Version to release, e.g. "v2.1.0". Required.
 
 .PARAMETER Push
     Push the tag to origin after creating it.
@@ -27,10 +27,10 @@
 
 .EXAMPLE
     # Dry run — local only, no push
-    .\tools\release.ps1 -Version v2.0.0
+    .\tools\release.ps1 -Version v2.1.0
 
     # Full release
-    .\tools\release.ps1 -Version v2.0.0 -Release
+    .\tools\release.ps1 -Version v2.1.0 -Release
 #>
 
 [CmdletBinding()]

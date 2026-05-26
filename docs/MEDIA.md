@@ -1,8 +1,11 @@
 # Media assets to produce
 
-> Visual assets needed to finish the v2.0.0 launch. None are blocking for
-> code shipping, but they're required for the README, the GitHub release
-> page, and Phase 5+ communication.
+> Visual assets needed to finish the v2.1.0 launch (pivot Pro =
+> évaluation qualité). None are blocking for code shipping, but they're
+> required for the README, the GitHub release page, and the Gumroad
+> listing. Notably : at least one screenshot **must show the Community
+> quota banner + upsell screen** so the freemium pitch is legible at
+> a glance.
 
 ---
 
@@ -13,8 +16,9 @@
 | **Hero GIF** | `docs/media/demo_v2.gif` | GIF | 1100×720, ≤ 8 Mo, 12 fps, 25-30 s | 🟡 TODO |
 | **Workspace screenshot** | `docs/media/workspace.png` | PNG | 1400×900, light theme | 🟡 TODO |
 | **Workspace dark** | `docs/media/workspace_dark.png` | PNG | 1400×900, dark theme | 🟡 TODO |
-| **Export Batch modal** | `docs/media/export_batch.png` | PNG | 1100×780 modal capture | 🟡 TODO |
-| **Expert Report modal** | `docs/media/expert_report.png` | PNG | 1100×780 modal capture | 🟡 TODO |
+| **Export Batch modal** (Community : « Les deux 🔒 Pro » + IA verrouillée) | `docs/media/export_batch.png` | PNG | 1100×780 modal capture | 🟡 TODO |
+| **Expert Report modal** (bandeau quota « 🎁 1/2 ») | `docs/media/expert_report.png` | PNG | 1100×780 modal capture | 🟡 TODO |
+| **Upsell screen** (rapport expert, quota épuisé) | `docs/media/expert_report_upsell.png` | PNG | 1100×780 modal capture | 🟡 TODO |
 
 **Hero GIF storyboard** (25-30 s) :
 

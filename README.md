@@ -236,7 +236,7 @@ Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
 |---|---|
 | `app/` | UI v3 — CustomTkinter, French locale |
 | `src/` | Backend — UI-agnostic, single facade entry point |
-| `tests/` | Automated suite (pytest, 90 tests) |
+| `tests/` | Automated suite (pytest, 120 tests) |
 | `test/` | Qualification dossier (Edvance methodology) — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
 | `docs/` | ARCHITECTURE, MEDIA, MONETIZATION |
 | `audit/` | Internal audit history + screenshots |
