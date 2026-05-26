@@ -61,10 +61,28 @@ class Tier(str, Enum):
     LIFETIME = "lifetime"
 
 
-# Features gated by the Pro tiers. Keep in sync with the Gumroad
-# product description and with the gating sites in the codebase
-# (currently only ``batch_unlimited`` is enforced).
+# Features gated by the Pro tiers. The 2026-05-27 pivot reframed the
+# Pro proposition around **quality evaluation** (the headline value
+# the app actually delivers) instead of around batch/scheduling
+# add-ons that nobody had asked for yet:
+#
+# - ``expert_report``     : full multi-section microstock audit
+#   (4 scores, rejection risks, improvements, marketing/buyer
+#   profiles, trends). Community gets a teaser quota — see
+#   ``COMMUNITY_EXPERT_REPORT_QUOTA``.
+# - ``dual_csv_export``   : Adobe + Shutterstock side-by-side export.
+#   Community can still pick one platform at a time (simple CSV).
+# - ``ai_enrichment``     : Ollama vision overlay on the heuristic
+#   report. Local model, but the gating recognises the IA pass as
+#   premium quality work.
+# - ``batch_unlimited``   : already in v2.0 ; > 50 images per run.
+# - ``ftp_scheduling``, ``ftp_multi_account``, ``iptc_templates``,
+#   ``prompt_profiles``, ``priority_support`` : roadmap features
+#   (not enforced yet, reserved so generated keys carry them).
 PRO_FEATURES: set[str] = {
+    "expert_report",     # full expert microstock audit (4 scores + risks + uses)
+    "dual_csv_export",   # Adobe + Shutterstock side-by-side CSV
+    "ai_enrichment",     # Ollama vision overlay on the heuristic report
     "batch_unlimited",   # > 50 images per export_batch run
     "ftp_scheduling",    # background recurring FTP push
     "ftp_multi_account", # multiple FTP profiles
@@ -72,6 +90,15 @@ PRO_FEATURES: set[str] = {
     "prompt_profiles",   # category-aware Ollama prompts
     "priority_support",  # 48h support SLA
 }
+
+
+# Number of expert reports a Community user may consume before the
+# upsell modal kicks in. Tracked across sessions in the settings
+# table (``community_expert_reports_used``). Two is the sweet spot
+# observed in similar freemium tools: enough to demonstrate value
+# on a couple of real images, low enough that a working contributor
+# hits the wall on the same day they install the app.
+COMMUNITY_EXPERT_REPORT_QUOTA = 2
 
 
 class LicenseError(Exception):

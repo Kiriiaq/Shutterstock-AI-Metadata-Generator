@@ -10,11 +10,14 @@
 
 - **Nom** : ShutterstockAnalyzer (alias *Shutterstock AI Metadata Generator*)
 - **Pitch** : générateur local de métadonnées microstock (Adobe Stock +
-  Shutterstock) avec IA optionnelle via Ollama.
-- **Version actuelle** : `v2.0.0`
-- **Statut** : **stable** (90 tests verts, 2 EXE PyInstaller, dossier de
-  qualification IHM complet). Phase de valorisation en cours (docs +
-  positionnement freemium).
+  Shutterstock) avec IA optionnelle via Ollama. **Freemium dual-edition**
+  depuis v2.1 : Community gratuit (workflow IPTC complet) +
+  Pro 29 €/an (évaluation qualité auto + dual CSV + IA Ollama).
+- **Version actuelle** : `v2.1.0` (pivot Pro = évaluation qualité)
+- **Statut** : **stable, monétisation amorçable** (120 tests verts,
+  2 EXE PyInstaller, dossier de qualification IHM, mécanique de
+  licence + gates UI livrés). Reste avant ship public : assets visuels
+  + listing Gumroad (~ 3,5 j-h).
 
 ---
 
@@ -37,7 +40,7 @@
 ```bash
 pip install -e ".[dev]"                                                # install
 python main.py                                                         # run from source
-pytest tests/ -q                                                       # tests (90)
+pytest tests/ -q                                                       # tests (120)
 ruff check app/ src/ main.py build.py tests/                           # lint
 ruff format app/ src/ main.py build.py tests/                          # format
 python build.py debug | release | all | clean                         # PyInstaller
@@ -148,9 +151,29 @@ main.py  →  app.main:main()
 - 90 tests verts, ruff propre.
 - 2 EXE PyInstaller (debug + release) 24,8 Mo chacun.
 
+### Fini (v2.1.0 — pivot Pro = évaluation qualité)
+- Trois nouvelles features Pro registrées : `expert_report`,
+  `dual_csv_export`, `ai_enrichment` (en plus de `batch_unlimited` et
+  des 5 features roadmap déjà en place).
+- Quota Community **2 aperçus gratuits** sur le rapport expert,
+  persisté dans la table `settings` SQLite
+  (clé `community_expert_reports_used`).
+- Facade : `expert_report_quota_remaining()`,
+  `consume_expert_report_quota()`, `reset_expert_report_quota()`.
+- UI Expert Report : bandeau de quota + checkbox IA tag « 🔒 Pro » +
+  bouton export CSV double tag « 🔒 Pro » + **écran upsell** (benefits
+  + Acheter Pro + J'ai déjà une clé) quand quota épuisé.
+- UI Export Batch : radio « Les deux 🔒 Pro » + checkbox IA « 🔒 Pro »
+  + gates au Start (toast + status badge explicites).
+- 9 nouveaux tests (`TestPivotFeatures`, `TestCommunityExpertReportQuota`).
+  Total suite : **120 verts**.
+
 ### En cours
-- **Production des assets visuels** (Phase 4) — GIF hero, 3 screenshots,
-  vidéo démo. Specs prêtes dans `docs/MEDIA.md`.
+- **Production des assets visuels** — GIF hero, 3 screenshots, vidéo
+  démo. Specs prêtes dans `docs/MEDIA.md`.
+- **Listing Gumroad** — texte produit prêt dans
+  `LAUNCH_PROCEDURE.html` (section C.2), reste création du listing
+  + workflow fulfillment.
 
 ### Fini (Phases 1-7)
 - **Phase 1** ✅ — `AUDIT.md` (inventaire, stack, fonctionnel, gaps).
@@ -168,14 +191,19 @@ main.py  →  app.main:main()
 - **Phase 7** ✅ — `LINKEDIN_DRAFTS.md` : 3 formats prêts à publier
   (court ~ 1 000 char, carousel 8 slides, storytelling ~ 1 900 char) +
   templates de réponses aux commentaires + calendrier.
+- **Pivot 2026-05-27** ✅ — réalignement Pro sur l'évaluation qualité,
+  3 nouvelles features gated, frontière Community/Pro refondue dans
+  les docs (README, MONETIZATION, LAUNCH_PROCEDURE, LINKEDIN_DRAFTS,
+  PROJECT_OVERVIEW).
 
-### Chemin critique restant (~ 4 h avant ship public)
-1. `git tag v2.0.0 && git push --tags` (5 min)
+### Chemin critique restant (~ 3,5 j-h avant ship public)
+1. `git tag v2.1.0 && git push --tags` (5 min)
 2. Capture GIF hero (1 h, storyboard dans `docs/MEDIA.md`)
-3. 3 screenshots (workspace, expert_report, export_batch) (30 min)
-4. `gh release create v2.0.0 dist/*.exe` (15 min)
-5. Mettre à jour README avec liens images réels (15 min)
-6. Publier le post technique court LinkedIn (5 min)
+3. 3 screenshots (workspace, expert_report avec quota, export_batch avec gates) (30 min)
+4. `gh release create v2.1.0 dist/*.exe` (15 min)
+5. Création listing Gumroad « ShutterstockAnalyzer Pro » (1 h)
+6. Mettre à jour README avec liens images réels + URL Gumroad (15 min)
+7. Publier le post technique court LinkedIn (5 min)
 
 ### Bugs connus
 - Aucun bloquant. Voir `audit/JOURNAL_CORRECTIONS.md` pour l'historique
@@ -205,6 +233,19 @@ main.py  →  app.main:main()
 - **Anti-stuffing keywords codé en dur** — listes statiques `BRAND_KEYWORDS`
   + `STUFFING_KEYWORDS` dans `src/modules/analysis/expert_report.py`.
   Le prompt IA les répète aussi, défense en profondeur.
+- **Pro = évaluation qualité** (pivot 2026-05-27) — la frontière Pro
+  porte sur le rapport expert, l'export dual CSV et l'enrichissement
+  IA, **pas** sur des add-ons batch/scheduling. Raison : ces features
+  sont déjà codées, donc 0 dev supplémentaire pour monétiser, et la
+  valeur perçue (« je sais quelle image vaut le coup ») est immédiate
+  pour l'acheteur. Voir `docs/MONETIZATION.md` § 2.1.
+- **Quota Community 2 aperçus** sur le rapport expert — persisté dans
+  la table `settings` SQLite. Choix du nombre : 1 = trop frustrant /
+  3+ = dilue la valeur perçue. À ajuster vers 1 ou 3 si la conversion
+  observée est < 5 % après 100 essayeurs.
+- **HMAC honor-system maintenu** — ed25519 sur la roadmap v2.2.0.
+  Le contournement reste possible mais le public cible (photographes
+  pro 29-89 €/an) paie par convenance, pas par incapacité technique.
 
 ---
 
@@ -262,4 +303,4 @@ main.py  →  app.main:main()
 
 ---
 
-*Dernière mise à jour : 2026-05-19 (Phase 3 — fichiers standards de repo).*
+*Dernière mise à jour : 2026-05-27 (v2.1.0 — pivot Pro = évaluation qualité).*

@@ -21,6 +21,7 @@ keep the dep footprint at zero — `hmac` is stdlib.
 """
 
 from .license import (
+    COMMUNITY_EXPERT_REPORT_QUOTA,
     DEFAULT_LICENSE_PATH,
     PRO_FEATURES,
     License,
@@ -34,6 +35,7 @@ from .license import (
 )
 
 __all__ = [
+    "COMMUNITY_EXPERT_REPORT_QUOTA",
     "DEFAULT_LICENSE_PATH",
     "License",
     "LicenseError",

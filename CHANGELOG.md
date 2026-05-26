@@ -5,48 +5,78 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — Pro tier groundwork
+## [2.1.0] — 2026-05-27
 
-> Targets release as **v2.1.0** once the Gumroad listing is live and a
-> couple of Pro features (FTP scheduling, multi-account) are shipped.
+> **Pivot Pro = évaluation qualité.** The previous Pro tier targeted
+> batch/scheduling add-ons that hadn't been built yet ; this release
+> repositions Pro around **what the app actually delivers today** —
+> the multi-section expert report, the dual CSV export, and the AI
+> enrichment. Community keeps a fully working metadata workflow
+> (scan, IPTC edit, single-platform CSV, FTP push) plus 2 teaser
+> rapport-expert slots.
+
+### Changed
+- **Pro/Community frontier reframed**. The headline value the app
+  delivers (quality scoring + multi-platform export + AI overlay)
+  is now Pro ; the basic metadata pipeline stays free.
+
+| Feature | Community | Pro |
+|---|---|---|
+| Scan folder, multi-select | ✅ | ✅ |
+| IPTC read/write (manual editor) | ✅ | ✅ |
+| Single-platform CSV export (Adobe **or** Shutterstock) | ✅ | ✅ |
+| Basic validation, history, FTP push | ✅ | ✅ |
+| **Expert report** (4 scores, risks, improvements, marketing uses) | 🎁 2 teasers | ✅ unlimited |
+| **Dual CSV export** (Adobe + Shutterstock side-by-side) | 🔒 | ✅ |
+| **AI enrichment** (Ollama vision overlay) | 🔒 | ✅ |
+| **Anti-stuffing** (brand/keyword filters via expert report) | 🔒 | ✅ |
+| **Batch > 50 images** | 🔒 | ✅ |
 
 ### Added
-- **Licensing module** (`src/modules/licensing/`) — HMAC-SHA256-signed
-  license payloads, ed25519 hardening path documented. Schema:
-  `{email, tier, features, issued_at, expires_at, signature}`.
-- **Four subscription tiers** — `community` (default), `pro_solo`,
-  `pro_studio`, `lifetime` — with feature-level gating via
-  ``License.has_feature(name)``.
-- **Six gated features** registered: `batch_unlimited`, `ftp_scheduling`,
-  `ftp_multi_account`, `iptc_templates`, `prompt_profiles`,
-  `priority_support`.
-- **Facade API** (`ShutterstockAIv2`): `.license` property,
-  `.activate_license(payload_or_text)`, `.deactivate_license()`.
-- **Admin generator**: `tools/generate_license.py` — CLI that produces
-  signed JSON payloads from `--email`, `--tier`, `--days` for Gumroad
-  fulfilment. Reads `SSA_LICENSE_SECRET` from env.
-- **UI**: new « Licence » section in Settings — shows current tier +
-  email + expiration, textbox to paste a key, « Activer » / « Retirer »
-  buttons, « Acheter Pro → » link (placeholder Gumroad URL).
-- **First enforced gate**: ExportBatchView caps batch at 50 images in
-  Community; > 50 surfaces a non-blocking toast + Gumroad CTA. Pro
-  bypasses the cap via `batch_unlimited`.
+- **Three new Pro features** registered in
+  `src/modules/licensing/license.py` :
+  `expert_report`, `dual_csv_export`, `ai_enrichment` — alongside
+  the six features carried over from the previous groundwork.
+- **Community quota**: `COMMUNITY_EXPERT_REPORT_QUOTA = 2`. The
+  expert report modal renders normally for the first 2 images, then
+  swaps to a Pro pitch screen on the 3rd. Counter persisted to the
+  SQLite `settings` table (`community_expert_reports_used`).
+- **Facade API** (`ShutterstockAIv2`) gained:
+  `.expert_report_quota_remaining()`,
+  `.consume_expert_report_quota()`,
+  `.reset_expert_report_quota()`.
+- **UI — Expert Report modal**: yellow banner showing remaining
+  teaser slots, AI checkbox locked with "🔒 Pro" label in Community,
+  dedicated **upsell screen** (benefits list + Acheter Pro + J'ai
+  déjà une clé) when the quota hits zero.
+- **UI — Export Batch modal**: "Les deux 🔒 Pro" indicator on the
+  platform radio (default forced to Adobe in Community), "🔒 IA Pro"
+  label on the enrichment checkbox, Pro gates at Start with
+  explicit toast + status badge.
 
 ### Tests
-- 21 new tests for the licensing layer (community default, key
-  generation, HMAC verify, tamper resistance, expiration, feature
-  gating, facade integration). Total suite: **111 passing**.
+- **9 new tests** in `tests/test_core/test_licensing.py`:
+  `TestPivotFeatures` (4) pins the new Pro features in the registry,
+  `TestCommunityExpertReportQuota` (5) covers the persisted counter
+  (initial value, consume → zero clamp, persistence across facade
+  restart, Pro=infinite, reset). **Total suite: 120 passing.**
+- Ruff: still **0 errors** across `app/`, `src/`, `tests/`.
 
 ### Documentation
-- All steps documented in `LAUNCH_PROCEDURE.html` (section E) with
-  ready-to-paste Gumroad description, prompt to extend Pro features,
-  and pricing rationale.
+- `docs/MONETIZATION.md` — section 2.1 (frontier) and 2.2 (pricing)
+  rewritten around the pivot.
+- `README.md` — features table now flags Community/Pro per row.
+- `LAUNCH_PROCEDURE.html` — section C.2 (Gumroad description) and
+  C.4 (email template) reflect the new pitch.
+- `LINKEDIN_DRAFTS.md` — three pitch formats updated to lead with
+  "quality evaluation" rather than "batch automation".
+- `CLAUDE.md` — sections « Fini », « État actuel », « Décisions
+  techniques » updated.
 
 ### Security notes
-- Current HMAC is symmetric → secret is reachable by anyone with a
-  copy of the EXE. This is **honour-system licensing**, acceptable
-  for a 29 €/an product. Hardening to ed25519 (PyNaCl, asymmetric)
-  is on the v2.2.0 roadmap.
+- HMAC stays honour-system (documented in
+  `src/modules/licensing/license.py`). The ed25519 hardening path
+  remains on the v2.2.0 roadmap.
 
 ---
 
@@ -171,6 +201,7 @@ and the **AI step is now optional**.
 - Pre-filtering (validates Shutterstock requirements: ≥ 4 MP, correct format).
 - Checklist validator + FTPS upload to Shutterstock servers.
 
+[2.1.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/tag/v1.0.0
