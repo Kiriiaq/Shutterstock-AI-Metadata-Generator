@@ -2,11 +2,11 @@
 
 > **Generate Adobe Stock & Shutterstock metadata locally — AI optional, FTP push built-in.**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-90%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-120%20passing-success.svg)](tests/)
 [![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
 
 > _Demo GIF placeholder — see [`docs/MEDIA.md`](docs/MEDIA.md) for the asset list to produce._
@@ -101,14 +101,41 @@ falls back to the heuristic builder transparently.
 
 ---
 
-## Features
+## Editions
+
+Since v2.1, the app ships as a freemium dual-edition. **Community is
+free forever** and covers the metadata workflow end-to-end ; **Pro
+(29 €/an or 79 € lifetime)** unlocks the automated quality evaluation.
+
+| Feature | Community | Pro |
+|---|:---:|:---:|
+| Scan folder + multi-select | ✅ | ✅ |
+| IPTC read / write (manual editor) | ✅ | ✅ |
+| Single-platform CSV export (Adobe **or** Shutterstock) | ✅ | ✅ |
+| Pre-upload validation, history, theme | ✅ | ✅ |
+| FTP / FTPS push (single, post-export) | ✅ | ✅ |
+| **Expert report** — 4 scores + risks + improvements + marketing uses | 🎁 2 teasers | ✅ unlimited |
+| **Dual CSV export** (Adobe + Shutterstock side-by-side) | 🔒 | ✅ |
+| **AI enrichment** via local Ollama vision models | 🔒 | ✅ |
+| **Anti-stuffing** (brand + keyword padding filters) | 🔒 | ✅ |
+| **Batch > 50 images per run** | 🔒 | ✅ |
+| Cross-platform compliance hints (Adobe 4–100 MP, Shutterstock 4 MP+ / 50 MB) | ✅ | ✅ |
+
+Pro is activated by pasting a JSON licence key into **Settings → Licence**.
+Works offline forever ; annual tier requires renewal, lifetime is one-shot.
+See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the rationale,
+pricing rationale and roadmap.
+
+---
+
+## Features (technical detail)
 
 | Feature | Detail |
 |---|---|
 | **Multi-platform export** | Adobe Stock + Shutterstock CSVs, UTF-8 BOM, comma-separated keywords (Shutterstock-compliant) |
 | **Expert report** | 4 scores (commercial / technique / SEO / risque rejet), dual titles, top-10 keywords, rejection risks, marketing uses |
 | **Heuristic-first** | All scores + reports work without AI. Runs in ~3 s on 15 images. |
-| **AI optional** | Ollama vision models for enrichment. Falls back gracefully when Ollama is absent. |
+| **AI optional (Pro)** | Ollama vision models for enrichment. Falls back gracefully when Ollama is absent. |
 | **FTP / FTPS push** | Direct upload to contributor portal after export. Credentials never persisted by default. |
 | **IPTC editor** | Read/write IPTC headline, caption, keywords, byline, copyright. |
 | **Validation pre-upload** | Per-image checks (resolution, format, file size, keyword count). |
@@ -188,7 +215,7 @@ pip install -e ".[dev]"
 # Run
 python main.py
 
-# Tests (90 tests, ~5 s)
+# Tests (120 tests, ~7 s)
 pytest tests/ -q
 
 # Lint
@@ -225,7 +252,10 @@ Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
 - ✅ FTP / FTPS push (v2.0.0)
 - ✅ Ollama model selection + preload (v2.0.0)
 - ✅ Heuristic-only expert report (no AI required) (v2.0.0)
-- 🟡 Pro features — batch >50, advanced FTP scheduling (dual-license plan)
+- ✅ Pro tier — quality evaluation, dual CSV, AI enrichment, batch > 50 (v2.1.0)
+- 🟡 FTP scheduling (Pro) — background recurring push
+- 🟡 Multi-account FTP (Pro) — Adobe + Shutterstock simultaneous
+- 🟡 Custom IPTC templates (Pro)
 - 🟡 macOS / Linux EXE
 - 🟡 Built-in demo GIF + screencast
 - 🟡 Drag & drop into Sources panel
@@ -252,10 +282,19 @@ changes, open an issue first.
 
 [MIT](LICENSE) © 2024-2026 Emmanuel Grolleau.
 
-Free for personal and commercial use. A **pro version** with advanced
-batch features (>50 images, scheduled FTP, premium support) is on the
-roadmap under a separate commercial license — see
-[`docs/MONETIZATION.md`](docs/MONETIZATION.md) (Phase 5+).
+The Community edition (everything described above as ✅) is free for
+personal and commercial use under MIT.
+
+The **Pro edition** (🎁 / 🔒 rows in the Editions table) unlocks the
+quality evaluation bundle — expert report, dual CSV export, AI
+enrichment, batch > 50 — under a separate commercial licence sold via
+Gumroad. 29 €/an or 79 € lifetime, key activated locally with HMAC
+signature verification.
+
+See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the full
+breakdown.
+
+*Not affiliated with Shutterstock, Inc. or Adobe Inc.*
 
 ---
 

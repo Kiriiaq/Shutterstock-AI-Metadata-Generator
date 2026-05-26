@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from src.modules.licensing import (
+    COMMUNITY_EXPERT_REPORT_QUOTA,
     PRO_FEATURES,
     License,
     Tier,
@@ -177,5 +178,129 @@ class TestFacadeIntegration:
 
             ok, msg = api.activate_license({"tier": "lifetime"})  # no signature
             assert ok is False
+        finally:
+            api.close()
+
+
+class TestPivotFeatures:
+    """The 2026-05-26 pivot reframed Pro around quality evaluation.
+
+    These tests pin the new gated features so a future contributor
+    doesn't accidentally remove them from ``PRO_FEATURES``.
+    """
+
+    def test_pivot_features_are_registered(self):
+        for feature in ("expert_report", "dual_csv_export", "ai_enrichment"):
+            assert feature in PRO_FEATURES, (
+                f"{feature!r} should be a Pro feature after the 2026-05-26 pivot"
+            )
+
+    def test_community_has_no_quality_features(self):
+        lic = License.community()
+        assert lic.has_feature("expert_report") is False
+        assert lic.has_feature("dual_csv_export") is False
+        assert lic.has_feature("ai_enrichment") is False
+
+    def test_pro_solo_unlocks_quality_features(self, tmp_path):
+        key = generate_license_key(email="alice@example.com", tier=Tier.PRO_SOLO)
+        path = tmp_path / "license.json"
+        path.write_text(json.dumps(key), encoding="utf-8")
+        lic = load_license(path)
+        assert lic.has_feature("expert_report") is True
+        assert lic.has_feature("dual_csv_export") is True
+        assert lic.has_feature("ai_enrichment") is True
+
+    def test_lifetime_unlocks_quality_features(self, tmp_path):
+        key = generate_license_key(email="carol@example.com", tier=Tier.LIFETIME)
+        path = tmp_path / "license.json"
+        path.write_text(json.dumps(key), encoding="utf-8")
+        lic = load_license(path)
+        assert lic.has_feature("expert_report") is True
+        assert lic.has_feature("dual_csv_export") is True
+        assert lic.has_feature("ai_enrichment") is True
+
+
+class TestCommunityExpertReportQuota:
+    """The 2-image teaser quota for the expert report in Community.
+
+    Exercises the facade helpers
+    (``expert_report_quota_remaining`` / ``consume_expert_report_quota``)
+    rather than the UI, so the rules stay testable headless.
+    """
+
+    def _fresh_api(self, tmp_path):
+        from src.modules.integration import ShutterstockAIv2
+
+        db = tmp_path / "quota.db"
+        api = ShutterstockAIv2(db_path=db)
+        # Some dev machines have a real license.json under ~ — force
+        # Community for the duration of the test so we test the gate.
+        api._license = License.community()
+        api.reset_expert_report_quota()
+        return api
+
+    def test_community_starts_with_full_quota(self, tmp_path):
+        api = self._fresh_api(tmp_path)
+        try:
+            assert api.expert_report_quota_remaining() == COMMUNITY_EXPERT_REPORT_QUOTA
+        finally:
+            api.close()
+
+    def test_consume_decrements_and_stops_at_zero(self, tmp_path):
+        api = self._fresh_api(tmp_path)
+        try:
+            # Two consumes burn the whole quota for QUOTA=2.
+            for expected in range(COMMUNITY_EXPERT_REPORT_QUOTA - 1, -1, -1):
+                assert api.consume_expert_report_quota() == expected
+            # Further consumes don't underflow — they stay clamped at 0.
+            assert api.consume_expert_report_quota() == 0
+            assert api.expert_report_quota_remaining() == 0
+        finally:
+            api.close()
+
+    def test_quota_persists_across_facade_restart(self, tmp_path):
+        api = self._fresh_api(tmp_path)
+        db_path = tmp_path / "quota.db"
+        try:
+            api.consume_expert_report_quota()
+        finally:
+            api.close()
+
+        from src.modules.integration import ShutterstockAIv2
+
+        api2 = ShutterstockAIv2(db_path=db_path)
+        api2._license = License.community()
+        try:
+            assert api2.expert_report_quota_remaining() == (
+                COMMUNITY_EXPERT_REPORT_QUOTA - 1
+            )
+        finally:
+            api2.close()
+
+    def test_pro_user_has_infinite_quota(self, tmp_path):
+        from src.modules.integration import ShutterstockAIv2
+
+        db = tmp_path / "pro.db"
+        api = ShutterstockAIv2(db_path=db)
+        try:
+            key = generate_license_key(email="pro@example.com", tier=Tier.PRO_SOLO)
+            ok, _ = api.activate_license(key)
+            assert ok is True
+            assert api.expert_report_quota_remaining() == -1
+            # Pro consume is a no-op — returns sentinel without
+            # touching the persisted counter.
+            assert api.consume_expert_report_quota() == -1
+        finally:
+            api.deactivate_license()
+            api.close()
+
+    def test_reset_brings_counter_back_to_full_quota(self, tmp_path):
+        api = self._fresh_api(tmp_path)
+        try:
+            api.consume_expert_report_quota()
+            api.consume_expert_report_quota()
+            assert api.expert_report_quota_remaining() == 0
+            api.reset_expert_report_quota()
+            assert api.expert_report_quota_remaining() == COMMUNITY_EXPERT_REPORT_QUOTA
         finally:
             api.close()

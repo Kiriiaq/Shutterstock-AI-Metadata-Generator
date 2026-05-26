@@ -54,60 +54,87 @@
 
 ## 2. Stratégie freemium / dual-license (voie principale)
 
+> **Pivot v2.1.0 (2026-05-27)** : la frontière Pro a été déplacée sur
+> les **fonctions d'évaluation qualité** (rapport expert, dual CSV,
+> enrichissement IA) qui sont **la vraie valeur livrée par l'app
+> aujourd'hui**, plutôt que sur des add-ons batch/scheduling qui
+> auraient demandé 7-8 j-h de dev supplémentaire avant la première
+> vente. Effort restant avant ship : ~ 0 (tout est codé, juste à
+> documenter et lancer le produit Gumroad).
+
 ### 2.1 Frontière OSS / Pro
 
-| Feature | Édition **Community** (MIT, gratuite) | Édition **Pro** (commerciale, payante) |
+| Feature | **Community** (MIT, gratuite) | **Pro** (commerciale, payante) |
 |---|---|---|
 | Scan dossier + sélection multi-fichiers | ✅ | ✅ |
-| Lire / écrire IPTC | ✅ | ✅ |
-| Rapport expert heuristique (sans IA) | ✅ | ✅ |
-| Rapport expert IA Ollama | ✅ | ✅ |
-| Export CSV Adobe **OU** Shutterstock | ✅ | ✅ |
-| Export double CSV (Adobe + Shutterstock) | ✅ | ✅ |
-| Validation pré-upload | ✅ | ✅ |
+| Lecture / écriture IPTC (éditeur manuel) | ✅ | ✅ |
+| Validation pré-upload basique | ✅ | ✅ |
 | Historique opérations | ✅ | ✅ |
-| **Batch ≤ 50 images / run** | ✅ | ✅ |
-| **Batch illimité (> 50, parallélisation worker pool)** | 🔴 | ✅ |
-| **Push FTP unique post-export** | ✅ (déjà gratuit) | ✅ |
-| **FTP scheduling** (push horaire, run-and-forget) | 🔴 | ✅ |
-| **Templates IPTC customs** (export/import) | 🔴 | ✅ |
-| **Multi-comptes FTP** (Adobe + Shutterstock simultané) | 🔴 | ✅ |
-| **Profils prompt IA par catégorie** (Business, Nature…) | 🔴 | ✅ |
-| **Stats avancées** (revenus simulés, top keywords du compte) | 🔴 | ✅ |
-| **Support prioritaire** (réponse < 48 h ouvrées) | 🔴 | ✅ |
-| **Licence d'usage entreprise** (≤ 5 postes) | 🔴 | ✅ |
+| Export CSV Adobe **OU** Shutterstock (mono-plateforme) | ✅ | ✅ |
+| Push FTP / FTPS unique post-export | ✅ | ✅ |
+| **Rapport expert microstock** (4 scores + risques + améliorations) | 🎁 **2 aperçus gratuits** | ✅ illimité |
+| **Export double CSV** (Adobe + Shutterstock côte à côte) | 🔒 | ✅ |
+| **Enrichissement IA Ollama** (LLaMA Vision, LLaVA, Moondream) | 🔒 | ✅ |
+| **Anti-stuffing automatique** (filtres marques + keywords) | 🔒 | ✅ |
+| **Marketing uses / buyer profiles / trends** par image | 🔒 | ✅ |
+| **Batch > 50 images par run** | 🔒 | ✅ |
+| **FTP scheduling** (push horaire, run-and-forget) — *roadmap* | 🔒 | ✅ |
+| **Multi-comptes FTP** (Adobe + Shutterstock simultané) — *roadmap* | 🔒 | ✅ |
+| **Templates IPTC customs** (export/import) — *roadmap* | 🔒 | ✅ |
+| **Support prioritaire** (réponse < 48 h ouvrées) | 🔒 | ✅ |
+| **Licence d'usage entreprise** (≤ 5 postes) | 🔒 | ✅ |
 
-> **Note** : le push FTP basique reste dans l'édition Community pour ne
-> pas casser le workflow d'usage actuel. C'est le **scheduling et le
-> multi-comptes** qui justifient le tier Pro.
+> **Pourquoi cette frontière** : le pipeline gratuit reste **utilisable
+> tel quel** par un photographe occasionnel (scan + édition IPTC + un
+> CSV par plateforme + push FTP). Ce qu'il achète en Pro, ce n'est pas
+> « un produit en plus », c'est **le jugement automatique** : « cette
+> image vaut 8/10 commercialement, risque rejet = 2/10, voici 5 façons
+> de l'améliorer ». C'est ce que l'app fait de plus précieux et qui
+> n'existe pas ailleurs.
+
+> **Anti-frustration** : les 2 aperçus gratuits du rapport expert
+> permettent à un essayeur de voir la valeur sur ses propres images
+> avant de payer — c'est le bouton de conversion principal. La case
+> IA et le radio « Les deux » restent visibles avec un tag 🔒 Pro
+> pour que l'upsell soit explicite, pas caché.
 
 ### 2.2 Tarification cible
 
+Tarification inchangée par rapport au plan initial — la justification
+prix tient encore mieux avec le nouveau bundle (l'utilisateur paie
+pour de l'évaluation automatisée, pas pour un cap technique).
+
 | Tier | Prix | Cible | Justification |
 |---|---|---|---|
-| **Community** | 0 € | Photographes occasionnels, étudiants, curieux | Acquisition, démonstration, retours utilisateurs |
-| **Pro Solo** | **29 € / an** | Photographe pro indépendant | ~ 2-3 heures économisées / mois sur 1 an |
-| **Pro Studio** | **89 € / an** | Studio / agence, ≤ 5 postes | Multi-poste + support |
-| **One-shot Lifetime** | **79 € unique** | Achat sans renouvellement | Alternative aux abonnements |
+| **Community** | 0 € | Photographes occasionnels, étudiants, curieux | Acquisition, démonstration, retours utilisateurs. 2 rapports experts gratuits comme teaser. |
+| **Pro Solo** | **29 € / an** | Photographe pro indépendant | Évaluation qualité illimitée + dual CSV + IA. ROI dès la 5ᵉ image analysée vs 5-10 min de réflexion manuelle par image. |
+| **Pro Studio** | **89 € / an** | Studio / agence, ≤ 5 postes | Multi-poste + support 48 h ouvrées + roadmap multi-comptes FTP. |
+| **One-shot Lifetime** | **79 € unique** | Achat sans renouvellement | Alternative aux abonnements pour l'audience allergique aux subscriptions (photographes en majorité). |
 
-Stratégie : **abonnement annuel par défaut**, lifetime en alternative pour
-les réfractaires (audience photographe = souvent allergique aux
-subscriptions). Une licence Pro débloque les features Pro localement
-(activation par clé hors-ligne, vérification cryptographique sur le
-binaire).
+Stratégie : **abonnement annuel par défaut**, lifetime en alternative.
+Une licence Pro débloque les features Pro localement (activation par
+clé hors-ligne, HMAC honor-system vérifié sur le binaire).
 
 ### 2.3 Effort estimé (mise en marché)
 
-| Lot | Détail | Effort |
+Le pivot v2.1.0 a déjà absorbé les lots techniques. Ce qui reste avant
+la première vente est purement commercial/contenu.
+
+| Lot | Détail | État |
 |---|---|---|
-| **Mécanique de licence** | Génération clés, vérification offline, persistance dans `~/.shutterstock_ai/license` | 2 j |
-| **Build dual** | Branche `pro/` privée + features pro derrière `if license.is_pro()` checks | 1 j |
-| **Frontière logique** | Batch > 50, scheduling FTP (background loop), multi-comptes UI | 2 j |
+| ~~Mécanique de licence~~ | HMAC, persistance, activation UI, generate_license CLI | ✅ livré v2.0/v2.1 |
+| ~~Frontière logique~~ | Gates expert_report / dual_csv / ai_enrichment / batch_unlimited | ✅ livré v2.1 |
 | **Page produit** | Landing GitHub Pages, démo embarquée, FAQ, CTA Gumroad | 1 j |
-| **Listing Gumroad** | Création produit, screenshots, vidéo 60 s, descriptions Adobe + Shutterstock keywords | 0,5 j |
+| **Listing Gumroad** | Création produit, screenshots, vidéo 60 s, descriptions | 0,5 j |
 | **Système de support** | Email dédié, template FAQ, premiers SLA | 0,5 j |
 | **Communication d'amorçage** | LinkedIn × 3, Product Hunt, Reddit, IndieHackers | 0,5 j |
-| **Total amorce v0** | | **~ 7-8 j-h** |
+| **Assets visuels** | GIF hero + 3 screenshots + 60 s screencast (specs : `docs/MEDIA.md`) | 1 j |
+| **Total amorce v0 restant** | | **~ 3,5 j-h** |
+
+> **Gain de pivot** : passage de 7-8 j-h à 3,5 j-h en repositionnant
+> Pro sur des features déjà livrées. Le delta budgétaire libéré peut
+> être réinvesti dans les assets visuels (qui font ×3 sur le taux de
+> clic LinkedIn / Product Hunt).
 
 ### 2.4 Revenu réaliste 12 mois
 

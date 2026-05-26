@@ -139,17 +139,32 @@ class ExportBatchView(BaseView):
         band.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_SM))
         band.grid_columnconfigure(99, weight=1)
 
-        # Plateforme — radios inline
+        # Cache the Pro state once so every gated control reads the
+        # same answer (avoids tearing if the licence is activated
+        # while the modal is open — that case requires a reload).
+        api = self.app.api
+        lic = getattr(api, "license", None)
+        is_dual_pro = bool(lic and lic.has_feature("dual_csv_export"))
+        is_ai_pro = bool(lic and lic.has_feature("ai_enrichment"))
+
+        # Plateforme — radios inline.
+        # Community users default to Adobe (a single CSV they can
+        # actually produce). The « Les deux » option is left clickable
+        # so the upsell toast fires on Start — disabling it would
+        # hide the Pro pitch.
         ctk.CTkLabel(
             band, text="Plateforme :", font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         ).grid(row=0, column=0, sticky="w", padx=(SPACE_MD, SPACE_SM), pady=SPACE_SM)
 
-        self._platform_var = ctk.StringVar(value="both")
-        for col, (val, label) in enumerate(
-            [("adobe", "Adobe Stock"), ("shutterstock", "Shutterstock"), ("both", "Les deux")],
-            start=1,
-        ):
+        default_platform = "both" if is_dual_pro else "adobe"
+        self._platform_var = ctk.StringVar(value=default_platform)
+        platform_options = [
+            ("adobe", "Adobe Stock"),
+            ("shutterstock", "Shutterstock"),
+            ("both", "Les deux" if is_dual_pro else "🔒 Les deux — Pro"),
+        ]
+        for col, (val, label) in enumerate(platform_options, start=1):
             ctk.CTkRadioButton(
                 band, text=label, variable=self._platform_var, value=val,
                 font=get_font("body"),
@@ -168,8 +183,12 @@ class ExportBatchView(BaseView):
         ).grid(row=0, column=11, sticky="w", padx=SPACE_SM, pady=SPACE_SM)
 
         self._use_ai_var = ctk.BooleanVar(value=False)
+        ai_label = (
+            "Enrichir avec IA (Ollama)" if is_ai_pro
+            else "🔒 Enrichir avec IA — Pro"
+        )
         ctk.CTkCheckBox(
-            band, text="Enrichir avec IA (Ollama)",
+            band, text=ai_label,
             variable=self._use_ai_var, font=get_font("body"),
             command=self._on_ai_toggle,
         ).grid(row=0, column=12, sticky="w", padx=SPACE_SM, pady=SPACE_SM)
@@ -645,11 +664,49 @@ class ExportBatchView(BaseView):
         if self._running:
             return
 
-        # --- Pro gating : batch > 50 -----------------------------
         api = self.app.api
         lic = getattr(api, "license", None)
-        is_pro = bool(lic and lic.has_feature("batch_unlimited"))
-        if len(self._files) > self.COMMUNITY_BATCH_CAP and not is_pro:
+
+        # --- Pro gating : dual CSV (Adobe + Shutterstock) --------
+        # The 2026-05-27 pivot moved dual export behind Pro because
+        # it's the headline value the app delivers — single-platform
+        # CSV stays free so Community keeps a working export path.
+        if (
+            self._platform_var.get() == "both"
+            and not (lic and lic.has_feature("dual_csv_export"))
+        ):
+            self.app.toasts.show(
+                "Édition Community : exportez une plateforme à la fois "
+                "(Adobe OU Shutterstock). L'export double est Pro.",
+                kind="warning",
+                timeout_ms=6000,
+            )
+            self._status_label.configure(
+                text="⛔ Pro requis pour export double",
+                text_color=palette_pair("warning"),
+            )
+            return
+
+        # --- Pro gating : AI enrichment ---------------------------
+        if (
+            self._use_ai_var.get()
+            and not (lic and lic.has_feature("ai_enrichment"))
+        ):
+            self.app.toasts.show(
+                "L'enrichissement IA (Ollama) est réservé à l'édition Pro. "
+                "Décochez la case pour lancer un export heuristique gratuit.",
+                kind="warning",
+                timeout_ms=6000,
+            )
+            self._status_label.configure(
+                text="⛔ Pro requis pour enrichissement IA",
+                text_color=palette_pair("warning"),
+            )
+            return
+
+        # --- Pro gating : batch > 50 -----------------------------
+        is_pro_batch = bool(lic and lic.has_feature("batch_unlimited"))
+        if len(self._files) > self.COMMUNITY_BATCH_CAP and not is_pro_batch:
             self.app.toasts.show(
                 f"Édition Community : maximum {self.COMMUNITY_BATCH_CAP} images "
                 f"par export (vous en avez {len(self._files)}). "

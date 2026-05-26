@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Launch procedure — ShutterstockAnalyzer v2.0.0 → commercialisation Pro</title>
+<title>Launch procedure — ShutterstockAnalyzer v2.1.0 → commercialisation Pro</title>
 <style>
   :root {
     --bg: #f7f8fa;
@@ -227,7 +227,7 @@
 </p>
 
 <div class="badges">
-  <span class="badge ok">✓ Tag v2.0.0 local</span>
+  <span class="badge ok">✓ Tag v2.1.0 local</span>
   <span class="badge ok">✓ 111 tests verts</span>
   <span class="badge ok">✓ Ruff propre</span>
   <span class="badge ok">✓ EXE 24,8 Mo (PROD secret)</span>
@@ -284,7 +284,7 @@
       <input type="checkbox" data-key="tech_pro" checked disabled>
       <div class="text">
         <div class="what">Pipeline licences Pro fonctionnel</div>
-        <div class="why">HMAC-signed keys, facade .license, UI Settings → Licence, gating batch &gt; 50, generate_license.py CLI</div>
+        <div class="why">HMAC-signed keys, facade .license, UI Settings → Licence, gates expert_report (2 teasers) + dual_csv_export + ai_enrichment + batch &gt; 50, generate_license.py CLI</div>
       </div>
     </div>
     <div class="check-row done">
@@ -304,7 +304,7 @@
     <div class="check-row done">
       <input type="checkbox" data-key="tech_tag" checked disabled>
       <div class="text">
-        <div class="what">Tag git v2.0.0 local</div>
+        <div class="what">Tag git v2.1.0 local</div>
         <div class="why">Annoté avec note de release complète. Pas encore poussé sur le remote.</div>
       </div>
     </div>
@@ -327,38 +327,38 @@
     <div class="check-row">
       <input type="checkbox" data-key="a1_push">
       <div class="text">
-        <div class="what">Pousser main + tag v2.0.0 sur GitHub</div>
+        <div class="what">Pousser main + tag v2.1.0 sur GitHub</div>
         <div class="why">8 commits cette session + tag annoté à publier en une fois</div>
       </div>
     </div>
     <div class="code-wrap">
       <pre>git push origin main
-git push origin v2.0.0</pre>
-      <button class="copy-btn" data-copy="git push origin main&#10;git push origin v2.0.0">Copier</button>
+git push origin v2.1.0</pre>
+      <button class="copy-btn" data-copy="git push origin main&#10;git push origin v2.1.0">Copier</button>
     </div>
 
     <h3>A.2 — Créer la GitHub Release</h3>
     <div class="check-row">
       <input type="checkbox" data-key="a2_release">
       <div class="text">
-        <div class="what">Créer la Release v2.0.0 avec les 2 EXE attachés</div>
+        <div class="what">Créer la Release v2.1.0 avec les 2 EXE attachés</div>
         <div class="why">Requiert <code>gh</code> (GitHub CLI) authentifié — sinon faire via l'UI GitHub</div>
       </div>
     </div>
 
     <h4>Option 1 — via gh CLI (recommandé)</h4>
     <div class="code-wrap">
-      <pre>gh release create v2.0.0 \
+      <pre>gh release create v2.1.0 \
   dist/ShutterstockAnalyzer.exe \
   dist/ShutterstockAnalyzer-debug.exe \
-  --title "v2.0.0 — Multi-platform microstock export, AI optional, FTP push" \
+  --title "v2.1.0 — Pro tier : quality evaluation, dual CSV, AI enrichment" \
   --notes-file CHANGELOG.md</pre>
-      <button class="copy-btn" data-copy="gh release create v2.0.0 dist/ShutterstockAnalyzer.exe dist/ShutterstockAnalyzer-debug.exe --title &quot;v2.0.0 — Multi-platform microstock export, AI optional, FTP push&quot; --notes-file CHANGELOG.md">Copier</button>
+      <button class="copy-btn" data-copy="gh release create v2.1.0 dist/ShutterstockAnalyzer.exe dist/ShutterstockAnalyzer-debug.exe --title &quot;v2.1.0 — Multi-platform microstock export, AI optional, FTP push&quot; --notes-file CHANGELOG.md">Copier</button>
     </div>
 
     <h4>Option 2 — via UI GitHub</h4>
     <p>Aller sur <code>github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/new</code>,
-    sélectionner le tag <code>v2.0.0</code>, drag-and-drop les 2 EXE
+    sélectionner le tag <code>v2.1.0</code>, drag-and-drop les 2 EXE
     depuis <code>dist/</code>, et coller dans le champ description :</p>
 
     <div class="template">
@@ -507,18 +507,20 @@ python tools\take_screenshots.py</pre>
 
 <strong>What you get</strong>
 ✓ Adobe Stock + Shutterstock CSV export (single or both, one click)
-✓ Expert metadata report — 4 scores, top-10 keywords, rejection risks, marketing uses
-✓ Optional AI enrichment via local Ollama (no API keys, no telemetry)
+✓ Expert metadata report — 4 scores (commercial / technical / SEO / rejection risk) + improvements + marketing uses
+✓ AI enrichment via local Ollama (LLaMA Vision, LLaVA, Moondream — no API keys, no telemetry)
+✓ Dual CSV export — Adobe Stock + Shutterstock side-by-side in one click
 ✓ Direct FTP / FTPS push to your contributor portal
 ✓ IPTC write-back opt-in (your originals untouched if you prefer)
 
 <strong>Why Pro</strong>
-The Community edition (free, MIT) caps at 50 images per export and lacks FTP scheduling. Pro unlocks:
-✓ Unlimited batch size (process 500 images at once)
-✓ FTP scheduling — set it up once, push every hour
-✓ Multi-account FTP — separate Adobe + Shutterstock profiles
-✓ Custom IPTC templates (save/load JSON profiles)
-✓ Category-aware Ollama prompts (Business, Nature, Tech…)
+The Community edition (free, MIT) covers the basic metadata workflow — scan, IPTC edit, single-platform CSV, FTP push — and offers 2 free expert-report previews so you can taste the value. Pro unlocks the full quality evaluation bundle:
+✓ Unlimited expert reports (4 scores + risks + improvements + marketing uses, per image)
+✓ Dual CSV export (Adobe + Shutterstock side-by-side, instead of one at a time)
+✓ AI enrichment via local Ollama vision models
+✓ Automatic anti-stuffing (brand + keyword padding filters)
+✓ Batch &gt; 50 images per run
+✓ Roadmap : FTP scheduling, multi-account FTP, custom IPTC templates
 ✓ Priority email support (48h SLA)
 
 <strong>Once you purchase</strong>
@@ -590,7 +592,13 @@ Merci pour votre achat de ShutterstockAnalyzer Pro ! Voici votre clé de licence
 
 Vous devriez voir « ✅ Édition Pro Solo · votre@email.com · Expire JJ/MM/AAAA ».
 
-À partir de là, le batch illimité, le FTP scheduling et toutes les autres features Pro sont débloqués.
+À partir de là, vous débloquez :
+• Le rapport expert illimité (4 scores + risques + améliorations + usages marketing par image)
+• L'export double CSV Adobe Stock + Shutterstock en un clic
+• L'enrichissement IA via Ollama (LLaMA Vision, LLaVA…)
+• L'anti-stuffing automatique des mots-clés
+• Le batch illimité (au-delà de 50 images par run)
+• Le support prioritaire (réponse sous 48 h ouvrées)
 
 <strong>En cas de problème :</strong> répondez à ce mail, je réponds sous 48 h ouvrées.
 
@@ -627,7 +635,7 @@ Emmanuel</div>
       <input type="checkbox" data-key="d1_post">
       <div class="text">
         <div class="what">Publier le post technique 1 000 caractères</div>
-        <div class="why">À publier le jour du tag v2.0.0 + GIF hero en pièce jointe (boost engagement ×3)</div>
+        <div class="why">À publier le jour du tag v2.1.0 + GIF hero en pièce jointe (boost engagement ×3)</div>
       </div>
     </div>
     <p>Texte : voir <code>LINKEDIN_DRAFTS.md</code> § Format 1.</p>
@@ -824,7 +832,7 @@ Emmanuel</div>
       </div>
       <div class="var-row">
         <label>Tag à publier</label>
-        <input type="text" value="v2.0.0" readonly>
+        <input type="text" value="v2.1.0" readonly>
       </div>
       <div class="var-row">
         <label>Commit HEAD</label>
@@ -881,7 +889,7 @@ Emmanuel</div>
 </details>
 
 <footer>
-  ShutterstockAnalyzer v2.0.0 · checklist autonome (HTML+CSS+JS inline,
+  ShutterstockAnalyzer v2.1.0 · checklist autonome (HTML+CSS+JS inline,
   aucune dépendance) · état persisté dans <code>localStorage</code> du
   navigateur · imprimable sans modification.
 </footer>

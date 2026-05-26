@@ -1,38 +1,45 @@
-# LinkedIn / Réseaux sociaux — drafts v2.0.0
+# LinkedIn / Réseaux sociaux — drafts v2.1.0
 
 > 3 formats prêts à copier-coller. Adapter le lien GitHub avant publication.
 > Audience : developers + photographes microstock + recruteurs tech.
+>
+> **Pivot v2.1.0 (2026-05-27)** — les drafts pivotent du pitch « 80 % de
+> la valeur sans IA » (pure-tech) au pitch « évaluation qualité de tes
+> images en local » (acheteur). Le freemium est explicite : Community
+> couvre le workflow IPTC complet ; Pro 29 €/an débloque l'évaluation
+> (rapport expert, dual CSV, IA Ollama, batch illimité).
 
 ---
 
-## Format 1 — Post technique court (≈ 1 000 caractères)
+## Format 1 — Post technique court (≈ 1 100 caractères)
 
 > **Pour quoi ?** Annonce neutre, format dev/tech, peu d'effort, premier
-> jet d'amorçage. À publier le jour J du tag v2.0.0.
+> jet d'amorçage. À publier le jour J du tag v2.1.0.
 
 ```text
-🏷 ShutterstockAnalyzer v2.0 — générer des métadonnées microstock en local, sans cloud.
+🏷 ShutterstockAnalyzer v2.1 — un outil local pour évaluer la qualité de tes images microstock avant de les envoyer.
 
-Le problème : un contributeur Adobe Stock / Shutterstock passe 5-10 minutes par image à écrire titre, description, mots-clés, catégories. Pour 50 photos par semaine, c'est 4-8 heures de saisie répétitive.
+Le problème : un contributeur Adobe Stock / Shutterstock passe 5-10 minutes par image à écrire titre, description, mots-clés, catégories — sans savoir laquelle vaut le coup d'uploader. Pour 50 photos par semaine, c'est 5h de saisie + 0 visibilité commerciale.
 
-Ma solution :
-✅ Pipeline heuristique qui produit titre + 30-50 keywords + scores commercial/SEO/risque rejet en ~200ms par image. Sans IA.
-✅ Enrichissement IA optionnel via Ollama local (LLaMA 3.2 Vision, LLaVA). Pas de clé API, pas de coût récurrent, pas de fuite IP.
-✅ Export CSV double Adobe + Shutterstock en un clic, avec push FTP intégré vers le portail contributeur.
+Ma solution, 100 % locale, sans cloud :
+✅ Édition Community (MIT, gratuite) — scan, édition IPTC, export CSV mono-plateforme, push FTP. Le workflow de base, end-to-end. + 2 aperçus gratuits du rapport expert pour tester.
+✅ Édition Pro (29 €/an ou 79 € lifetime) — rapport expert illimité (4 scores : commercial / technique / SEO / risque rejet), dual CSV Adobe + Shutterstock simultané, enrichissement IA via Ollama (LLaMA Vision, LLaVA), anti-stuffing automatique, batch > 50 images.
 
-Stack : Python 3.11 + CustomTkinter, ~20 000 LOC, 90 tests verts, EXE PyInstaller 25 Mo.
+Stack : Python 3.11 + CustomTkinter, ~20 000 LOC, 120 tests verts, EXE PyInstaller 25 Mo. HMAC pour les licences, zéro télémétrie, zéro photo qui quitte ta machine.
 
-1 enseignement : la posture « heuristique d'abord » fait gagner 80% de la valeur avec 20% de la complexité — l'IA reste un enrichisseur, pas un prérequis. Mon laptop bas-de-gamme génère un rapport en 3 secondes pour 15 images.
+1 enseignement : monétiser ce qui apporte un *jugement* (les scores) plutôt qu'un cap technique (batch ∞). Le user paie pour l'expertise, pas pour la levée d'un quota.
 
 👉 Code + EXE : [LIEN_GITHUB]
+👉 Pro : [LIEN_GUMROAD]
 
 #Python #Microstock #IndieDev
 ```
 
-**Caractères : ~ 1 070** (limite LinkedIn ~ 3 000).
+**Caractères : ~ 1 200** (limite LinkedIn ~ 3 000).
 **Hashtags** : 3 ciblés, pas de pavé.
 **Vérifications avant publication** :
-- [ ] Lien GitHub canonique (release v2.0.0 publiée)
+- [ ] Lien GitHub canonique (release v2.1.0 publiée)
+- [ ] Lien Gumroad live (sinon, retirer la 2ᵉ ligne CTA)
 - [ ] GIF hero attaché en pièce jointe (boost engagement × 3)
 - [ ] Publier mardi/jeudi 10h-12h heure FR (peak engagement)
 
@@ -185,7 +192,7 @@ Sous le capot
 [Tableau]
 20 167  LOC Python
 82      fichiers
-90      tests verts (5 s)
+120     tests verts (7 s)
 49      tests qualification IHM
 25 Mo   EXE PyInstaller
 4       dépendances runtime
@@ -194,6 +201,7 @@ Sous le capot
 Python 3.11 · CustomTkinter ·
 Pillow · SQLite · stdlib ftplib ·
 ExifTool subprocess · Ollama HTTP
+HMAC pour les licences (stdlib)
 
 [Note]
 Architecture : 1 facade backend,
@@ -207,14 +215,18 @@ Heuristique d'abord, IA en option.
 
 ```
 [Titre]
-Disponible maintenant en open-source.
+Disponible maintenant.
 
 [Bullet list]
-🆓 Édition Community — gratuite, MIT
-💼 Édition Pro — 29 €/an (batch ∞ + FTP scheduling)
+🆓 Édition Community — gratuite, MIT, MicroStock complet
+   + 2 aperçus gratuits du rapport expert
+💼 Édition Pro — 29 €/an ou 79 € à vie
+   Rapport expert illimité, dual CSV, IA Ollama,
+   anti-stuffing, batch > 50
 
 [Bloc CTA]
 ⭐ github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator
+🛒 gumroad.com/l/shutterstockanalyzer-pro
 ☕ ko-fi.com/kiriiaq
 
 [Pied]
@@ -286,12 +298,16 @@ Si tu fais du microstock ou si tu shipes des outils desktop en Python : je suis 
 
 ### « Le code est open-source mais il y a une version Pro ? »
 
-> Oui — dual-license. Le core est MIT (gratuit, hackable, redistribuable).
-> La version Pro débloque le batch illimité (> 50 images), le FTP
-> scheduling (push automatique horaire) et le support. C'est le modèle
-> freemium classique : 80 % des utilisateurs sont parfaitement servis
-> par la Community, 20 % qui en font leur outil quotidien ont une option
-> payante pour soutenir le projet.
+> Oui — dual-license. Le core est MIT (gratuit, hackable, redistribuable)
+> et couvre tout le workflow de base : scan, édition IPTC, export CSV
+> mono-plateforme, push FTP. Tu as aussi 2 aperçus gratuits du rapport
+> expert pour tester la valeur. La version Pro (29 €/an ou 79 € à vie)
+> débloque le rapport expert illimité — c'est le module qui te dit
+> *pourquoi* une image vaut le coup d'uploader, avec 4 scores et des
+> améliorations concrètes — ainsi que l'export dual Adobe+Shutterstock
+> simultané, l'enrichissement IA via Ollama local, et le batch > 50
+> images. Tu paies pour le jugement automatisé, pas pour la levée d'un
+> quota technique.
 
 ### « Tu acceptes les PRs ? »
 
