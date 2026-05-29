@@ -309,12 +309,46 @@ class App(ctk.CTk):
         """
         api = self.api
         return {
+            "Édition": self._edition_health(),
             "Backend": ("Disponible", "success") if api else ("Absent", "warning"),
             "ExifTool": (("OK", "success") if (api and api.exiftool_available) else ("Absent", "warning"))
             if api
             else ("—", "muted"),
             "Ollama": self._ollama_health,
         }
+
+    def _edition_health(self) -> tuple[str, str]:
+        """Edition chip: ``Pro`` (success) when licensed, else ``Gratuite``.
+
+        Surfaced permanently in the topbar so the freemium state is
+        always visible at a glance. We deliberately do *not* render the
+        expert-report preview count here: that quota gates a single
+        feature, not the whole app, so a global ``n/2`` chip would
+        misrepresent everything else (scan, IPTC, mono CSV, FTP) as
+        rationed. The precise remaining count lives in the Expert
+        Report view, where it is contextually accurate.
+        """
+        api = self.api
+        if api is None:
+            return ("—", "muted")
+        try:
+            if api.license.is_pro():
+                return ("Pro", "success")
+        except Exception:
+            logger.debug("license read failed for edition chip", exc_info=True)
+        return ("Gratuite", "muted")
+
+    def _on_license_changed(self, _payload: object = None) -> None:
+        """React to Settings activating/deactivating a Pro licence.
+
+        Refreshes the topbar edition chip immediately and re-opens the
+        active gated view (if any) so lock badges and the quota banner
+        reflect the new tier without forcing a restart.
+        """
+        try:
+            self.topbar.refresh_health()
+        except Exception:
+            logger.debug("topbar.refresh_health failed on license change", exc_info=True)
 
     def set_ollama_health(self, label: str, kind: str) -> None:
         """Met à jour l'état Ollama caché + déclenche un refresh de la

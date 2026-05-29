@@ -17,8 +17,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from src import __version__ as VERSION
+
 APP_NAME = "ShutterstockAnalyzer"
-VERSION = "2.1.0"
 ICON = "assets/icons/icone.ico"
 ENTRY_POINT = "main.py"
 
@@ -26,7 +27,7 @@ ENTRY_POINT = "main.py"
 # Verified by grep against src/ + main.py:
 #   customtkinter — main.py + every page
 #   darkdetect    — transitive via customtkinter, but ctk uses string-based imports
-#   PIL           — scan_page, write_page, splash_screen, validators
+#   PIL           — image scan/write paths + validators
 HIDDEN_IMPORTS = [
     "customtkinter",
     "darkdetect",

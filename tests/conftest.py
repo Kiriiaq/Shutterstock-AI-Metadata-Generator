@@ -9,6 +9,23 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_license_file(tmp_path, monkeypatch):
+    """Never let a test touch the user's real ~/.shutterstock_ai/license.json.
+
+    ``activate_license`` writes to ``DEFAULT_LICENSE_PATH`` and
+    ``deactivate_license`` unlinks it. Without this redirect, running the
+    suite on a machine that has a real Pro key installed would overwrite
+    and then delete that key. Pointing the path at a per-test tmp file
+    keeps the suite hermetic and makes ``load_license`` deterministic
+    (no stray file ⇒ Community).
+    """
+    fake = tmp_path / "license.json"
+    monkeypatch.setattr("src.modules.licensing.DEFAULT_LICENSE_PATH", fake, raising=False)
+    monkeypatch.setattr("src.modules.licensing.license.DEFAULT_LICENSE_PATH", fake, raising=False)
+    yield
+
+
 @pytest.fixture
 def temp_dir():
     """Create a temporary directory for test files."""

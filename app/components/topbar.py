@@ -108,7 +108,7 @@ class Topbar(ctk.CTkFrame, Themeable):
         # (et SPACE_SM côté droit = espacement interne avec les chips).
         self._title = ctk.CTkLabel(
             self,
-            text="ShutterstockAnalyzer v2.1.0 — Atelier",
+            text=t("app.topbar_title"),
             font=get_font("body_strong"),
             anchor="w",
         )

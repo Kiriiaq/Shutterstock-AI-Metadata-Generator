@@ -7,9 +7,12 @@ language later means swapping this module's import target.
 
 from __future__ import annotations
 
+from src import __version__ as _VERSION
+
 T: dict[str, str] = {
     # ============================== App ==============================
-    "app.title": "ShutterstockAnalyzer v2.1.0 — Générateur de métadonnées IA",
+    "app.title": f"ShutterstockAnalyzer v{_VERSION} — Générateur de métadonnées IA",
+    "app.topbar_title": f"ShutterstockAnalyzer v{_VERSION} — Atelier",
     "app.welcome_title": "Bienvenue",
     # NOTE Phase F : la sidebar a été supprimée — on remplace l'ancien
     # message "Sélectionnez une vue dans la barre latérale" par un

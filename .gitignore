@@ -9,6 +9,11 @@
 # be committed — anyone with this file can forge Pro keys)
 src/modules/licensing/_secret_compiled.py
 
+# Internal seller cheat-sheet (pricing + key-generation workflow). Marked
+# "ne pas publier" — kept local so it never lands in the public repo.
+# Run `git add -f vente.html` if you want to version it in a private repo.
+vente.html
+
 # Python
 __pycache__/
 *.py[cod]
@@ -37,9 +42,6 @@ env/
 .coverage.*
 htmlcov/
 .pytest_cache/
-
-# Audit working files (generated, not source of truth)
-_archive/legacy_ui_v1/__pycache__/
 
 # Logs
 *.log
