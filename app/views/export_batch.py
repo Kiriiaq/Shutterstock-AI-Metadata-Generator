@@ -139,30 +139,19 @@ class ExportBatchView(BaseView):
         band.grid(row=row, column=0, sticky="ew", pady=(0, SPACE_SM))
         band.grid_columnconfigure(99, weight=1)
 
-        # Cache the Pro state once so every gated control reads the
-        # same answer (avoids tearing if the licence is activated
-        # while the modal is open — that case requires a reload).
-        api = self.app.api
-        lic = getattr(api, "license", None)
-        is_dual_pro = bool(lic and lic.has_feature("dual_csv_export"))
-        is_ai_pro = bool(lic and lic.has_feature("ai_enrichment"))
-
-        # Plateforme — radios inline.
-        # Community users default to Adobe (a single CSV they can
-        # actually produce). The « Les deux » option is left clickable
-        # so the upsell toast fires on Start — disabling it would
-        # hide the Pro pitch.
+        # Plateforme — radios inline. All free now: the only paywall is
+        # the export run itself (quota enforced at Start). Default to
+        # « both » since dual-platform CSV is no longer gated.
         ctk.CTkLabel(
             band, text="Plateforme :", font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         ).grid(row=0, column=0, sticky="w", padx=(SPACE_MD, SPACE_SM), pady=SPACE_SM)
 
-        default_platform = "both" if is_dual_pro else "adobe"
-        self._platform_var = ctk.StringVar(value=default_platform)
+        self._platform_var = ctk.StringVar(value="both")
         platform_options = [
             ("adobe", "Adobe Stock"),
             ("shutterstock", "Shutterstock"),
-            ("both", "Les deux" if is_dual_pro else "🔒 Les deux — Pro"),
+            ("both", "Les deux"),
         ]
         for col, (val, label) in enumerate(platform_options, start=1):
             ctk.CTkRadioButton(
@@ -175,7 +164,7 @@ class ExportBatchView(BaseView):
             row=0, column=10, padx=SPACE_SM
         )
 
-        # IPTC + IA — checkboxes inline
+        # IPTC + IA — checkboxes inline (both free)
         self._write_iptc_var = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(
             band, text="Écrire IPTC dans le fichier",
@@ -183,12 +172,8 @@ class ExportBatchView(BaseView):
         ).grid(row=0, column=11, sticky="w", padx=SPACE_SM, pady=SPACE_SM)
 
         self._use_ai_var = ctk.BooleanVar(value=False)
-        ai_label = (
-            "Enrichir avec IA (Ollama)" if is_ai_pro
-            else "🔒 Enrichir avec IA — Pro"
-        )
         ctk.CTkCheckBox(
-            band, text=ai_label,
+            band, text="Enrichir avec IA (Ollama)",
             variable=self._use_ai_var, font=get_font("body"),
             command=self._on_ai_toggle,
         ).grid(row=0, column=12, sticky="w", padx=SPACE_SM, pady=SPACE_SM)
@@ -201,6 +186,57 @@ class ExportBatchView(BaseView):
             font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         ).grid(row=0, column=99, sticky="e", padx=SPACE_MD)
+
+        # Export-quota banner (Community only). The data export is the
+        # single paid feature: COMMUNITY_EXPORT_QUOTA free runs, then
+        # the 10 € lifetime key. Hidden entirely for licensed users.
+        self._quota_banner = None
+        if not self._export_unlocked():
+            self._quota_banner = ctk.CTkLabel(
+                band, text="", font=get_font("small"),
+                text_color=palette_pair("warning"), anchor="w", justify="left",
+            )
+            self._quota_banner.grid(
+                row=1, column=0, columnspan=100, sticky="ew",
+                padx=SPACE_MD, pady=(0, SPACE_SM),
+            )
+            self._refresh_quota_banner()
+
+    # ------------------------------------------------------------------
+    # Export quota — the single paywall is the data export itself
+    # ------------------------------------------------------------------
+
+    def _export_unlocked(self) -> bool:
+        """True iff the licence removes the export quota (unlimited)."""
+        api = self.app.api
+        lic = getattr(api, "license", None)
+        return bool(lic and lic.has_feature("data_export"))
+
+    def _refresh_quota_banner(self) -> None:
+        """Update the Community export-quota banner (no-op if licensed)."""
+        banner = getattr(self, "_quota_banner", None)
+        if banner is None:
+            return
+        from src.modules.licensing import COMMUNITY_EXPORT_QUOTA
+
+        remaining = self.app.api.export_quota_remaining()
+        if remaining <= 0:
+            banner.configure(
+                text=(
+                    f"🛑 Export gratuit épuisé ({COMMUNITY_EXPORT_QUOTA}/"
+                    f"{COMMUNITY_EXPORT_QUOTA}). Passez Pro (10 € à vie) pour "
+                    f"un export illimité — Réglages → Licence."
+                ),
+                text_color=palette_pair("error"),
+            )
+        else:
+            banner.configure(
+                text=(
+                    f"🎁 Édition Community · {remaining}/{COMMUNITY_EXPORT_QUOTA} "
+                    f"export(s) gratuit(s) restant(s). Pro (10 € à vie) = illimité."
+                ),
+                text_color=palette_pair("warning"),
+            )
 
     # ------------------------------------------------------------------
     # Ollama band — revealed when « Enrichir avec IA » is checked
@@ -654,70 +690,28 @@ class ExportBatchView(BaseView):
     # Start / worker
     # ------------------------------------------------------------------
 
-    # Cap batch size in Community edition. Pro tiers lift it via the
-    # `batch_unlimited` feature. Anything ≤ this number runs the
-    # standard path; above it, we surface a blocking toast + Gumroad
-    # link instead of silently truncating the user's selection.
-    COMMUNITY_BATCH_CAP = 50
-
     def _start(self) -> None:
         if self._running:
             return
 
         api = self.app.api
-        lic = getattr(api, "license", None)
 
-        # --- Pro gating : dual CSV (Adobe + Shutterstock) --------
-        # The 2026-05-27 pivot moved dual export behind Pro because
-        # it's the headline value the app delivers — single-platform
-        # CSV stays free so Community keeps a working export path.
-        if (
-            self._platform_var.get() == "both"
-            and not (lic and lic.has_feature("dual_csv_export"))
-        ):
+        # --- Paywall : the data export itself (Community quota) ------
+        # Platform choice, AI enrichment and batch size are all free.
+        # The only gated thing is running the export: COMMUNITY_EXPORT_
+        # QUOTA free runs, then the 10 € lifetime key.
+        if not self._export_unlocked() and api.export_quota_remaining() <= 0:
             self.app.toasts.show(
-                "Édition Community : exportez une plateforme à la fois "
-                "(Adobe OU Shutterstock). L'export double est Pro.",
+                "Export gratuit épuisé. Passez Pro (10 € à vie) pour un "
+                "export illimité — Réglages → Licence.",
                 kind="warning",
-                timeout_ms=6000,
+                timeout_ms=7000,
             )
             self._status_label.configure(
-                text="⛔ Pro requis pour export double",
+                text="⛔ Quota épuisé — Pro requis",
                 text_color=palette_pair("warning"),
             )
-            return
-
-        # --- Pro gating : AI enrichment ---------------------------
-        if (
-            self._use_ai_var.get()
-            and not (lic and lic.has_feature("ai_enrichment"))
-        ):
-            self.app.toasts.show(
-                "L'enrichissement IA (Ollama) est réservé à l'édition Pro. "
-                "Décochez la case pour lancer un export heuristique gratuit.",
-                kind="warning",
-                timeout_ms=6000,
-            )
-            self._status_label.configure(
-                text="⛔ Pro requis pour enrichissement IA",
-                text_color=palette_pair("warning"),
-            )
-            return
-
-        # --- Pro gating : batch > 50 -----------------------------
-        is_pro_batch = bool(lic and lic.has_feature("batch_unlimited"))
-        if len(self._files) > self.COMMUNITY_BATCH_CAP and not is_pro_batch:
-            self.app.toasts.show(
-                f"Édition Community : maximum {self.COMMUNITY_BATCH_CAP} images "
-                f"par export (vous en avez {len(self._files)}). "
-                f"Passez en Pro pour le batch illimité.",
-                kind="warning",
-                timeout_ms=6000,
-            )
-            self._status_label.configure(
-                text=f"⛔ Pro requis pour > {self.COMMUNITY_BATCH_CAP} images",
-                text_color=palette_pair("warning"),
-            )
+            self._refresh_quota_banner()
             return
 
         out_dir = Path(self._out_var.get().strip() or self._files[0].parent)
@@ -821,6 +815,13 @@ class ExportBatchView(BaseView):
                 f"Export OK : {csv_count} CSV produit(s){ftp_msg}.",
                 kind="success",
             )
+
+        # Debit one free export run (Community only) when output was
+        # actually produced, then refresh the banner so the next run
+        # shows the updated count or the upsell.
+        if not self._export_unlocked() and getattr(result, "csv_paths", None):
+            self.app.api.consume_export_quota()
+            self._refresh_quota_banner()
 
     def _on_finished_error(self, msg: str) -> None:
         self._running = False

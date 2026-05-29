@@ -55,66 +55,51 @@
 
 ## 2. Stratégie freemium / dual-license (voie principale)
 
-> **Pivot v2.1.0 (2026-05-27)** : la frontière Pro a été déplacée sur
-> les **fonctions d'évaluation qualité** (rapport expert, dual CSV,
-> enrichissement IA) qui sont **la vraie valeur livrée par l'app
-> aujourd'hui**, plutôt que sur des add-ons batch/scheduling qui
-> auraient demandé 7-8 j-h de dev supplémentaire avant la première
-> vente. Effort restant avant ship : ~ 0 (tout est codé, juste à
-> documenter et lancer le produit Gumroad).
+> **Pivot v2.2.0 (2026-05-29)** : la frontière Pro est désormais **un
+> seul mur — l'export de données**. Tout le reste (scan, IPTC, rapport
+> expert, IA Ollama, mise en page double CSV, FTP) est **gratuit et
+> illimité**. Community dispose de **3 exports gratuits**, puis l'export
+> illimité se débloque avec une **clé à vie à 10 €** (paiement unique).
+> Raison : zéro barrière à l'adoption (tout l'outil est essayable),
+> prix d'impulsion sans friction d'abonnement, conversion au moment
+> précis où l'utilisateur a déjà produit ses premiers CSV.
 
 ### 2.1 Frontière OSS / Pro
 
-| Feature | **Community** (MIT, gratuite) | **Pro** (commerciale, payante) |
+| Feature | **Community** (gratuite) | **Pro** (10 € à vie) |
 |---|---|---|
 | Scan dossier + sélection multi-fichiers | ✅ | ✅ |
 | Lecture / écriture IPTC (éditeur manuel) | ✅ | ✅ |
-| Validation pré-upload basique | ✅ | ✅ |
-| Historique opérations | ✅ | ✅ |
-| Export CSV Adobe **OU** Shutterstock (mono-plateforme) | ✅ | ✅ |
-| Push FTP / FTPS unique post-export | ✅ | ✅ |
-| **Rapport expert microstock** (4 scores + risques + améliorations) | 🎁 **2 aperçus gratuits** | ✅ illimité |
-| **Export double CSV** (Adobe + Shutterstock côte à côte) | 🔒 | ✅ |
-| **Enrichissement IA Ollama** (LLaMA Vision, LLaVA, Moondream) | 🔒 | ✅ |
-| **Anti-stuffing automatique** (filtres marques + keywords) | 🔒 | ✅ |
-| **Marketing uses / buyer profiles / trends** par image | 🔒 | ✅ |
-| **Batch > 50 images par run** | 🔒 | ✅ |
-| **FTP scheduling** (push horaire, run-and-forget) — *roadmap* | 🔒 | ✅ |
-| **Multi-comptes FTP** (Adobe + Shutterstock simultané) — *roadmap* | 🔒 | ✅ |
-| **Templates IPTC customs** (export/import) — *roadmap* | 🔒 | ✅ |
-| **Support prioritaire** (réponse < 48 h ouvrées) | 🔒 | ✅ |
-| **Licence d'usage entreprise** (≤ 5 postes) | 🔒 | ✅ |
+| Rapport expert microstock (4 scores + risques + améliorations + usages) | ✅ | ✅ |
+| Enrichissement IA Ollama (LLaMA Vision, LLaVA, Moondream) | ✅ | ✅ |
+| Mise en page double CSV (Adobe + Shutterstock) | ✅ | ✅ |
+| Anti-stuffing automatique (filtres marques + keywords) | ✅ | ✅ |
+| Validation pré-upload, historique, push FTP / FTPS | ✅ | ✅ |
+| **Export de données** (génération des CSV à uploader) | 🎁 **3 exports gratuits** | ✅ illimité |
 
-> **Pourquoi cette frontière** : le pipeline gratuit reste **utilisable
-> tel quel** par un photographe occasionnel (scan + édition IPTC + un
-> CSV par plateforme + push FTP). Ce qu'il achète en Pro, ce n'est pas
-> « un produit en plus », c'est **le jugement automatique** : « cette
-> image vaut 8/10 commercialement, risque rejet = 2/10, voici 5 façons
-> de l'améliorer ». C'est ce que l'app fait de plus précieux et qui
-> n'existe pas ailleurs.
+> **Pourquoi cette frontière** : tout l'outil est essayable
+> gratuitement, donc l'adoption n'a aucune barrière. Le seul geste
+> payant — exporter ses données en masse — arrive **après** que
+> l'utilisateur a vu la valeur (scores, métadonnées propres) et produit
+> ses premiers fichiers. On vend la commodité de l'usage répété, pas
+> l'accès à une fonctionnalité.
 
-> **Anti-frustration** : les 2 aperçus gratuits du rapport expert
-> permettent à un essayeur de voir la valeur sur ses propres images
-> avant de payer — c'est le bouton de conversion principal. La case
-> IA et le radio « Les deux » restent visibles avec un tag 🔒 Pro
-> pour que l'upsell soit explicite, pas caché.
+> **Anti-frustration** : les 3 exports gratuits laissent l'utilisateur
+> produire de vrais CSV pour son catalogue avant de buter sur le mur.
+> Un bandeau affiche le compte restant (« 2/3, 1/3… ») pour que l'upsell
+> soit explicite, jamais caché.
 
 ### 2.2 Tarification cible
 
-Tarification inchangée par rapport au plan initial — la justification
-prix tient encore mieux avec le nouveau bundle (l'utilisateur paie
-pour de l'évaluation automatisée, pas pour un cap technique).
-
 | Tier | Prix | Cible | Justification |
 |---|---|---|---|
-| **Community** | 0 € | Photographes occasionnels, étudiants, curieux | Acquisition, démonstration, retours utilisateurs. 2 rapports experts gratuits comme teaser. |
-| **Pro Solo** | **29 € / an** | Photographe pro indépendant | Évaluation qualité illimitée + dual CSV + IA. ROI dès la 5ᵉ image analysée vs 5-10 min de réflexion manuelle par image. |
-| **Pro Studio** | **89 € / an** | Studio / agence, ≤ 5 postes | Multi-poste + support 48 h ouvrées + roadmap multi-comptes FTP. |
-| **One-shot Lifetime** | **79 € unique** | Achat sans renouvellement | Alternative aux abonnements pour l'audience allergique aux subscriptions (photographes en majorité). |
+| **Community** | 0 € | Tous | Acquisition + démonstration. Outil complet + 3 exports gratuits. |
+| **Pro — à vie** | **10 € (paiement unique)** | Tout utilisateur régulier | Export de données illimité, pour toujours. Prix d'impulsion : sous la barre 10-15 €, pas de décision budgétaire. Coût marginal nul → quasi pure marge. |
 
-Stratégie : **abonnement annuel par défaut**, lifetime en alternative.
-Une licence Pro débloque les features Pro localement (activation par
-clé hors-ligne, HMAC honor-system vérifié sur le binaire).
+Stratégie : **paiement unique à vie**, pas d'abonnement (l'audience
+photographe déteste les subscriptions). La licence débloque l'export
+illimité localement (activation par clé hors-ligne, HMAC honor-system
+vérifié sur le binaire).
 
 ### 2.3 Effort estimé (mise en marché)
 
@@ -225,7 +210,7 @@ Ordre de publication (ne pas tout sortir le même jour, étaler sur 3-4 semaines
 
 | Plateforme | Action |
 |---|---|
-| **Gumroad** | Listing « ShutterstockAnalyzer Pro » 29 €/an et 79 € lifetime, lien depuis le README v2 |
+| **Gumroad** | Listing « ShutterstockAnalyzer Pro » **10 € à vie** (paiement unique), lien depuis le README |
 | **Lemon Squeezy** (alternative) | Idem, gère mieux la TVA EU si volume > seuil de franchise |
 | **GitHub Sponsors** | Reactiver le bouton sponsor existant + Ko-fi |
 
@@ -266,7 +251,7 @@ Ordre de publication (ne pas tout sortir le même jour, étaler sur 3-4 semaines
 
 | Élément | Valeur |
 |---|---|
-| **Voie principale** | Freemium dual-license MIT + Pro 29-89 €/an (pivot v2.1.0 : Pro = évaluation qualité) |
+| **Voie principale** | Freemium MIT + Pro **10 € à vie** (pivot v2.2.0 : seul l'export de données est payant, 3 essais gratuits) |
 | **Voie fallback** | Lead magnet portfolio (open-source pur, focus visibilité freelance) |
 | **Effort amorce restant** | ~ 3,5 j-h (assets visuels + Gumroad listing, code 100 % livré) |
 | **Revenu réaliste 12 mois** | 3 500–4 500 € (~ 25-30 customers actifs) |

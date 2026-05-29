@@ -1691,60 +1691,57 @@ class ShutterstockAIv2:
         self._license = load_license()
         return True, "Licence retirée — mode Community actif."
 
-    # ==================== Community quota (expert report teaser) ====
+    # ==================== Community quota (data export) =============
 
-    # Settings key used to track the number of expert reports the
-    # Community user has already consumed. Stored as int in the
-    # ``settings`` SQLite table so the count survives app restarts —
-    # a session-scoped counter would let the user reset it by closing
-    # the window, which defeats the teaser purpose.
-    _EXPERT_REPORT_COUNTER_KEY = "community_expert_reports_used"
+    # Settings key tracking the number of data exports a Community user
+    # has run. Stored as int in the ``settings`` SQLite table so the
+    # count survives app restarts — a session-scoped counter would let
+    # the user reset it by closing the window, defeating the trial.
+    _EXPORT_COUNTER_KEY = "community_exports_used"
 
-    def expert_report_quota_remaining(self) -> int:
-        """How many expert reports the user may still consume for free.
+    def export_quota_remaining(self) -> int:
+        """How many data exports the user may still run for free.
 
         Returns:
-            * ``-1`` if the user is on a Pro tier holding
-              ``expert_report`` (= unlimited).
-            * Otherwise the remaining count from
-              ``COMMUNITY_EXPERT_REPORT_QUOTA`` minus the persisted
+            * ``-1`` if the licence unlocks ``data_export`` (= unlimited).
+            * Otherwise ``COMMUNITY_EXPORT_QUOTA`` minus the persisted
               counter, clamped to ``[0, QUOTA]``.
 
-        The UI calls this **before** opening the expert-report modal
-        to decide whether to render the report or the upsell overlay.
+        The UI calls this **before** an export to decide whether to run
+        it or show the upsell.
         """
-        from .licensing import COMMUNITY_EXPERT_REPORT_QUOTA
+        from .licensing import COMMUNITY_EXPORT_QUOTA
 
-        if self._license.has_feature("expert_report"):
+        if self._license.has_feature("data_export"):
             return -1
-        used = int(self.get_setting(self._EXPERT_REPORT_COUNTER_KEY, 0) or 0)
-        remaining = COMMUNITY_EXPERT_REPORT_QUOTA - used
+        used = int(self.get_setting(self._EXPORT_COUNTER_KEY, 0) or 0)
+        remaining = COMMUNITY_EXPORT_QUOTA - used
         if remaining < 0:
             return 0
-        if remaining > COMMUNITY_EXPERT_REPORT_QUOTA:
-            return COMMUNITY_EXPERT_REPORT_QUOTA
+        if remaining > COMMUNITY_EXPORT_QUOTA:
+            return COMMUNITY_EXPORT_QUOTA
         return remaining
 
-    def consume_expert_report_quota(self) -> int:
-        """Increment the Community counter, return the new remaining count.
+    def consume_export_quota(self) -> int:
+        """Increment the Community export counter, return new remaining.
 
-        No-op for Pro users (returns ``-1``). Safe to call
-        idempotently — the UI invokes it once per successful report
-        opening so the next opening sees the updated count.
+        No-op for licensed users (returns ``-1``). The UI invokes it
+        once per successful export so the next one sees the updated
+        count.
         """
-        from .licensing import COMMUNITY_EXPERT_REPORT_QUOTA
+        from .licensing import COMMUNITY_EXPORT_QUOTA
 
-        if self._license.has_feature("expert_report"):
+        if self._license.has_feature("data_export"):
             return -1
-        used = int(self.get_setting(self._EXPERT_REPORT_COUNTER_KEY, 0) or 0)
+        used = int(self.get_setting(self._EXPORT_COUNTER_KEY, 0) or 0)
         used += 1
-        self.set_setting(self._EXPERT_REPORT_COUNTER_KEY, used)
-        remaining = COMMUNITY_EXPERT_REPORT_QUOTA - used
+        self.set_setting(self._EXPORT_COUNTER_KEY, used)
+        remaining = COMMUNITY_EXPORT_QUOTA - used
         return max(0, remaining)
 
-    def reset_expert_report_quota(self) -> None:
-        """Reset the Community counter (admin / test helper)."""
-        self.set_setting(self._EXPERT_REPORT_COUNTER_KEY, 0)
+    def reset_export_quota(self) -> None:
+        """Reset the Community export counter (admin / test helper)."""
+        self.set_setting(self._EXPORT_COUNTER_KEY, 0)
 
     # ==================== Cleanup ====================
 
