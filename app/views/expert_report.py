@@ -67,26 +67,16 @@ class ExpertReportView(BaseView):
         self.app = app
         self._report = None
         self._use_ai = ctk.BooleanVar(value=False)
-        # Track whether we've already debited the Community quota for
-        # this modal opening so a « Régénérer » click doesn't burn a
-        # second teaser slot on the same image.
-        self._quota_consumed_for_this_session = False
         self._build()
 
     # ------------------------------------------------------------------
-    # Pro/Community helpers
+    # Export quota helper — the only paywall is the data export
 
-    def _is_pro(self) -> bool:
-        """True iff the active licence unlocks the expert report."""
+    def _export_unlocked(self) -> bool:
+        """True iff the licence removes the export quota (unlimited)."""
         api = self.app.api
         lic = getattr(api, "license", None)
-        return bool(lic and lic.has_feature("expert_report"))
-
-    def _is_ai_pro(self) -> bool:
-        """True iff the active licence unlocks AI enrichment."""
-        api = self.app.api
-        lic = getattr(api, "license", None)
-        return bool(lic and lic.has_feature("ai_enrichment"))
+        return bool(lic and lic.has_feature("data_export"))
 
     # ------------------------------------------------------------------
 
@@ -113,14 +103,6 @@ class ExpertReportView(BaseView):
             ).grid(row=0, column=0, sticky="nsew")
             return
 
-        # Community quota check — show the upsell screen before
-        # consuming any compute when the teaser slots are depleted.
-        if not self._is_pro():
-            remaining = self.app.api.expert_report_quota_remaining()
-            if remaining == 0:
-                self._build_upsell_screen()
-                return
-
         wrapper = ctk.CTkScrollableFrame(self, fg_color="transparent")
         wrapper.grid(row=0, column=0, sticky="nsew", padx=SPACE_XL, pady=SPACE_XL)
         wrapper.grid_columnconfigure(0, weight=1)
@@ -146,28 +128,6 @@ class ExpertReportView(BaseView):
         )
         self._mode_label.grid(row=2, column=0, sticky="ew", pady=(0, SPACE_MD))
 
-        # Community quota banner — visible only when the user is not
-        # Pro and still has free slots left. Sits between the mode
-        # label and the report body so the user sees the cost upfront.
-        if not self._is_pro():
-            from src.modules.licensing import COMMUNITY_EXPERT_REPORT_QUOTA
-            remaining = self.app.api.expert_report_quota_remaining()
-            self._quota_banner = ctk.CTkLabel(
-                wrapper,
-                text=(
-                    f"🎁 Aperçu Community · il reste {remaining}/"
-                    f"{COMMUNITY_EXPERT_REPORT_QUOTA} rapport(s) gratuit(s). "
-                    f"Passez Pro pour un usage illimité."
-                ),
-                font=get_font("small"),
-                text_color=palette_pair("warning"),
-                anchor="w",
-                justify="left",
-            )
-            self._quota_banner.grid(
-                row=3, column=0, sticky="ew", pady=(0, SPACE_SM)
-            )
-
         # Body container — sections are rendered into here by ``_render``
         # once the worker thread finishes. The header above stays
         # visible during the spinner state.
@@ -181,21 +141,11 @@ class ExpertReportView(BaseView):
         actions.grid(row=5, column=0, sticky="ew", pady=(SPACE_LG, 0))
         actions.grid_columnconfigure(2, weight=1)
 
-        ai_label = "Enrichir avec IA (Ollama)"
-        ai_state = "normal"
-        if not self._is_ai_pro():
-            ai_label = "🔒 Enrichir avec IA — Pro"
-            ai_state = "disabled"
-            # Force-uncheck in case the user toggled it before the
-            # licence was revoked.
-            self._use_ai.set(False)
-
         ctk.CTkCheckBox(
             actions,
-            text=ai_label,
+            text="Enrichir avec IA (Ollama)",
             variable=self._use_ai,
             font=get_font("small"),
-            state=ai_state,
         ).grid(row=0, column=0, sticky="w")
 
         self._refresh_btn = ctk.CTkButton(
@@ -230,138 +180,19 @@ class ExpertReportView(BaseView):
         self._launch_build()
 
     # ------------------------------------------------------------------
-    # Upsell — Community quota exhausted
+    # Export-quota upsell (only paywall: the data export)
 
-    def _build_upsell_screen(self) -> None:
-        """Render the Pro pitch when the Community quota is depleted.
+    def _show_export_upsell(self) -> None:
+        """Tell the user the free export quota is spent → 10 € unlock."""
+        from src.modules.licensing import COMMUNITY_EXPORT_QUOTA
 
-        Replaces the normal modal body. Kept intentionally short and
-        action-oriented — the user already knows what they get, the
-        question is whether to pay. One primary CTA (Acheter Pro),
-        one secondary (Activer une clé existante), and a discreet
-        Annuler that closes the modal.
-        """
-        from src.modules.licensing import COMMUNITY_EXPERT_REPORT_QUOTA
-
-        wrapper = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        wrapper.grid(row=0, column=0, sticky="nsew", padx=SPACE_XL, pady=SPACE_XL)
-        wrapper.grid_columnconfigure(0, weight=1)
-
-        _modal_header(wrapper, icon="🔒", title="Passez en édition Pro", row=0)
-
-        ctk.CTkLabel(
-            wrapper,
-            text=(
-                f"Vous avez utilisé vos {COMMUNITY_EXPERT_REPORT_QUOTA} "
-                f"aperçus gratuits du rapport expert."
-            ),
-            font=get_font("body_strong"),
-            text_color=palette_pair("fg"),
-            anchor="w",
-            justify="left",
-            wraplength=620,
-        ).grid(row=1, column=0, sticky="ew", pady=(0, SPACE_MD))
-
-        # Card listing the Pro benefits — short, direct, no bullet padding.
-        card = ctk.CTkFrame(
-            wrapper,
-            fg_color=palette_pair("bg_elevated"),
-            corner_radius=RADIUS_MD,
-            border_width=1,
-            border_color=palette_pair("border"),
+        self.app.toasts.show(
+            f"Export gratuit épuisé ({COMMUNITY_EXPORT_QUOTA}/{COMMUNITY_EXPORT_QUOTA}). "
+            "Passez Pro (10 € à vie) pour un export illimité — "
+            "Réglages → Licence.",
+            kind="warning",
+            timeout_ms=7000,
         )
-        card.grid(row=2, column=0, sticky="ew", pady=(0, SPACE_LG))
-        card.grid_columnconfigure(0, weight=1)
-
-        ctk.CTkLabel(
-            card,
-            text="Édition Pro — Évaluation qualité illimitée",
-            font=get_font("body_strong"),
-            text_color=palette_pair("accent"),
-            anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=SPACE_MD, pady=(SPACE_MD, SPACE_XS))
-
-        benefits = [
-            "✓ Rapport expert illimité — 4 scores, risques, améliorations",
-            "✓ Export double CSV Adobe Stock + Shutterstock en un clic",
-            "✓ Enrichissement IA via Ollama local (LLaMA Vision, LLaVA…)",
-            "✓ Anti-stuffing automatique des mots-clés (marques, padding)",
-            "✓ Batch illimité (> 50 images par run)",
-            "✓ Marketing uses, profils acheteurs et tendances par image",
-        ]
-        for i, line in enumerate(benefits, start=1):
-            ctk.CTkLabel(
-                card, text=line, font=get_font("body"),
-                text_color=palette_pair("fg"),
-                anchor="w",
-            ).grid(row=i, column=0, sticky="ew", padx=SPACE_MD, pady=1)
-
-        ctk.CTkLabel(
-            card,
-            text="29 €/an  ·  79 € à vie  ·  paiement Gumroad",
-            font=get_font("small"),
-            text_color=palette_pair("fg_muted"),
-            anchor="w",
-        ).grid(row=99, column=0, sticky="ew", padx=SPACE_MD, pady=(SPACE_SM, SPACE_MD))
-
-        actions = ctk.CTkFrame(wrapper, fg_color="transparent")
-        actions.grid(row=3, column=0, sticky="ew", pady=(0, SPACE_SM))
-        actions.grid_columnconfigure(2, weight=1)
-
-        ctk.CTkButton(
-            actions,
-            text="Acheter Pro →",
-            height=32,
-            fg_color=palette_pair("accent"),
-            hover_color=palette_pair("accent_hover"),
-            text_color=palette_pair("accent_fg"),
-            font=get_font("body_strong"),
-            command=self._open_gumroad,
-        ).grid(row=0, column=0, sticky="w", padx=(0, SPACE_SM))
-
-        ctk.CTkButton(
-            actions,
-            text="J'ai déjà une clé…",
-            height=32,
-            fg_color=palette_pair("bg_hover"),
-            hover_color=palette_pair("bg_active"),
-            text_color=palette_pair("fg"),
-            border_width=1,
-            border_color=palette_pair("border"),
-            command=self._open_settings_for_license,
-        ).grid(row=0, column=1, sticky="w")
-
-        ctk.CTkLabel(
-            wrapper,
-            text=(
-                "Astuce : la version Community reste utile pour scanner "
-                "vos dossiers, éditer les IPTC manuellement et exporter "
-                "un CSV simple par plateforme."
-            ),
-            font=get_font("small"),
-            text_color=palette_pair("fg_muted"),
-            anchor="w",
-            justify="left",
-            wraplength=620,
-        ).grid(row=4, column=0, sticky="ew", pady=(SPACE_MD, 0))
-
-    def _open_gumroad(self) -> None:
-        """Open the Gumroad listing in the user's browser."""
-        import webbrowser
-        # Placeholder — replace with the real URL once the product is live.
-        url = "https://gumroad.com/l/shutterstockanalyzer-pro"
-        try:
-            webbrowser.open(url, new=2)
-        except Exception:  # noqa: BLE001
-            logger.exception("Could not open Gumroad URL")
-            self.app.toasts.show(f"Ouvrez manuellement : {url}", kind="info")
-
-    def _open_settings_for_license(self) -> None:
-        """Switch to the Settings modal so the user can paste a key."""
-        try:
-            self.app.open_in_modal("settings")
-        except Exception:  # noqa: BLE001
-            logger.exception("Could not open settings modal")
 
     # ------------------------------------------------------------------
     # Helpers
@@ -418,16 +249,9 @@ class ExpertReportView(BaseView):
     def _on_success(self, report: Any) -> None:
         self._report = report
         self._refresh_btn.configure(state="normal")
-        # Community users can't trigger the dual-CSV export from this
-        # modal — it's a Pro feature now. Keep the button visible but
-        # disabled, with a 🔒 hint so the upsell is obvious.
-        if self._is_dual_csv_pro():
-            self._export_btn.configure(state="normal")
-        else:
-            self._export_btn.configure(
-                state="disabled",
-                text="🔒 Exporter CSV double — Pro",
-            )
+        # The report is free now — the export button is always enabled.
+        # The export itself respects the data-export quota (_export_csv).
+        self._export_btn.configure(state="normal")
         mode_label = {
             "heuristic": "Rapide (sans IA)",
             "ai": "Enrichi IA",
@@ -438,49 +262,6 @@ class ExpertReportView(BaseView):
             text_color=palette_pair("fg_muted"),
         )
         self._render(report)
-
-        # Debit one Community slot AFTER the report renders so a
-        # failed build doesn't burn a teaser. Re-generating the same
-        # image (via « Régénérer ») within the same modal opening
-        # doesn't re-debit — that would feel punitive.
-        if not self._is_pro() and not self._quota_consumed_for_this_session:
-            try:
-                remaining = self.app.api.consume_expert_report_quota()
-            except Exception:  # noqa: BLE001
-                logger.exception("consume_expert_report_quota failed")
-                remaining = -1
-            self._quota_consumed_for_this_session = True
-            self._update_quota_banner(remaining)
-
-    def _is_dual_csv_pro(self) -> bool:
-        """True iff the active licence unlocks the dual CSV export."""
-        api = self.app.api
-        lic = getattr(api, "license", None)
-        return bool(lic and lic.has_feature("dual_csv_export"))
-
-    def _update_quota_banner(self, remaining: int) -> None:
-        """Refresh the quota label after consumption."""
-        banner = getattr(self, "_quota_banner", None)
-        if banner is None:
-            return
-        from src.modules.licensing import COMMUNITY_EXPERT_REPORT_QUOTA
-        if remaining <= 0:
-            banner.configure(
-                text=(
-                    f"🛑 Dernier aperçu Community consommé "
-                    f"({COMMUNITY_EXPERT_REPORT_QUOTA}/"
-                    f"{COMMUNITY_EXPERT_REPORT_QUOTA}). "
-                    f"Passez Pro pour un usage illimité."
-                ),
-                text_color=palette_pair("error"),
-            )
-        else:
-            banner.configure(
-                text=(
-                    f"🎁 Aperçu Community · il reste {remaining}/"
-                    f"{COMMUNITY_EXPERT_REPORT_QUOTA} rapport(s) gratuit(s)."
-                ),
-            )
 
     def _on_failure(self, error: str) -> None:
         self._refresh_btn.configure(state="normal")
@@ -508,22 +289,18 @@ class ExpertReportView(BaseView):
     def _export_csv(self) -> None:
         if self._report is None:
             return
-        # Pro gate — dual CSV is part of the Pro bundle.
-        if not self._is_dual_csv_pro():
-            self.app.toasts.show(
-                "L'export double CSV (Adobe + Shutterstock) est réservé à "
-                "l'édition Pro. Activez votre licence dans Paramètres → Licence.",
-                kind="warning",
-                timeout_ms=6000,
-            )
+        api = self.app.api
+        # The only paywall: the data export. Community gets a limited
+        # number of free runs; the 10 € lifetime key lifts the cap.
+        if not self._export_unlocked() and api.export_quota_remaining() <= 0:
+            self._show_export_upsell()
             return
         # Multi-file: prefer the workspace selection if any, else the
         # single current report.
         selected = self.app.app_state.get("selected_paths") or []
         reports = [self._report]
         if selected and len(selected) > 1:
-            # Build the missing reports in background; for simplicity
-            # we do them sequentially inline — the user is already
+            # Build the missing reports inline — the user is already
             # waiting for the file dialog.
             extras: List[Any] = []
             for p in selected:
@@ -531,7 +308,7 @@ class ExpertReportView(BaseView):
                 if p == self._target_path:
                     continue
                 try:
-                    extras.append(self.app.api.build_expert_report(p, use_ai=False))
+                    extras.append(api.build_expert_report(p, use_ai=False))
                 except Exception:  # noqa: BLE001
                     logger.warning("build_expert_report skipped for %s", p, exc_info=True)
             reports = [self._report, *extras]
@@ -540,13 +317,19 @@ class ExpertReportView(BaseView):
         if not out_dir:
             return
         try:
-            result = self.app.api.export_double_csv(reports, Path(out_dir), basename="metadata")
+            result = api.export_double_csv(reports, Path(out_dir), basename="metadata")
         except Exception as exc:  # noqa: BLE001
             logger.exception("export_double_csv failed")
             self.app.toasts.show(f"Échec export : {exc}", kind="error")
             return
+
+        remaining_msg = ""
+        if not self._export_unlocked():
+            remaining = api.consume_export_quota()
+            if remaining >= 0:
+                remaining_msg = f" · {remaining} export(s) gratuit(s) restant(s)"
         self.app.toasts.show(
-            f"{result.row_count} ligne(s) écrite(s) — Adobe + Shutterstock.",
+            f"{result.row_count} ligne(s) écrite(s) — Adobe + Shutterstock.{remaining_msg}",
             kind="success",
         )
 

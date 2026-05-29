@@ -4,10 +4,10 @@ The license payload is a JSON object with this schema::
 
     {
         "email": "alice@example.com",
-        "tier": "pro_solo",        # community | pro_solo | pro_studio | lifetime
-        "features": ["batch_unlimited", "ftp_scheduling", ...],
+        "tier": "lifetime",        # community | lifetime (single 10 € paid tier)
+        "features": ["data_export"],
         "issued_at": "2026-05-19T18:00:00",
-        "expires_at": "2027-05-19T18:00:00",   # null for "lifetime"
+        "expires_at": null,                    # null for "lifetime"
         "signature": "..."   # HMAC-SHA256 hex digest of the rest, sorted-keys
     }
 
@@ -53,52 +53,37 @@ DEFAULT_LICENSE_PATH = Path.home() / ".shutterstock_ai" / "license.json"
 
 
 class Tier(str, Enum):
-    """Subscription tier — Community is the default unlicensed state."""
+    """Edition tier — Community is the default unlicensed state.
+
+    The product ships a **single paid tier**: ``LIFETIME`` (10 €
+    one-shot), which unlocks unlimited data export. ``is_pro()`` treats
+    any non-Community tier as paid, so re-introducing time-limited
+    tiers later only means adding enum members + an ``expires_at``.
+    """
 
     COMMUNITY = "community"
-    PRO_SOLO = "pro_solo"
-    PRO_STUDIO = "pro_studio"
     LIFETIME = "lifetime"
 
 
-# Features gated by the Pro tiers. The 2026-05-27 pivot reframed the
-# Pro proposition around **quality evaluation** (the headline value
-# the app actually delivers) instead of around batch/scheduling
-# add-ons that nobody had asked for yet:
+# The single capability gated behind the paid tier: exporting the
+# metadata CSV (Adobe Stock + Shutterstock) — the "data export" the
+# product actually sells. Everything else is free and unlimited:
+# folder scan, IPTC editor, the multi-section expert report, AI
+# enrichment (local Ollama), and the dual-platform CSV layout.
 #
-# - ``expert_report``     : full multi-section microstock audit
-#   (4 scores, rejection risks, improvements, marketing/buyer
-#   profiles, trends). Community gets a teaser quota — see
-#   ``COMMUNITY_EXPERT_REPORT_QUOTA``.
-# - ``dual_csv_export``   : Adobe + Shutterstock side-by-side export.
-#   Community can still pick one platform at a time (simple CSV).
-# - ``ai_enrichment``     : Ollama vision overlay on the heuristic
-#   report. Local model, but the gating recognises the IA pass as
-#   premium quality work.
-# - ``batch_unlimited``   : already in v2.0 ; > 50 images per run.
-# - ``ftp_scheduling``, ``ftp_multi_account``, ``iptc_templates``,
-#   ``prompt_profiles``, ``priority_support`` : roadmap features
-#   (not enforced yet, reserved so generated keys carry them).
+# Community users get ``COMMUNITY_EXPORT_QUOTA`` free export runs;
+# after that the export is gated behind the 10 € lifetime key.
 PRO_FEATURES: set[str] = {
-    "expert_report",     # full expert microstock audit (4 scores + risks + uses)
-    "dual_csv_export",   # Adobe + Shutterstock side-by-side CSV
-    "ai_enrichment",     # Ollama vision overlay on the heuristic report
-    "batch_unlimited",   # > 50 images per export_batch run
-    "ftp_scheduling",    # background recurring FTP push
-    "ftp_multi_account", # multiple FTP profiles
-    "iptc_templates",    # save/load custom IPTC templates
-    "prompt_profiles",   # category-aware Ollama prompts
-    "priority_support",  # 48h support SLA
+    "data_export",  # unlimited CSV export (Adobe + Shutterstock)
 }
 
 
-# Number of expert reports a Community user may consume before the
-# upsell modal kicks in. Tracked across sessions in the settings
-# table (``community_expert_reports_used``). Two is the sweet spot
-# observed in similar freemium tools: enough to demonstrate value
-# on a couple of real images, low enough that a working contributor
-# hits the wall on the same day they install the app.
-COMMUNITY_EXPERT_REPORT_QUOTA = 2
+# Number of data exports a Community user may run before the upsell
+# kicks in. Tracked across sessions in the settings table
+# (``community_exports_used``). Three is the sweet spot: enough to
+# prove the full workflow on real images, low enough that an active
+# contributor hits the wall the same day they install the app.
+COMMUNITY_EXPORT_QUOTA = 3
 
 
 class LicenseError(Exception):
@@ -140,15 +125,13 @@ class License:
     def has_feature(self, name: str) -> bool:
         """True if *name* is unlocked by the current tier.
 
-        Lifetime + Studio + Solo all carry the same feature set. The
-        distinction lives in seat count (Studio = up to 5) and pricing,
-        not in the feature gate.
+        The single paid tier (Lifetime) grants every feature in
+        ``PRO_FEATURES`` (currently just ``data_export``). The
+        ``features`` field exists for future per-feature licensing.
         """
         if self.is_expired():
             return False
         if self.is_pro():
-            # Pro tiers grant ALL Pro features. The ``features`` field
-            # exists for future granularity (per-feature licensing).
             if not self.features:
                 return name in PRO_FEATURES
             return name in self.features
@@ -356,7 +339,7 @@ def generate_license_key(
 
     Args:
         email: Customer email (returned in payload, displayed in UI).
-        tier: ``Tier`` enum or string ("pro_solo", "pro_studio", "lifetime").
+        tier: ``Tier`` enum or string ("lifetime" — the single paid tier).
         features: Optional explicit feature list. If None, the customer
             gets every feature in ``PRO_FEATURES`` (Pro tiers) or nothing
             (Community).

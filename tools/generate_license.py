@@ -7,21 +7,12 @@ dev placeholder if absent.
 Usage examples
 --------------
 
-    # Pro Solo 1 year — default
-    python tools\\generate_license.py --email alice@example.com --tier pro_solo
+    # Lifetime key — the only paid tier (10 € one-shot, never expires)
+    python tools\\generate_license.py --email alice@example.com --tier lifetime
 
-    # Pro Studio (multi-poste) 1 year
-    python tools\\generate_license.py --email bob@studio.com --tier pro_studio
-
-    # Lifetime, no expiration
-    python tools\\generate_license.py --email carol@example.com --tier lifetime
-
-    # Override expiration (in days)
-    python tools\\generate_license.py --email dave@example.com --tier pro_solo --days 30
-
-    # Write to file (default = stdout)
-    python tools\\generate_license.py --email eve@example.com --tier pro_solo \
-        --output keys\\eve_2026.json
+    # Write to a file instead of stdout
+    python tools\\generate_license.py --email eve@example.com --tier lifetime \
+        --output keys\\eve.json
 
 The output is the JSON payload to paste into the customer's app via
 Settings → Licence. Send it as a plain-text email attachment or via
@@ -73,7 +64,7 @@ def main() -> int:
         "--days",
         type=int,
         default=None,
-        help="Days until expiration. Default: 365 for pro_solo/pro_studio, none for lifetime.",
+        help="Days until expiration. Default: none (the lifetime tier never expires).",
     )
     parser.add_argument(
         "--output", "-o",
@@ -122,10 +113,6 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-
-    # Default validity by tier
-    if args.days is None and args.tier in {"pro_solo", "pro_studio"}:
-        args.days = 365
 
     payload = generate_license_key(
         email=args.email,

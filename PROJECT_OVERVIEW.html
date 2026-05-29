@@ -129,14 +129,14 @@
 
 <header>
   <h1>ShutterstockAnalyzer</h1>
-  <p class="pitch">Générateur local de métadonnées microstock (Adobe Stock + Shutterstock) avec IA optionnelle via Ollama. <strong>Freemium dual-edition</strong> depuis v2.1 : Community gratuit (scan / IPTC / CSV mono-plateforme / FTP) + Pro 29 €/an (rapport expert + dual CSV + IA + anti-stuffing + batch &gt; 50).</p>
+  <p class="pitch">Générateur local de métadonnées microstock (Adobe Stock + Shutterstock) avec IA optionnelle via Ollama. <strong>Freemium</strong> : tout est gratuit (scan / IPTC / rapport expert / IA / dual CSV / FTP) ; seul l'<strong>export de données</strong> est limité à 3 essais, puis débloqué à vie pour <strong>10 €</strong>.</p>
   <div class="badges">
-    <span class="badge ver">v2.1.0</span>
+    <span class="badge ver">v2.2.0</span>
     <span class="badge ok">Stable</span>
     <span class="badge">Python 3.11+</span>
     <span class="badge">MIT</span>
     <span class="badge">Windows 10/11</span>
-    <span class="badge ok">120 tests verts</span>
+    <span class="badge ok">121 tests verts</span>
     <span class="badge muted">~25 Mo EXE</span>
   </div>
 </header>
@@ -191,21 +191,21 @@
     <tbody>
       <tr><td class="status">✅</td><td class="cat">Sources</td><td>Scan dossier + ajout incrémental</td><td>Multi-sélection, compteur permanent, Suppr clavier</td></tr>
       <tr><td class="status">✅</td><td class="cat">IPTC</td><td>Lecture / écriture IPTC</td><td>Via ExifTool. UTF-8, accents et symboles I&C OK.</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Expert</td><td>Rapport expert sans IA</td><td>8 sections, 4 scores 0-10, ~3 s pour 15 images. <strong>Pro</strong> (Community : 2 aperçus gratuits)</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Expert</td><td>Enrichissement IA optionnel</td><td>Ollama vision (LLaMA 3.2 / LLaVA / Moondream). <strong>Pro</strong></td></tr>
-      <tr><td class="status">✅</td><td class="cat">Export</td><td>CSV Adobe Stock (mono)</td><td>5 colonnes, UTF-8 BOM, mapping catégorie SH→Adobe. Community + Pro</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Export</td><td>CSV Shutterstock (mono)</td><td>7 colonnes, keywords séparateur virgule (fix P0). Community + Pro</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Export</td><td>Export double Adobe + SH</td><td>Un seul clic, 2 fichiers côte à côte. <strong>Pro</strong></td></tr>
+      <tr><td class="status">✅</td><td class="cat">Expert</td><td>Rapport expert sans IA</td><td>8 sections, 4 scores 0-10, ~3 s pour 15 images. Gratuit (illimité)</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Expert</td><td>Enrichissement IA optionnel</td><td>Ollama vision (LLaMA 3.2 / LLaVA / Moondream). Gratuit</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Export</td><td>CSV Adobe Stock (mono)</td><td>5 colonnes, UTF-8 BOM, mapping catégorie SH→Adobe. Quota export (3 gratuits)</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Export</td><td>CSV Shutterstock (mono)</td><td>7 colonnes, keywords séparateur virgule (fix P0). Quota export (3 gratuits)</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Export</td><td>Export double Adobe + SH</td><td>Un seul clic, 2 fichiers côte à côte. Gratuit (mise en page) ; soumis au quota export</td></tr>
       <tr><td class="status">✅</td><td class="cat">Export</td><td>Push FTP / FTPS</td><td>Stdlib ftplib, credentials non persistés, test connexion. Community + Pro</td></tr>
-      <tr><td class="status">✅</td><td class="cat">IA</td><td>Sélection + préchargement modèle</td><td>Dropdown, test, charger, indicateur état coloré. <strong>Pro</strong> (option visible 🔒 en Community)</td></tr>
+      <tr><td class="status">✅</td><td class="cat">IA</td><td>Sélection + préchargement modèle</td><td>Dropdown, test, charger, indicateur état coloré. Gratuit</td></tr>
       <tr><td class="status">✅</td><td class="cat">Validation</td><td>Pré-upload checklist</td><td>Résolution, format, taille, complétude métadonnées. Community + Pro</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Filtres</td><td>Anti-stuffing keywords</td><td>Brands + génériques filtrés, cap à 50, top 10 prio. <strong>Pro</strong> (via rapport expert)</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Filtres</td><td>Anti-stuffing keywords</td><td>Brands + génériques filtrés, cap à 50, top 10 prio. Gratuit (via rapport expert)</td></tr>
       <tr><td class="status">✅</td><td class="cat">UI</td><td>Theme light / dark / system</td><td>Persisté, sans rétrécissement colonne après toggle</td></tr>
       <tr><td class="status">✅</td><td class="cat">UI</td><td>Historique opérations</td><td>SQLite, filtres période + statut, export JSON / CSV</td></tr>
       <tr><td class="status">✅</td><td class="cat">UI</td><td>Raccourcis clavier</td><td>Ctrl+1/2/3 panneaux, Ctrl+? aide, Esc cancel/modal</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Licence</td><td>HMAC + tiers + UI + CLI admin</td><td>4 tiers, 9 features, activation Settings, generate_license.py</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Licence</td><td>Quota Community rapport expert</td><td>2 aperçus gratuits, écran upsell, persistance SQLite</td></tr>
-      <tr><td class="status">✅</td><td class="cat">Tests</td><td>Suite automatisée</td><td>120 tests, ruff propre, build PyInstaller smoke OK</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Licence</td><td>HMAC + licence + UI + CLI admin</td><td>2 tiers (Community + Pro à vie), 1 feature (data_export), activation Settings, generate_license.py</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Licence</td><td>Quota Community export</td><td>3 exports gratuits, bandeau + upsell, persistance SQLite</td></tr>
+      <tr><td class="status">✅</td><td class="cat">Tests</td><td>Suite automatisée</td><td>121 tests, ruff propre, build PyInstaller smoke OK</td></tr>
       <tr><td class="status">✅</td><td class="cat">Tests</td><td>Qualification IHM Edvance</td><td>Matrice XLSX 49 tests + HTML interactif + 15 images Pillow + run/compare</td></tr>
       <tr><td class="status">🟡</td><td class="cat">Démo</td><td>GIF / vidéo démo</td><td>À produire (voir docs/MEDIA.md)</td></tr>
       <tr><td class="status">🟡</td><td class="cat">Cross-OS</td><td>macOS / Linux EXE</td><td>Code portable, EXE Windows uniquement</td></tr>

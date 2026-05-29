@@ -304,25 +304,23 @@ class SettingsView(BaseView):
             return
         lic = api.license
         if lic.is_pro():
-            tier_label = {
-                "pro_solo": "Pro Solo",
-                "pro_studio": "Pro Studio",
-                "lifetime": "Lifetime",
-            }.get(lic.tier.value, lic.tier.value)
             email = lic.email or "—"
-            exp = lic.expires_at.strftime("%d/%m/%Y") if lic.expires_at else "jamais"
             text = (
-                f"✅  Édition {tier_label}\n"
+                "✅  Édition Pro — licence à vie\n"
                 f"     Email : {email}\n"
-                f"     Expire : {exp}"
+                "     Export de données illimité (Adobe + Shutterstock)"
             )
             self._license_status.configure(text=text, text_color=palette_pair("success"))
         else:
+            from src.modules.licensing import COMMUNITY_EXPORT_QUOTA
+
+            remaining = api.export_quota_remaining()
             text = (
                 "🆓  Édition Community (gratuite)\n"
-                "     Scan + IPTC + export CSV mono-plateforme + FTP · 2 aperçus gratuits du rapport expert\n"
-                "     Pro débloque : rapport expert illimité, dual CSV Adobe+Shutterstock, IA Ollama,\n"
-                "     anti-stuffing automatique, batch > 50 images"
+                "     Tout est gratuit : scan, IPTC, rapport expert, IA Ollama,\n"
+                "     dual CSV Adobe + Shutterstock, FTP.\n"
+                f"     Export de données : {remaining}/{COMMUNITY_EXPORT_QUOTA} gratuit(s) — "
+                "Pro (10 € à vie) = illimité."
             )
             self._license_status.configure(text=text, text_color=palette_pair("fg"))
 

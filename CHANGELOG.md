@@ -5,6 +5,40 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-05-29
+
+> **Monetization pivot → single 10 € lifetime, export-only paywall.**
+> The previous Pro tier (29/89 €/an, 79 € lifetime) gated quality
+> evaluation. This release drops all of that: **everything is free** —
+> scan, IPTC, the full expert report, AI enrichment, dual CSV, FTP —
+> **except the data export**, which Community runs 3 times for free,
+> then unlocks forever with a **10 € one-shot lifetime key**.
+
+### Changed
+- **Single paid tier.** `Tier` collapses to `COMMUNITY` + `LIFETIME`
+  (dropped `PRO_SOLO` / `PRO_STUDIO`). `PRO_FEATURES = {"data_export"}`.
+- **The paywall is the export run, not the analysis.** The expert
+  report, AI enrichment and dual-platform CSV are now free and unlimited.
+- **Quota moved from the expert report to the export.**
+  `COMMUNITY_EXPORT_QUOTA = 3`; facade exposes `export_quota_remaining()`
+  / `consume_export_quota()` / `reset_export_quota()` (settings key
+  `community_exports_used`). Both export entry points (Export Batch and
+  the expert report's CSV button) share the counter.
+- **UI.** Export Batch shows a live export-quota banner + upsell at
+  Start; all "🔒 Pro" labels on dual CSV / AI / batch are gone.
+- **Pricing → 10 € lifetime** across README, settings, keygen and docs.
+
+### Removed
+- `Tier.PRO_SOLO`, `Tier.PRO_STUDIO`, the multi-feature `PRO_FEATURES`
+  set (expert_report / dual_csv_export / ai_enrichment / batch_unlimited
+  / roadmap flags) and the Community batch cap (50).
+
+### Tests
+- `test_licensing.py` + `test_freemium_journey.py` rewritten around the
+  export quota and the single lifetime tier. Suite green, ruff clean.
+
+---
+
 ## [2.1.0] — 2026-05-27
 
 > **Pivot Pro = évaluation qualité.** The previous Pro tier targeted

@@ -10,14 +10,15 @@
 
 - **Nom** : ShutterstockAnalyzer (alias *Shutterstock AI Metadata Generator*)
 - **Pitch** : générateur local de métadonnées microstock (Adobe Stock +
-  Shutterstock) avec IA optionnelle via Ollama. **Freemium dual-edition**
-  depuis v2.1 : Community gratuit (workflow IPTC complet) +
-  Pro 29 €/an (évaluation qualité auto + dual CSV + IA Ollama).
-- **Version actuelle** : `v2.1.0` (pivot Pro = évaluation qualité)
-- **Statut** : **stable, monétisation amorçable** (120 tests verts,
-  2 EXE PyInstaller, dossier de qualification IHM, mécanique de
-  licence + gates UI livrés). Reste avant ship public : assets visuels
-  + listing Gumroad (~ 3,5 j-h).
+  Shutterstock) avec IA optionnelle via Ollama. **Freemium** depuis
+  v2.2 : **tout est gratuit** (scan, IPTC, rapport expert, IA, dual CSV,
+  FTP) ; **seul l'export de données est payant** — 3 exports gratuits
+  puis clé à vie **10 € (paiement unique)**.
+- **Version actuelle** : `v2.2.0` (pivot monétisation = export-only, 10 € à vie)
+- **Statut** : **stable, monétisation amorçable** (121 tests verts,
+  EXE PyInstaller, dossier de qualification IHM, mécanique de
+  licence + gate export + UI livrés). Reste avant ship public : assets
+  visuels + listing Gumroad 10 €.
 
 ---
 
@@ -233,19 +234,21 @@ main.py  →  app.main:main()
 - **Anti-stuffing keywords codé en dur** — listes statiques `BRAND_KEYWORDS`
   + `STUFFING_KEYWORDS` dans `src/modules/analysis/expert_report.py`.
   Le prompt IA les répète aussi, défense en profondeur.
-- **Pro = évaluation qualité** (pivot 2026-05-27) — la frontière Pro
-  porte sur le rapport expert, l'export dual CSV et l'enrichissement
-  IA, **pas** sur des add-ons batch/scheduling. Raison : ces features
-  sont déjà codées, donc 0 dev supplémentaire pour monétiser, et la
-  valeur perçue (« je sais quelle image vaut le coup ») est immédiate
-  pour l'acheteur. Voir `docs/MONETIZATION.md` § 2.1.
-- **Quota Community 2 aperçus** sur le rapport expert — persisté dans
-  la table `settings` SQLite. Choix du nombre : 1 = trop frustrant /
-  3+ = dilue la valeur perçue. À ajuster vers 1 ou 3 si la conversion
-  observée est < 5 % après 100 essayeurs.
-- **HMAC honor-system maintenu** — ed25519 sur la roadmap v2.2.0.
-  Le contournement reste possible mais le public cible (photographes
-  pro 29-89 €/an) paie par convenance, pas par incapacité technique.
+- **Monétisation = export-only, 10 € à vie** (pivot 2026-05-29, v2.2.0)
+  — **supersede** le pivot « Pro = évaluation qualité » du 2026-05-27.
+  La seule fonctionnalité payante est désormais l'**export de données**
+  (`data_export`) ; tout le reste (rapport expert, IA, dual CSV, FTP)
+  est gratuit et illimité. Un seul tier : `lifetime` à 10 € (paiement
+  unique — plus d'abonnement ni de Solo/Studio). Raison : zéro barrière
+  à l'adoption, prix d'impulsion, conversion au moment où l'utilisateur
+  a déjà produit ses CSV. Voir `docs/MONETIZATION.md` § 2.
+- **Quota Community 3 exports** sur l'export de données — persisté dans
+  `settings` SQLite (`community_exports_used`). Partagé par les deux
+  points d'export (Export Batch + bouton CSV du rapport expert).
+  À ajuster vers 2 si la conversion est faible.
+- **HMAC honor-system maintenu** — ed25519 sur la roadmap. Le
+  contournement reste possible mais à 10 € one-shot le coût de cracker
+  dépasse le prix : le public paie par convenance.
 
 ---
 
@@ -303,4 +306,4 @@ main.py  →  app.main:main()
 
 ---
 
-*Dernière mise à jour : 2026-05-27 (v2.1.0 — pivot Pro = évaluation qualité).*
+*Dernière mise à jour : 2026-05-29 (v2.2.0 — pivot monétisation = export-only, 10 € à vie).*

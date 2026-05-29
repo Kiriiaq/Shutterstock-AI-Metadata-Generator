@@ -103,28 +103,27 @@ falls back to the heuristic builder transparently.
 
 ## Editions
 
-Since v2.1, the app ships as a freemium dual-edition. **Community is
-free forever** and covers the metadata workflow end-to-end ; **Pro
-(29 €/an or 79 € lifetime)** unlocks the automated quality evaluation.
+The app ships as a freemium build unlocked by a key. **Community is free
+forever** and includes the *entire* analysis workflow — scan, IPTC
+editor, the multi-section expert report, AI enrichment, the
+dual-platform CSV layout, FTP push. The only metered thing is the
+**data export**: Community gets **3 free export runs**, then the **Pro
+key (10 € — lifetime, one-shot)** unlocks unlimited exports.
 
-| Feature | Community | Pro |
+| Feature | Community | Pro (10 € à vie) |
 |---|:---:|:---:|
 | Scan folder + multi-select | ✅ | ✅ |
 | IPTC read / write (manual editor) | ✅ | ✅ |
-| Single-platform CSV export (Adobe **or** Shutterstock) | ✅ | ✅ |
-| Pre-upload validation, history, theme | ✅ | ✅ |
-| FTP / FTPS push (single, post-export) | ✅ | ✅ |
-| **Expert report** — 4 scores + risks + improvements + marketing uses | 🎁 2 teasers | ✅ unlimited |
-| **Dual CSV export** (Adobe + Shutterstock side-by-side) | 🔒 | ✅ |
-| **AI enrichment** via local Ollama vision models | 🔒 | ✅ |
-| **Anti-stuffing** (brand + keyword padding filters) | 🔒 | ✅ |
-| **Batch > 50 images per run** | 🔒 | ✅ |
+| Expert report — 4 scores + risks + improvements + marketing uses | ✅ | ✅ |
+| AI enrichment via local Ollama vision models | ✅ | ✅ |
+| Dual-platform CSV layout (Adobe + Shutterstock) | ✅ | ✅ |
+| Pre-upload validation, history, theme, FTP / FTPS push | ✅ | ✅ |
 | Cross-platform compliance hints (Adobe 4–100 MP, Shutterstock 4 MP+ / 50 MB) | ✅ | ✅ |
+| **Data export** (write the CSV your stock platforms ingest) | 🎁 3 free runs | ✅ unlimited |
 
 Pro is activated by pasting a JSON licence key into **Settings → Licence**.
-Works offline forever ; annual tier requires renewal, lifetime is one-shot.
-See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the rationale,
-pricing rationale and roadmap.
+One-shot **10 €** payment, works offline forever, no subscription.
+See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the rationale.
 
 ---
 
@@ -285,11 +284,11 @@ changes, open an issue first.
 The Community edition (everything described above as ✅) is free for
 personal and commercial use under MIT.
 
-The **Pro edition** (🎁 / 🔒 rows in the Editions table) unlocks the
-quality evaluation bundle — expert report, dual CSV export, AI
-enrichment, batch > 50 — under a separate commercial licence sold via
-Gumroad. 29 €/an or 79 € lifetime, key activated locally with HMAC
-signature verification.
+The **Pro edition** unlocks **unlimited data export** (Community runs the
+export 3 times for free). Everything else — scan, IPTC, expert report,
+AI enrichment, dual-platform CSV, FTP — is free. Sold via Gumroad as a
+**10 € one-shot lifetime key**, activated locally with HMAC signature
+verification.
 
 See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the full
 breakdown.
