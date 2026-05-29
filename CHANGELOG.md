@@ -78,6 +78,26 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `src/modules/licensing/license.py`). The ed25519 hardening path
   remains on the v2.2.0 roadmap.
 
+### Fixed
+- **Single source of truth for the version.** `src/__init__.py` still
+  declared `__version__ = "2.0.0"` while `pyproject.toml`, `build.py`
+  and both UI title bars read `2.1.0`. The package `__version__` is now
+  canonical — `build.py` and `app/i18n/fr.py` derive from it, and
+  `tests/test_core/test_version.py` fails the suite if they ever drift.
+- **Licence test isolation.** An autouse fixture redirects
+  `DEFAULT_LICENSE_PATH` to a tmp file, so running the suite can no
+  longer overwrite or delete a real `~/.shutterstock_ai/license.json`.
+
+### Removed
+- **Dead `src/utils/splash_screen.py`** — never wired into the app
+  (`main.py` opens the window directly). Dropped with its smoke-test
+  import line.
+
+### Tests (release finalization)
+- `test_freemium_journey.py` — end-to-end Community → quota exhausted →
+  activate Pro → unlock → deactivate, plus a tampered-key rejection
+  path. `test_version.py` — version-consistency guard. **Suite: 126.**
+
 ---
 
 ## [2.0.0] — 2026-05-19

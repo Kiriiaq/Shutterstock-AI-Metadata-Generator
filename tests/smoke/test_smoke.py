@@ -209,7 +209,6 @@ def test_src_package_imports():
         "src.modules.models.metadata_models",
         "src.utils.validators",
         "src.utils.file_utils",
-        "src.utils.splash_screen",
     ]:
         importlib.import_module(mod)
 
