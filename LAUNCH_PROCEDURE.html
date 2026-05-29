@@ -284,7 +284,7 @@
       <input type="checkbox" data-key="tech_pro" checked disabled>
       <div class="text">
         <div class="what">Pipeline licences Pro fonctionnel</div>
-        <div class="why">HMAC-signed keys, facade .license, UI Settings → Licence, gates expert_report (2 teasers) + dual_csv_export + ai_enrichment + batch &gt; 50, generate_license.py CLI</div>
+        <div class="why">HMAC-signed keys, facade .license, UI Settings → Licence, gate data_export (3 exports gratuits puis clé 10 € à vie), generate_license.py CLI</div>
       </div>
     </div>
     <div class="check-row done">
@@ -490,8 +490,8 @@ python tools\take_screenshots.py</pre>
     <div class="check-row">
       <input type="checkbox" data-key="c2_product">
       <div class="text">
-        <div class="what">Créer 3 produits ou 1 produit avec 3 tiers</div>
-        <div class="why">Pro Solo 29 €/an · Pro Studio 89 €/an · Lifetime 79 € unique</div>
+        <div class="what">Créer 1 produit « ShutterstockAnalyzer Pro »</div>
+        <div class="why">Tier unique : 10 € à vie (paiement unique) — débloque l'export de données illimité</div>
       </div>
     </div>
 
@@ -505,26 +505,19 @@ python tools\take_screenshots.py</pre>
       <h4>Description longue</h4>
       <div class="body">Stop spending 5-10 minutes writing titles, descriptions and keywords for each microstock image. ShutterstockAnalyzer Pro generates the lot in seconds, 100% locally, no cloud API costs.
 
-<strong>What you get</strong>
-✓ Adobe Stock + Shutterstock CSV export (single or both, one click)
+<strong>Everything below is free</strong>
+✓ Scan + multi-select, IPTC read/write editor
 ✓ Expert metadata report — 4 scores (commercial / technical / SEO / rejection risk) + improvements + marketing uses
 ✓ AI enrichment via local Ollama (LLaMA Vision, LLaVA, Moondream — no API keys, no telemetry)
-✓ Dual CSV export — Adobe Stock + Shutterstock side-by-side in one click
-✓ Direct FTP / FTPS push to your contributor portal
+✓ Dual-platform CSV layout — Adobe Stock + Shutterstock side-by-side
+✓ Direct FTP / FTPS push, pre-upload validation, history
 ✓ IPTC write-back opt-in (your originals untouched if you prefer)
 
-<strong>Why Pro</strong>
-The Community edition (free, MIT) covers the basic metadata workflow — scan, IPTC edit, single-platform CSV, FTP push — and offers 2 free expert-report previews so you can taste the value. Pro unlocks the full quality evaluation bundle:
-✓ Unlimited expert reports (4 scores + risks + improvements + marketing uses, per image)
-✓ Dual CSV export (Adobe + Shutterstock side-by-side, instead of one at a time)
-✓ AI enrichment via local Ollama vision models
-✓ Automatic anti-stuffing (brand + keyword padding filters)
-✓ Batch &gt; 50 images per run
-✓ Roadmap : FTP scheduling, multi-account FTP, custom IPTC templates
-✓ Priority email support (48h SLA)
+<strong>What Pro unlocks — 10 €, one-shot, lifetime</strong>
+The whole tool above is free. The only metered thing is the <strong>data export</strong>: Community runs the export 3 times for free, then the 10 € lifetime key unlocks <strong>unlimited exports</strong> — forever, offline, no subscription, no renewal.
 
 <strong>Once you purchase</strong>
-You'll receive a JSON license key by email. Paste it into the app via Settings → Licence → Activer. Works offline forever (annual tier requires renewal; lifetime is one-shot).
+You'll receive a JSON license key by email. Paste it into the app via Settings → Licence → Activer. One-shot 10 € payment, works offline forever.
 
 <strong>System requirements</strong>
 Windows 10/11 · 4 GB RAM (heuristic mode) · 16 GB RAM + GPU (AI mode, optional)
@@ -559,19 +552,13 @@ Free download of the Community edition: <em>github.com/Kiriiaq/Shutterstock-AI-M
     <h4>Workflow manuel (recommandé au démarrage)</h4>
     <ol>
       <li>Réception email Gumroad « New sale ».</li>
-      <li>Noter l'email client + le tier acheté (Pro Solo / Studio / Lifetime).</li>
+      <li>Noter l'email client (tier unique : lifetime).</li>
       <li>Générer la clé :</li>
     </ol>
     <div class="code-wrap">
-      <pre># Pro Solo (29 €/an)
-python tools\generate_license.py --email CLIENT@EMAIL.COM --tier pro_solo --output keys\client_2026.json
-
-# Pro Studio (89 €/an)
-python tools\generate_license.py --email CLIENT --tier pro_studio --output keys\xxx.json
-
-# Lifetime (79 € unique)
-python tools\generate_license.py --email CLIENT --tier lifetime --output keys\xxx.json</pre>
-      <button class="copy-btn" data-copy="python tools\generate_license.py --email CLIENT@EMAIL.COM --tier pro_solo --output keys\client_2026.json">Copier</button>
+      <pre># Tier unique : lifetime (10 € à vie, sans expiration)
+python tools\generate_license.py --email CLIENT@EMAIL.COM --tier lifetime --output keys\client.json</pre>
+      <button class="copy-btn" data-copy="python tools\generate_license.py --email CLIENT@EMAIL.COM --tier lifetime --output keys\client.json">Copier</button>
     </div>
 
     <p>Puis envoyer l'email avec la clé en pièce jointe — template ci-dessous.</p>
@@ -590,15 +577,9 @@ Merci pour votre achat de ShutterstockAnalyzer Pro ! Voici votre clé de licence
 4. Coller dans la zone de texte de l'app.
 5. Cliquer « Activer ».
 
-Vous devriez voir « ✅ Édition Pro Solo · votre@email.com · Expire JJ/MM/AAAA ».
+Vous devriez voir « ✅ Édition Pro — licence à vie · votre@email.com ».
 
-À partir de là, vous débloquez :
-• Le rapport expert illimité (4 scores + risques + améliorations + usages marketing par image)
-• L'export double CSV Adobe Stock + Shutterstock en un clic
-• L'enrichissement IA via Ollama (LLaMA Vision, LLaVA…)
-• L'anti-stuffing automatique des mots-clés
-• Le batch illimité (au-delà de 50 images par run)
-• Le support prioritaire (réponse sous 48 h ouvrées)
+À partir de là, vous débloquez l'<strong>export de données illimité</strong> (CSV Adobe Stock + Shutterstock), à vie. Tout le reste de l'outil (rapport expert, IA Ollama, dual CSV, push FTP) était déjà gratuit en Community.
 
 <strong>En cas de problème :</strong> répondez à ce mail, je réponds sous 48 h ouvrées.
 
@@ -847,16 +828,8 @@ Emmanuel</div>
         <input type="text" value="ShutterstockAnalyzer Pro" id="var-name">
       </div>
       <div class="var-row">
-        <label>Prix Pro Solo</label>
-        <input type="text" value="29 € / an" id="var-price-solo">
-      </div>
-      <div class="var-row">
-        <label>Prix Pro Studio</label>
-        <input type="text" value="89 € / an (≤ 5 postes)" id="var-price-studio">
-      </div>
-      <div class="var-row">
-        <label>Prix Lifetime</label>
-        <input type="text" value="79 € unique" id="var-price-life">
+        <label>Prix Pro (à vie)</label>
+        <input type="text" value="10 € — paiement unique" id="var-price-life">
       </div>
       <div class="var-row">
         <label>URL Gumroad (slug)</label>

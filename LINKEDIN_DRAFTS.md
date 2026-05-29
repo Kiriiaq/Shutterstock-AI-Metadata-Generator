@@ -1,13 +1,14 @@
-# LinkedIn / Réseaux sociaux — drafts v2.1.0
+# LinkedIn / Réseaux sociaux — drafts v2.2.0
 
 > 3 formats prêts à copier-coller. Adapter le lien GitHub avant publication.
 > Audience : developers + photographes microstock + recruteurs tech.
 >
-> **Pivot v2.1.0 (2026-05-27)** — les drafts pivotent du pitch « 80 % de
-> la valeur sans IA » (pure-tech) au pitch « évaluation qualité de tes
-> images en local » (acheteur). Le freemium est explicite : Community
-> couvre le workflow IPTC complet ; Pro 29 €/an débloque l'évaluation
-> (rapport expert, dual CSV, IA Ollama, batch illimité).
+> **Pivot v2.2.0 (2026-05-29)** — modèle simplifié : **tout l'outil est
+> gratuit** (scan, IPTC, rapport expert, IA, dual CSV, FTP) ; on paie
+> **10 € une seule fois, à vie**, uniquement pour débloquer l'**export
+> de données illimité** (3 exports gratuits avant). Angle : « essaie
+> tout gratuitement, paie un prix d'impulsion quand tu veux exporter
+> ton catalogue ».
 
 ---
 
@@ -17,17 +18,17 @@
 > jet d'amorçage. À publier le jour J du tag v2.1.0.
 
 ```text
-🏷 ShutterstockAnalyzer v2.1 — un outil local pour évaluer la qualité de tes images microstock avant de les envoyer.
+🏷 ShutterstockAnalyzer v2.2 — un outil local pour préparer et noter tes images microstock avant de les envoyer.
 
 Le problème : un contributeur Adobe Stock / Shutterstock passe 5-10 minutes par image à écrire titre, description, mots-clés, catégories — sans savoir laquelle vaut le coup d'uploader. Pour 50 photos par semaine, c'est 5h de saisie + 0 visibilité commerciale.
 
 Ma solution, 100 % locale, sans cloud :
-✅ Édition Community (MIT, gratuite) — scan, édition IPTC, export CSV mono-plateforme, push FTP. Le workflow de base, end-to-end. + 2 aperçus gratuits du rapport expert pour tester.
-✅ Édition Pro (29 €/an ou 79 € lifetime) — rapport expert illimité (4 scores : commercial / technique / SEO / risque rejet), dual CSV Adobe + Shutterstock simultané, enrichissement IA via Ollama (LLaMA Vision, LLaVA), anti-stuffing automatique, batch > 50 images.
+✅ Tout est gratuit — scan, édition IPTC, rapport expert (4 scores : commercial / technique / SEO / risque rejet), enrichissement IA via Ollama (LLaMA Vision, LLaVA), dual CSV Adobe + Shutterstock, push FTP. L'outil complet, end-to-end.
+✅ Le seul truc payant : l'export de données. 3 exports gratuits, puis 10 € une fois (à vie) pour exporter ton catalogue sans limite. Zéro abonnement.
 
-Stack : Python 3.11 + CustomTkinter, ~20 000 LOC, 120 tests verts, EXE PyInstaller 25 Mo. HMAC pour les licences, zéro télémétrie, zéro photo qui quitte ta machine.
+Stack : Python 3.11 + CustomTkinter, ~20 000 LOC, 121 tests verts, EXE PyInstaller 25 Mo. HMAC pour les licences, zéro télémétrie, zéro photo qui quitte ta machine.
 
-1 enseignement : monétiser ce qui apporte un *jugement* (les scores) plutôt qu'un cap technique (batch ∞). Le user paie pour l'expertise, pas pour la levée d'un quota.
+1 enseignement : tout offrir gratuitement pour lever la barrière à l'adoption, et ne facturer qu'un geste à forte intention — l'export en masse — à un prix d'impulsion (10 €). Le user a déjà vu la valeur avant de payer.
 
 👉 Code + EXE : [LIEN_GITHUB]
 👉 Pro : [LIEN_GUMROAD]
@@ -218,11 +219,10 @@ Heuristique d'abord, IA en option.
 Disponible maintenant.
 
 [Bullet list]
-🆓 Édition Community — gratuite, MIT, MicroStock complet
-   + 2 aperçus gratuits du rapport expert
-💼 Édition Pro — 29 €/an ou 79 € à vie
-   Rapport expert illimité, dual CSV, IA Ollama,
-   anti-stuffing, batch > 50
+🆓 Tout gratuit — scan, IPTC, rapport expert, IA Ollama,
+   dual CSV, FTP. L'outil complet. + 3 exports gratuits.
+💼 Pro — 10 € à vie (paiement unique)
+   Débloque l'export de données illimité. Zéro abonnement.
 
 [Bloc CTA]
 ⭐ github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator
@@ -298,16 +298,12 @@ Si tu fais du microstock ou si tu shipes des outils desktop en Python : je suis 
 
 ### « Le code est open-source mais il y a une version Pro ? »
 
-> Oui — dual-license. Le core est MIT (gratuit, hackable, redistribuable)
-> et couvre tout le workflow de base : scan, édition IPTC, export CSV
-> mono-plateforme, push FTP. Tu as aussi 2 aperçus gratuits du rapport
-> expert pour tester la valeur. La version Pro (29 €/an ou 79 € à vie)
-> débloque le rapport expert illimité — c'est le module qui te dit
-> *pourquoi* une image vaut le coup d'uploader, avec 4 scores et des
-> améliorations concrètes — ainsi que l'export dual Adobe+Shutterstock
-> simultané, l'enrichissement IA via Ollama local, et le batch > 50
-> images. Tu paies pour le jugement automatisé, pas pour la levée d'un
-> quota technique.
+> Oui — le core est MIT (gratuit, hackable, redistribuable) et couvre
+> **tout l'outil** : scan, édition IPTC, rapport expert (4 scores), IA
+> Ollama, dual CSV Adobe+Shutterstock, push FTP. La seule chose payante
+> est l'**export de données** : 3 exports gratuits, puis une clé à vie à
+> **10 € (paiement unique)** pour exporter sans limite. Tu paies un geste
+> à forte intention (sortir ton catalogue), pas l'accès aux fonctions.
 
 ### « Tu acceptes les PRs ? »
 
