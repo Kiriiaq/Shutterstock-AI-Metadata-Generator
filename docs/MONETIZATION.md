@@ -129,7 +129,10 @@ similaires sur Gumroad, segments < 100 €) :
 
 - **Trafic mensuel cible mois 1-3** : 200 visiteurs uniques (post LinkedIn + Reddit)
 - **Conversion visiteur → essai gratuit** : 5 % → 10 essais / mois
-- **Conversion essai → Pro Solo** : 15 % → 1,5 paying customers / mois × 29 €
+- **Conversion essai → Pro (10 € à vie)** : prix d'impulsion → viser une
+  conversion plus élevée mais un panier plus faible (10 € vs 29 €). Les
+  €-figures du tableau ci-dessous sont une estimation **pré-pivot** (29 €)
+  à recalibrer : à 10 €, miser sur le volume.
 - **Croissance mois 4-12** : ×3 → ~ 5 customers / mois mois 12
 
 | Période | Customers payants nets | Revenu mensuel | Cumul |

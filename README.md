@@ -251,10 +251,11 @@ Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
 - ✅ FTP / FTPS push (v2.0.0)
 - ✅ Ollama model selection + preload (v2.0.0)
 - ✅ Heuristic-only expert report (no AI required) (v2.0.0)
-- ✅ Pro tier — quality evaluation, dual CSV, AI enrichment, batch > 50 (v2.1.0)
-- 🟡 FTP scheduling (Pro) — background recurring push
-- 🟡 Multi-account FTP (Pro) — Adobe + Shutterstock simultaneous
-- 🟡 Custom IPTC templates (Pro)
+- ✅ Quality evaluation, dual CSV, AI enrichment — now all free (v2.1.0 → v2.2.0)
+- ✅ Pro = unlimited data export, 10 € one-shot lifetime key (v2.2.0)
+- 🟡 FTP scheduling — background recurring push
+- 🟡 Multi-account FTP — Adobe + Shutterstock simultaneous
+- 🟡 Custom IPTC templates
 - 🟡 macOS / Linux EXE
 - 🟡 Built-in demo GIF + screencast
 - 🟡 Drag & drop into Sources panel
