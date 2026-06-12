@@ -175,7 +175,6 @@ BUYER_PROFILES: Dict[str, List[str]] = {
     "Education": ["éditeur scolaire", "organisme de formation", "ed-tech"],
     "Beauty/Fashion": ["marque mode", "e-commerce", "magazine lifestyle"],
     "Buildings/Landmarks": ["office du tourisme", "agence immobilière", "presse architecture"],
-    "Technology;": ["SaaS", "agence digitale"],
 }
 
 DEFAULT_BUYER_PROFILES = ["agence marketing", "blog éditorial", "presse en ligne"]

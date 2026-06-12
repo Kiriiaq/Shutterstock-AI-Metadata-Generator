@@ -490,6 +490,13 @@ class WorkspaceView(BaseView):
 
     def _on_sources_appended(self, new_rows: list[dict[str, Any]], folder: Path | None) -> None:
         """Met à jour le modèle + la table avec les nouvelles lignes."""
+        # Re-dédoublonnage sur le main thread : deux workers lancés coup
+        # sur coup (double-clic « + Dossier… ») figent le même instantané
+        # de ``_scanned`` et peuvent donc rapporter les mêmes chemins
+        # (audit B-07). Le filtre du worker reste utile (gros volumes),
+        # celui-ci est l'arbitre final.
+        current = {r["_path"] for r in self._scanned}
+        new_rows = [r for r in new_rows if r["_path"] not in current]
         self._scanned.extend(new_rows)
         self._sources_table.set_rows(self._scanned)
         self._scan_btn.configure(state="normal", text="Scanner")

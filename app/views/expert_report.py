@@ -295,16 +295,32 @@ class ExpertReportView(BaseView):
         if not self._export_unlocked() and api.export_quota_remaining() <= 0:
             self._show_export_upsell()
             return
+
+        # The file dialog must run on the Tk main thread — ask first,
+        # then hand the heavy work (extra report builds = one PIL probe
+        # + one ExifTool subprocess per file) to a worker thread. The
+        # previous inline loop froze the UI for seconds on large
+        # selections (audit B-06).
+        out_dir = filedialog.askdirectory(title="Dossier d'export CSV")
+        if not out_dir:
+            return
+
+        selected = self.app.app_state.get("selected_paths") or []
+        self._export_btn.configure(state="disabled", text="Export en cours…")
+        threading.Thread(
+            target=self._export_csv_worker,
+            args=(api, Path(out_dir), [Path(p) for p in selected]),
+            daemon=True,
+        ).start()
+
+    def _export_csv_worker(self, api: Any, out_dir: Path, selected: List[Path]) -> None:
+        """Build missing reports + write both CSVs off the main thread."""
         # Multi-file: prefer the workspace selection if any, else the
         # single current report.
-        selected = self.app.app_state.get("selected_paths") or []
         reports = [self._report]
         if selected and len(selected) > 1:
-            # Build the missing reports inline — the user is already
-            # waiting for the file dialog.
             extras: List[Any] = []
             for p in selected:
-                p = Path(p)
                 if p == self._target_path:
                     continue
                 try:
@@ -313,16 +329,21 @@ class ExpertReportView(BaseView):
                     logger.warning("build_expert_report skipped for %s", p, exc_info=True)
             reports = [self._report, *extras]
 
-        out_dir = filedialog.askdirectory(title="Dossier d'export CSV")
-        if not out_dir:
-            return
         try:
-            result = api.export_double_csv(reports, Path(out_dir), basename="metadata")
+            result = api.export_double_csv(reports, out_dir, basename="metadata")
         except Exception as exc:  # noqa: BLE001
             logger.exception("export_double_csv failed")
-            self.app.toasts.show(f"Échec export : {exc}", kind="error")
+            self.after(0, lambda e=str(exc): self._on_export_failed(e))
             return
+        self.after(0, lambda r=result: self._on_export_done(r))
 
+    def _on_export_failed(self, error: str) -> None:
+        self._export_btn.configure(state="normal", text="Exporter CSV (Adobe + Shutterstock)…")
+        self.app.toasts.show(f"Échec export : {error}", kind="error")
+
+    def _on_export_done(self, result: Any) -> None:
+        self._export_btn.configure(state="normal", text="Exporter CSV (Adobe + Shutterstock)…")
+        api = self.app.api
         remaining_msg = ""
         if not self._export_unlocked():
             remaining = api.consume_export_quota()

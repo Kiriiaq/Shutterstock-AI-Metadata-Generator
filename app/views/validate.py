@@ -50,13 +50,17 @@ class ValidateView(BaseView):
 
         files = list(self.app.app_state.get("scanned_images") or [])
         if not files:
+            # Le bouton ferme la modale pour rendre la main au panneau
+            # Sources du workspace. (L'ancien ``navigate_to("sources")``
+            # visait une route jamais enregistrée — seul ``home`` existe —
+            # et ne faisait donc rien ; audit B-03.)
             EmptyState(
                 self,
                 icon="✓",
                 title="Aucune image à valider",
                 subtitle="Scannez d'abord un dossier dans Sources et tri.",
-                action_label="Aller à Sources",
-                on_action=lambda: self.app.router.navigate_to("sources"),
+                action_label="Fermer et aller à Sources",
+                on_action=lambda: self.winfo_toplevel().destroy(),
             ).grid(row=0, column=0, sticky="nsew")
             return
 

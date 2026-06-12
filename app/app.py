@@ -228,6 +228,12 @@ class App(ctk.CTk):
 
         body = ctk.CTkFrame(inner, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=SPACE_LG, pady=(0, SPACE_LG))
+        # Poids de grille pour les builders qui posent leurs widgets via
+        # ``grid(sticky="nsew")`` (détails d'audit) — sans eux la cellule
+        # ne s'étire pas et la textbox reste minuscule (audit B-08). Sans
+        # effet pour les builders qui utilisent ``pack`` (validation).
+        body.grid_columnconfigure(0, weight=1)
+        body.grid_rowconfigure(0, weight=1)
         try:
             builder(body)
         except Exception:
