@@ -1,27 +1,8 @@
 """
-Utils module - File utilities and validators.
+Utils module.
+
+Only ``subprocess_helper`` remains — the v1 ``file_utils`` /
+``validators`` modules were unused by the v2 app (the engines and the
+worker pool carry their own equivalents) and were removed in the
+2026-06-12 audit. Recover from git history if ever needed.
 """
-
-from .file_utils import (
-    IMAGE_EXTENSIONS,
-    collect_image_files,
-    compute_file_hash,
-    get_file_size_mb,
-    is_valid_image_extension,
-)
-from .validators import (
-    validate_file_size,
-    validate_image_dimensions,
-    validate_metadata_completeness,
-)
-
-__all__ = [
-    "collect_image_files",
-    "compute_file_hash",
-    "get_file_size_mb",
-    "is_valid_image_extension",
-    "IMAGE_EXTENSIONS",
-    "validate_image_dimensions",
-    "validate_file_size",
-    "validate_metadata_completeness",
-]

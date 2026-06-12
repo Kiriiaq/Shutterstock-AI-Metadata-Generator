@@ -156,35 +156,11 @@ def test_ollama_status_enum():
     assert OllamaStatus.BUSY.value == "busy"
 
 
-def test_validators_dimensions():
-    from src.utils.validators import validate_image_dimensions
-
-    ok, err = validate_image_dimensions(3000, 2000, min_megapixels=4.0)
-    assert ok is True
-    assert err is None
-
-    ok, err = validate_image_dimensions(500, 500, min_megapixels=4.0)
-    assert ok is False
-    assert err and "low" in err.lower()
-
-
-def test_shutterstock_params_serialization():
-    from src.core.params import ShutterstockParams
-
-    params = ShutterstockParams(source_folder="/tmp/photos")
-    data = params.to_dict()
-    assert data["source_folder"] == "/tmp/photos"
-    restored = ShutterstockParams.from_dict(data)
-    assert restored.source_folder == "/tmp/photos"
-
-
 def test_src_package_imports():
     """Catch missing modules / circular imports across the active surface."""
     import importlib
 
     for mod in [
-        "src.core.params",
-        "src.core.config_manager",
         "src.modules.integration",
         "src.modules.storage.database",
         "src.modules.workers.worker_pool",
@@ -195,8 +171,7 @@ def test_src_package_imports():
         "src.modules.ai.vision_analyzer",
         "src.modules.ai.prompt_templates",
         "src.modules.models.metadata_models",
-        "src.utils.validators",
-        "src.utils.file_utils",
+        "src.utils.subprocess_helper",
     ]:
         importlib.import_module(mod)
 
