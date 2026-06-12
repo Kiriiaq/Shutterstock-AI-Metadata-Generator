@@ -474,8 +474,12 @@ class WorkspaceView(BaseView):
                 except Exception:
                     pass
                 if reader is not None:
+                    # ``has_metadata`` sonde le vrai bloc IPTC. L'ancien
+                    # appel (``get_quick_info``) retourne largeur/hauteur
+                    # pour TOUTE image lisible → la colonne affichait
+                    # « Oui » même sans la moindre métadonnée (audit B-02).
                     try:
-                        row["meta"] = "Oui" if reader.get_quick_info(f) else "Non"
+                        row["meta"] = "Oui" if reader.has_metadata(f).get("iptc") else "Non"
                     except Exception:
                         row["meta"] = "?"
                 new_rows.append(row)
