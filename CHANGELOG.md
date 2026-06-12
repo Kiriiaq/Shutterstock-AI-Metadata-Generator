@@ -5,6 +5,49 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+> **Audit complet 2026-06-12** (branche `audit/2026-06-12`) — scan
+> intégral du code, 2 bugs majeurs + 7 mineurs corrigés, ~2 800 lignes
+> de code mort v1 retirées. Aucun changement de comportement voulu en
+> dehors des correctifs listés.
+
+### Fixed
+- **« Ignorer si méta » (Analyse IA batch) fonctionne enfin** : la
+  facade pré-filtre les fichiers qui portent déjà un bloc IPTC
+  exploitable (headline + keywords) avant d'appeler le modèle. Avant,
+  l'option était un no-op et toutes les images repassaient à l'IA
+  (B-01). 3 nouveaux tests facade.
+- **Colonne « Méta » des Sources honnête** : sonde le vrai bloc IPTC
+  (`has_metadata`) au lieu d'afficher « Oui » pour tout fichier lisible
+  (B-02).
+- Bouton « Aller à Sources » de la modale Validation (route inexistante
+  → ferme désormais la modale) (B-03).
+- La chip « Édition » de la topbar se rafraîchit immédiatement après
+  activation/retrait d'une licence (B-04).
+- L'export CSV multi-fichiers du Rapport expert ne gèle plus l'UI
+  (construction des rapports déportée en thread) (B-06).
+- Dédoublonnage des ajouts Sources concurrents (B-07) ; textbox des
+  détails d'audit étirable (B-08).
+- Modale « Modèle IA » : passe par la facade, persiste l'URL testée et
+  le modèle choisi, bouton « ⬇ Charger » (le combo n'avait aucun effet)
+  (B-09).
+
+### Removed
+- Code mort v1 (~2 800 lignes, grep-vérifié sans appelant, récupérable
+  via git) : surface inutilisée de la facade (process_folder, diff/
+  comparaison IA, templates wrappers, get_statistics…), handler
+  `ai_analyze` cassé (B-05), `ProcessingPipeline`, suite sidecar XMP du
+  writer, méthodes orphelines IPTCEngine/Database/OllamaClient/
+  VisionAnalyzer, historique back/forward du Router, table SQLite
+  `processing_queue` jamais écrite, et les modules v1 `src/core/` +
+  `src/utils/file_utils|validators` (testés mais jamais utilisés par
+  l'app — tests associés retirés avec eux).
+
+### Docs
+- Docstrings mises à jour (licence 10 € à vie, dataclasses stdlib),
+  commentaire `urllib3` (dépendance transitive épinglée).
+
 ## [2.2.0] — 2026-05-29
 
 > **Monetization pivot → single 10 € lifetime, export-only paywall.**

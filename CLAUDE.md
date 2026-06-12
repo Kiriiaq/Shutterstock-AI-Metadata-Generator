@@ -15,7 +15,9 @@
   FTP) ; **seul l'export de données est payant** — 3 exports gratuits
   puis clé à vie **10 € (paiement unique)**.
 - **Version actuelle** : `v2.2.0` (pivot monétisation = export-only, 10 € à vie)
-- **Statut** : **stable, monétisation amorçable** (121 tests verts,
+  + audit complet 2026-06-12 (branche `audit/2026-06-12`, voir CHANGELOG
+  `[Unreleased]`).
+- **Statut** : **stable, monétisation amorçable** (110 tests verts,
   EXE PyInstaller, dossier de qualification IHM, mécanique de
   licence + gate export + UI livrés). Reste avant ship public : assets
   visuels + listing Gumroad 10 €.
@@ -41,7 +43,7 @@
 ```bash
 pip install -e ".[dev]"                                                # install
 python main.py                                                         # run from source
-pytest tests/ -q                                                       # tests (120)
+pytest tests/ -q                                                       # tests (110)
 ruff check app/ src/ main.py build.py tests/                           # lint
 ruff format app/ src/ main.py build.py tests/                          # format
 python build.py debug | release | all | clean                         # PyInstaller
@@ -168,6 +170,20 @@ main.py  →  app.main:main()
   + gates au Start (toast + status badge explicites).
 - 9 nouveaux tests (`TestPivotFeatures`, `TestCommunityExpertReportQuota`).
   Total suite : **120 verts**.
+
+### Fini (audit 2026-06-12, branche `audit/2026-06-12`)
+- Scan complet du code + rapport d'audit (40 fonctionnalités, 9 bugs).
+- **Lot B** : « Ignorer si méta » du batch IA réparé (pré-filtre IPTC
+  côté facade + 3 tests) ; colonne « Méta » des Sources honnête.
+- **Lot C** : 6 bugs mineurs UI (modale Validation, refresh chip
+  licence, export rapport expert en thread, dédoublonnage Sources,
+  textbox audit, modale Modèle IA refondue via la facade avec
+  persistance URL/modèle + bouton Charger) + docstrings à jour.
+- **Lot D/E** : ~2 800 lignes de code mort v1 supprimées (surface
+  facade inutilisée, ProcessingPipeline, sidecars XMP, `src/core/`,
+  `src/utils/file_utils|validators`, table `processing_queue`,
+  historique Router). Suite : **110 tests verts**, ruff propre.
+  Détail dans CHANGELOG `[Unreleased]`.
 
 ### En cours
 - **Production des assets visuels** — GIF hero, 3 screenshots, vidéo
@@ -306,4 +322,4 @@ main.py  →  app.main:main()
 
 ---
 
-*Dernière mise à jour : 2026-05-29 (v2.2.0 — pivot monétisation = export-only, 10 € à vie).*
+*Dernière mise à jour : 2026-06-12 (audit complet — lots B/C/D/E appliqués, 110 tests verts).*
