@@ -351,33 +351,6 @@ class OllamaClient:
 
         return False
 
-    def unload_model(self) -> bool:
-        """
-        Unload current model from memory
-
-        Returns:
-            True if successful
-        """
-        if not self._current_model:
-            return True
-
-        try:
-            # Ollama automatically unloads after timeout
-            # Force by loading with keep_alive=0
-            requests.post(
-                f"{self.base_url}/api/generate",
-                json={"model": self._current_model, "prompt": "", "keep_alive": 0, "stream": False},
-                timeout=30,
-            )
-
-            self._current_model = None
-            self.status = OllamaStatus.ONLINE
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to unload model: {e}")
-            return False
-
     # ==================== Generation ====================
 
     def generate(

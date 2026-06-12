@@ -1862,6 +1862,3 @@ class WorkspaceView(BaseView):
                 bar.grid_remove()
         except Exception:
             logger.debug("Panel busy toggle failed for %r", busy_id, exc_info=True)
-
-
-_ = SPACE_LG  # keep imported constant for future use

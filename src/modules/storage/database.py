@@ -106,21 +106,6 @@ class Database:
         version INTEGER NOT NULL DEFAULT 1
     );
 
-    -- Processing queue table
-    CREATE TABLE IF NOT EXISTS processing_queue (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        job_id TEXT UNIQUE NOT NULL,
-        file_path TEXT NOT NULL,
-        operations TEXT NOT NULL,
-        priority INTEGER NOT NULL DEFAULT 5,
-        status TEXT NOT NULL DEFAULT 'pending',
-        created_at TEXT NOT NULL,
-        started_at TEXT,
-        completed_at TEXT,
-        result TEXT,
-        error TEXT
-    );
-
     -- Settings table
     CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
@@ -165,7 +150,6 @@ class Database:
     CREATE INDEX IF NOT EXISTS idx_audit_batch_id ON audit_log(batch_id);
     CREATE INDEX IF NOT EXISTS idx_history_file_path ON metadata_history(file_path);
     CREATE INDEX IF NOT EXISTS idx_history_file_hash ON metadata_history(file_hash);
-    CREATE INDEX IF NOT EXISTS idx_queue_status ON processing_queue(status);
     CREATE INDEX IF NOT EXISTS idx_file_status_path ON file_status(file_path);
     CREATE INDEX IF NOT EXISTS idx_file_status_hash ON file_status(file_hash);
 
@@ -190,7 +174,6 @@ class Database:
 
         self.db_path = Path(db_path)
         self._local = threading.local()
-        self._lock = threading.Lock()
 
         # Initialize database
         self._init_database()
@@ -424,30 +407,6 @@ class Database:
 
         return history
 
-    def get_latest_metadata(self, file_path: str, metadata_type: str = "shutterstock") -> Optional[Dict[str, Any]]:
-        """
-        Get the most recent metadata for a file
-
-        Returns:
-            Metadata dict or None
-        """
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT metadata_json FROM metadata_history
-            WHERE file_path = ? AND metadata_type = ?
-            ORDER BY version DESC LIMIT 1
-        """,
-            (file_path, metadata_type),
-        )
-
-        row = cursor.fetchone()
-        if row:
-            return json.loads(row["metadata_json"])
-        return None
-
     # ==================== Settings Methods ====================
 
     def get_setting(self, key: str, default: Any = None) -> Any:
@@ -623,42 +582,6 @@ class Database:
         )
         conn.commit()
 
-    def update_file_status(
-        self,
-        file_path: str,
-        file_hash: str,
-        file_size: int,
-        last_modified: datetime,
-        status: str = "pending",
-        has_metadata: bool = False,
-        has_ai_analysis: bool = False,
-        batch_id: Optional[str] = None,
-    ):
-        """Update or create file status record"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO file_status
-            (file_path, file_hash, file_size, last_modified, status, has_metadata, has_ai_analysis, last_processed, batch_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                file_path,
-                file_hash,
-                file_size,
-                last_modified.isoformat(),
-                status,
-                1 if has_metadata else 0,
-                1 if has_ai_analysis else 0,
-                datetime.now().isoformat(),
-                batch_id,
-            ),
-        )
-
-        conn.commit()
-
     def get_file_status(self, file_path: str) -> Optional[Dict[str, Any]]:
         """Get status for a specific file"""
         conn = self._get_connection()
@@ -670,32 +593,6 @@ class Database:
         if row:
             return dict(row)
         return None
-
-    def get_pending_files(self, batch_id: Optional[str] = None, limit: int = 100) -> List[str]:
-        """Get list of pending files"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-
-        if batch_id:
-            cursor.execute(
-                """
-                SELECT file_path FROM file_status
-                WHERE status = 'pending' AND batch_id = ?
-                LIMIT ?
-            """,
-                (batch_id, limit),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT file_path FROM file_status
-                WHERE status = 'pending'
-                LIMIT ?
-            """,
-                (limit,),
-            )
-
-        return [row["file_path"] for row in cursor.fetchall()]
 
     # ==================== Statistics Methods ====================
 
@@ -739,12 +636,6 @@ class Database:
         if hasattr(self._local, "connection") and self._local.connection:
             self._local.connection.close()
             self._local.connection = None
-
-    def vacuum(self):
-        """Optimize database"""
-        conn = self._get_connection()
-        conn.execute("VACUUM")
-        logger.info("Database vacuumed")
 
     def export_audit_log(self, output_path: Path, format: str = "json") -> int:
         """
