@@ -106,3 +106,109 @@ class TestGetCurrentModel:
         fake_client.current_model = "llava:7b"
         facade.ollama_client = fake_client
         assert facade.get_current_model() == "llava:7b"
+
+
+def _fake_metadata(*, headline, keywords):
+    """ImageMetadata stub matching the _has_complete_iptc criterion."""
+    meta = MagicMock()
+    meta.has_iptc = bool(headline or keywords)
+    meta.iptc.headline = headline
+    meta.iptc.keywords = keywords
+    return meta
+
+
+def _install_fake_analyzer(facade, analyzed_paths):
+    """Stub vision_analyzer whose analyze_batch records the paths it gets
+    and emits one completed result per path (mirrors the real callback
+    contract used by analyze_batch_ai)."""
+    fake_analyzer = MagicMock()
+
+    def fake_batch(paths, **kwargs):
+        analyzed_paths.extend(paths)
+        for p in paths:
+            res = MagicMock()
+            res.status.value = "completed"
+            res.is_successful = True
+            res.to_dict.return_value = {"file_path": str(p), "status": "completed"}
+            kwargs["on_result"](res)
+        return []
+
+    fake_analyzer.analyze_batch.side_effect = fake_batch
+    facade.vision_analyzer = fake_analyzer
+    facade.ollama_client = MagicMock()
+    return fake_analyzer
+
+
+class TestAnalyzeBatchSkipPreFilter:
+    """Audit B-01 — « Ignorer si méta » must actually skip in batch mode.
+
+    VisionAnalyzer.analyze_image only honours skip_if_has_metadata when
+    existing_metadata is supplied, and the batch path never supplies it,
+    so the facade must pre-filter. These tests pin that contract.
+    """
+
+    def test_files_with_complete_iptc_are_skipped(self, facade, tmp_path):
+        file_a = tmp_path / "a.jpg"
+        file_b = tmp_path / "b.jpg"
+        file_a.write_bytes(b"x")
+        file_b.write_bytes(b"x")
+
+        facade.metadata_reader = MagicMock()  # enables the pre-filter
+        full = _fake_metadata(headline="Sunset", keywords=["sky"])
+        facade.read_metadata = MagicMock(
+            side_effect=lambda p: full if p.name == "a.jpg" else None
+        )
+
+        analyzed: list = []
+        _install_fake_analyzer(facade, analyzed)
+
+        seen_results = []
+        summary = facade.analyze_batch_ai(
+            [file_a, file_b],
+            skip_if_has_metadata=True,
+            on_result=seen_results.append,
+        )
+
+        assert summary["skipped"] == 1
+        assert summary["completed"] == 1
+        assert [p.name for p in analyzed] == ["b.jpg"]
+        skipped = [r for r in seen_results if r["status"] == "skipped"]
+        assert len(skipped) == 1 and skipped[0]["file_path"].endswith("a.jpg")
+
+    def test_flag_off_analyzes_everything(self, facade, tmp_path):
+        file_a = tmp_path / "a.jpg"
+        file_a.write_bytes(b"x")
+
+        facade.metadata_reader = MagicMock()
+        facade.read_metadata = MagicMock(
+            return_value=_fake_metadata(headline="T", keywords=["k"])
+        )
+
+        analyzed: list = []
+        _install_fake_analyzer(facade, analyzed)
+
+        summary = facade.analyze_batch_ai([file_a], skip_if_has_metadata=False)
+
+        assert summary["skipped"] == 0
+        assert summary["completed"] == 1
+        assert [p.name for p in analyzed] == ["a.jpg"]
+        facade.read_metadata.assert_not_called()
+
+    def test_partial_iptc_is_not_skipped(self, facade, tmp_path):
+        # Keywords without headline → incomplete → must go through AI.
+        file_a = tmp_path / "a.jpg"
+        file_a.write_bytes(b"x")
+
+        facade.metadata_reader = MagicMock()
+        facade.read_metadata = MagicMock(
+            return_value=_fake_metadata(headline=None, keywords=["k"])
+        )
+
+        analyzed: list = []
+        _install_fake_analyzer(facade, analyzed)
+
+        summary = facade.analyze_batch_ai([file_a], skip_if_has_metadata=True)
+
+        assert summary["skipped"] == 0
+        assert summary["completed"] == 1
+        assert [p.name for p in analyzed] == ["a.jpg"]

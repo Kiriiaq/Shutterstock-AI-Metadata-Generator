@@ -1238,6 +1238,19 @@ class ShutterstockAIv2:
             )
             return {"success": False, "file_path": str(file_path), "error": str(e)}
 
+    def _has_complete_iptc(self, file_path: Path) -> bool:
+        """True when the file already carries a usable IPTC block.
+
+        Same criterion as the single-image path in ``analyze_image_ai``:
+        headline + keywords present. Never raises — unreadable files
+        simply go through the AI pass.
+        """
+        try:
+            existing = self.read_metadata(file_path)
+        except Exception:  # noqa: BLE001
+            return False
+        return bool(existing and existing.has_iptc and existing.iptc.headline and existing.iptc.keywords)
+
     def analyze_batch_ai(
         self,
         file_paths: List[Path],
@@ -1277,10 +1290,51 @@ class ShutterstockAIv2:
         completed = 0
         failed = 0
         skipped = 0
+        total_files = len(file_paths)
+
+        # Pre-filter files that already carry usable IPTC. This must live
+        # here: VisionAnalyzer.analyze_image only honours
+        # skip_if_has_metadata when existing_metadata is supplied, and the
+        # batch path never supplies it — without this pass the checkbox
+        # « Ignorer si méta » would be a no-op (audit B-01).
+        to_analyze: List[Path] = [Path(p) for p in file_paths]
+        if skip_if_has_metadata and self.metadata_reader is not None:
+            to_analyze = []
+            for idx, path in enumerate((Path(p) for p in file_paths), start=1):
+                if self._has_complete_iptc(path):
+                    skipped += 1
+                    self.database.log_action(
+                        ActionType.AI_ANALYSIS,
+                        file_path=str(path),
+                        success=True,
+                        batch_id=batch_id,
+                        details={"message": "Skipped - already has metadata"},
+                    )
+                    result_dict = {
+                        "file_path": str(path),
+                        "status": "skipped",
+                        "title": None,
+                        "description": None,
+                        "keywords": [],
+                        "categories": [],
+                        "editorial": False,
+                        "error": "Already has metadata",
+                        "processing_time_ms": 0,
+                        "model_used": "",
+                    }
+                    results.append(result_dict)
+                    if on_result:
+                        on_result(result_dict)
+                    if on_progress:
+                        on_progress(skipped, total_files, path.name)
+                    self.database.update_batch_progress(batch_id, processed=skipped, failed=0)
+                else:
+                    to_analyze.append(path)
+        pre_skipped = skipped
 
         def progress_callback(progress):
             if on_progress:
-                on_progress(progress.completed, progress.total, progress.current_file)
+                on_progress(progress.completed + pre_skipped, total_files, progress.current_file)
 
         def result_callback(result):
             nonlocal completed, failed, skipped
@@ -1312,13 +1366,15 @@ class ShutterstockAIv2:
                 failed=failed,
             )
 
-        # Run batch analysis
-        self.vision_analyzer.analyze_batch(
-            file_paths,
-            skip_if_has_metadata=skip_if_has_metadata,
-            on_progress=progress_callback,
-            on_result=result_callback,
-        )
+        # Run batch analysis on the remaining files. The skip decision was
+        # already made above, so the analyzer-level flag stays off.
+        if to_analyze:
+            self.vision_analyzer.analyze_batch(
+                to_analyze,
+                skip_if_has_metadata=False,
+                on_progress=progress_callback,
+                on_result=result_callback,
+            )
 
         elapsed = int((time.time() - start_time) * 1000)
 
