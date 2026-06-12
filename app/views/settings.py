@@ -338,6 +338,10 @@ class SettingsView(BaseView):
             self.app.toasts.show(msg, kind="success")
             self._license_textbox.delete("1.0", "end")
             self._refresh_license_status()
+            # Rafraîchit la chip « Édition » de la topbar tout de suite —
+            # sans cet appel elle restait « Gratuite » jusqu'au prochain
+            # poll Ollama (~5 s) ; audit B-04.
+            self.app._on_license_changed()
             try:
                 self._deactivate_btn.configure(state="normal")
             except Exception:
@@ -362,6 +366,7 @@ class SettingsView(BaseView):
         if ok:
             self.app.toasts.show(msg, kind="info")
             self._refresh_license_status()
+            self.app._on_license_changed()
             try:
                 self._deactivate_btn.configure(state="disabled")
             except Exception:

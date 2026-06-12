@@ -1,5 +1,8 @@
 """
-Pydantic models for metadata validation and data structures
+Dataclass models for metadata validation and data structures.
+
+Stdlib ``@dataclass`` only — Pydantic was dropped on purpose to keep
+the PyInstaller bundle small (see CLAUDE.md, décisions techniques).
 """
 
 import re

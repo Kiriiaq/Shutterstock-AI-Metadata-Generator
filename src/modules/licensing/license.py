@@ -15,7 +15,7 @@ The signing secret lives in an env var ``SSA_LICENSE_SECRET`` on the
 maintainer's machine and inside the bundled EXE (compiled as a Python
 constant). HMAC is symmetric, so anyone with the binary can in
 principle extract the secret and forge keys — this is **honour-system
-licensing**, not DRM. Acceptable for a 29 €/an product where the
+licensing**, not DRM. Acceptable for a 10 € one-shot product where the
 target audience pays out of convenience, not out of inability to crack.
 
 Hardening upgrade path (v2.2.0+): replace HMAC with ed25519 (PyNaCl)
