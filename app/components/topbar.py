@@ -257,7 +257,3 @@ class Topbar(ctk.CTkFrame, Themeable):
     # method is kept as an alias for backward compatibility.
     def refresh_theme(self) -> None:
         self.apply_theme()
-
-    # set_breadcrumb is a no-op since the dense atelier removed nav.
-    def set_breadcrumb(self, _label: str) -> None:
-        return None

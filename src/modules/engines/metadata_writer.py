@@ -3,13 +3,12 @@ MetadataWriter - Write EXIF, IPTC, and XMP metadata to image files
 Uses ExifTool for comprehensive metadata writing
 """
 
-import json
 import logging
 import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from ...utils.subprocess_helper import SUBPROCESS_NO_WINDOW
 from ..models.metadata_models import ImageMetadata, IPTCFields, ShutterstockMetadata
@@ -225,89 +224,6 @@ class MetadataWriter:
 
         return self._run_exiftool_write(file_path, args)
 
-    def copy_metadata(self, source_path: Path, dest_path: Path, metadata_types: List[str] = None) -> bool:
-        """
-        Copy metadata from one file to another
-
-        Args:
-            source_path: Source file path
-            dest_path: Destination file path
-            metadata_types: List of types to copy ('exif', 'iptc', 'xmp'), or None for all
-
-        Returns:
-            True if successful
-        """
-        source_path = Path(source_path)
-        dest_path = Path(dest_path)
-
-        if not source_path.exists():
-            raise MetadataWriteError(f"Source file not found: {source_path}")
-        if not dest_path.exists():
-            raise MetadataWriteError(f"Destination file not found: {dest_path}")
-
-        args = ["-tagsFromFile", str(source_path)]
-
-        if metadata_types:
-            for mt in metadata_types:
-                if mt.lower() == "exif":
-                    args.append("-EXIF:all")
-                elif mt.lower() == "iptc":
-                    args.append("-IPTC:all")
-                elif mt.lower() == "xmp":
-                    args.append("-XMP:all")
-        else:
-            args.append("-all:all")
-
-        return self._run_exiftool_write(dest_path, args)
-
-    def clear_metadata(self, file_path: Path, metadata_types: List[str] = None) -> bool:
-        """
-        Clear metadata from a file
-
-        Args:
-            file_path: Path to the image file
-            metadata_types: Types to clear ('exif', 'iptc', 'xmp'), or None for all
-
-        Returns:
-            True if successful
-        """
-        file_path = Path(file_path)
-
-        args = []
-        if metadata_types:
-            for mt in metadata_types:
-                if mt.lower() == "exif":
-                    args.append("-EXIF:all=")
-                elif mt.lower() == "iptc":
-                    args.append("-IPTC:all=")
-                elif mt.lower() == "xmp":
-                    args.append("-XMP:all=")
-        else:
-            args.append("-all=")
-
-        return self._run_exiftool_write(file_path, args)
-
-    def write_batch(self, files_metadata: List[Tuple[Path, IPTCFields]]) -> List[Tuple[Path, bool, Optional[str]]]:
-        """
-        Write metadata to multiple files
-
-        Args:
-            files_metadata: List of (file_path, iptc_data) tuples
-
-        Returns:
-            List of (path, success, error_message) tuples
-        """
-        results = []
-
-        for file_path, iptc in files_metadata:
-            try:
-                success = self.write_iptc(file_path, iptc)
-                results.append((file_path, success, None))
-            except Exception as e:
-                results.append((file_path, False, str(e)))
-
-        return results
-
     def _build_iptc_args(self, iptc: IPTCFields, fields_filter: Optional[List[str]] = None) -> List[str]:
         """Build ExifTool arguments for IPTC fields"""
         args = []
@@ -467,418 +383,6 @@ class MetadataWriter:
             self._dry_run_results.clear()
             logger.info("Dry run mode ENABLED - no files will be modified")
 
-    def restore_backup(self, file_path: Path) -> bool:
-        """
-        Restore original file from backup
-
-        Args:
-            file_path: Path to the modified file
-
-        Returns:
-            True if backup was restored
-        """
-        file_path = Path(file_path)
-        backup_path = file_path.with_suffix(file_path.suffix + "_original")
-
-        if not backup_path.exists():
-            logger.warning(f"No backup found for: {file_path}")
-            return False
-
-        try:
-            # Remove modified file
-            file_path.unlink()
-            # Rename backup to original
-            backup_path.rename(file_path)
-            logger.info(f"Restored backup for: {file_path}")
-            return True
-        except Exception as e:
-            raise MetadataWriteError(f"Failed to restore backup: {e}") from e
-
-    def cleanup_backups(self, directory: Path, recursive: bool = False) -> int:
-        """
-        Remove all _original backup files in a directory
-
-        Args:
-            directory: Directory to clean
-            recursive: Search subdirectories
-
-        Returns:
-            Number of backup files removed
-        """
-        directory = Path(directory)
-        pattern = "*_original"
-
-        if recursive:
-            backup_files = list(directory.rglob(pattern))
-        else:
-            backup_files = list(directory.glob(pattern))
-
-        count = 0
-        for backup_file in backup_files:
-            try:
-                backup_file.unlink()
-                count += 1
-            except Exception as e:
-                logger.warning(f"Failed to remove backup {backup_file}: {e}")
-
-        logger.info(f"Removed {count} backup files from {directory}")
-        return count
-
-    # ==================== XMP Sidecar Support ====================
-
-    # RAW file extensions that require XMP sidecar
-    RAW_EXTENSIONS = {
-        ".cr2",
-        ".cr3",  # Canon
-        ".nef",
-        ".nrw",  # Nikon
-        ".arw",
-        ".srf",
-        ".sr2",  # Sony
-        ".orf",  # Olympus
-        ".rw2",  # Panasonic
-        ".pef",
-        ".dng",  # Pentax, Adobe DNG
-        ".raf",  # Fujifilm
-        ".raw",
-        ".rwl",  # Leica (.rw2 already listed above for Panasonic)
-        ".3fr",  # Hasselblad
-        ".fff",  # Imacon
-        ".iiq",  # Phase One
-        ".srw",  # Samsung
-        ".x3f",  # Sigma
-        ".kdc",
-        ".dcr",  # Kodak
-        ".mrw",  # Minolta
-        ".erf",  # Epson
-    }
-
-    def is_raw_file(self, file_path: Path) -> bool:
-        """
-        Check if a file is a RAW format
-
-        Args:
-            file_path: Path to the image file
-
-        Returns:
-            True if file is a RAW format
-        """
-        return file_path.suffix.lower() in self.RAW_EXTENSIONS
-
-    def get_xmp_sidecar_path(self, file_path: Path) -> Path:
-        """
-        Get the XMP sidecar path for a file
-
-        Args:
-            file_path: Path to the image file
-
-        Returns:
-            Path to the XMP sidecar file
-        """
-        return file_path.with_suffix(".xmp")
-
-    def xmp_sidecar_exists(self, file_path: Path) -> bool:
-        """
-        Check if XMP sidecar exists for a file
-
-        Args:
-            file_path: Path to the image file
-
-        Returns:
-            True if sidecar exists
-        """
-        return self.get_xmp_sidecar_path(file_path).exists()
-
-    def create_xmp_sidecar(
-        self,
-        file_path: Path,
-        iptc: Optional[IPTCFields] = None,
-        xmp_data: Optional[Dict[str, Any]] = None,
-        copy_from_raw: bool = True,
-    ) -> Path:
-        """
-        Create XMP sidecar file for a RAW image
-
-        Args:
-            file_path: Path to the RAW image file
-            iptc: Optional IPTC fields to write
-            xmp_data: Optional XMP data to write
-            copy_from_raw: Copy existing metadata from RAW file
-
-        Returns:
-            Path to the created XMP sidecar
-
-        Raises:
-            MetadataWriteError: If creation fails
-        """
-        file_path = Path(file_path)
-        if not file_path.exists():
-            raise MetadataWriteError(f"File not found: {file_path}")
-
-        xmp_path = self.get_xmp_sidecar_path(file_path)
-
-        # DRY RUN MODE
-        if self.dry_run:
-            dry_result = DryRunResult(
-                file_path=xmp_path,
-                would_write=True,
-                args=["create_xmp_sidecar"],
-                changes=[f"Would create XMP sidecar: {xmp_path}"],
-            )
-            self._dry_run_results.append(dry_result)
-            logger.info(f"[DRY RUN] Would create XMP sidecar: {xmp_path}")
-            return xmp_path
-
-        # Step 1: Create sidecar from RAW (copies existing metadata)
-        if copy_from_raw:
-            cmd = [self.exiftool_path, "-o", str(xmp_path), "-charset", "utf8", str(file_path)]
-
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    timeout=60,
-                    **SUBPROCESS_NO_WINDOW,
-                )
-
-                if result.returncode != 0 and "1 output files created" not in result.stdout:
-                    # Create empty XMP sidecar
-                    self._create_empty_xmp_sidecar(file_path, xmp_path)
-
-            except Exception as e:
-                logger.warning(f"Failed to copy from RAW, creating empty sidecar: {e}")
-                self._create_empty_xmp_sidecar(file_path, xmp_path)
-        else:
-            self._create_empty_xmp_sidecar(file_path, xmp_path)
-
-        # Step 2: Write additional metadata to sidecar
-        if iptc or xmp_data:
-            self.write_to_xmp_sidecar(file_path, iptc, xmp_data)
-
-        logger.info(f"Created XMP sidecar: {xmp_path}")
-        return xmp_path
-
-    def _create_empty_xmp_sidecar(self, source_path: Path, xmp_path: Path):
-        """Create an empty XMP sidecar file with basic structure"""
-        # Get original filename for reference
-        original_filename = source_path.name
-
-        xmp_content = f'''<?xml version="1.0" encoding="UTF-8"?>
-<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Shutterstock AI Metadata Generator">
-    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-        <rdf:Description rdf:about=""
-            xmlns:dc="http://purl.org/dc/elements/1.1/"
-            xmlns:xmp="http://ns.adobe.com/xap/1.0/"
-            xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
-            xmlns:Iptc4xmpCore="http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/"
-            xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
-            xmp:CreatorTool="Shutterstock AI Metadata Generator"
-            xmpMM:OriginalDocumentID="{original_filename}">
-        </rdf:Description>
-    </rdf:RDF>
-</x:xmpmeta>
-'''
-        with open(xmp_path, "w", encoding="utf-8") as f:
-            f.write(xmp_content)
-
-    def write_to_xmp_sidecar(
-        self, file_path: Path, iptc: Optional[IPTCFields] = None, xmp_data: Optional[Dict[str, Any]] = None
-    ) -> bool:
-        """
-        Write metadata to XMP sidecar file
-
-        Args:
-            file_path: Path to the original image file
-            iptc: IPTC fields to write
-            xmp_data: XMP data to write
-
-        Returns:
-            True if successful
-        """
-        xmp_path = self.get_xmp_sidecar_path(file_path)
-
-        # Create sidecar if it doesn't exist
-        if not xmp_path.exists():
-            self.create_xmp_sidecar(file_path, copy_from_raw=False)
-
-        args = []
-
-        # Convert IPTC to XMP format
-        if iptc:
-            if iptc.object_name:
-                args.append(f"-XMP-dc:Title={iptc.object_name}")
-            if iptc.headline:
-                args.append(f"-XMP-photoshop:Headline={iptc.headline}")
-            if iptc.caption:
-                args.append(f"-XMP-dc:Description={iptc.caption}")
-            if iptc.byline:
-                args.append(f"-XMP-dc:Creator={iptc.byline}")
-            if iptc.copyright_notice:
-                args.append(f"-XMP-dc:Rights={iptc.copyright_notice}")
-            if iptc.city:
-                args.append(f"-XMP-photoshop:City={iptc.city}")
-            if iptc.province_state:
-                args.append(f"-XMP-photoshop:State={iptc.province_state}")
-            if iptc.country_name:
-                args.append(f"-XMP-photoshop:Country={iptc.country_name}")
-            if iptc.country_code:
-                args.append(f"-XMP-iptcCore:CountryCode={iptc.country_code}")
-            if iptc.special_instructions:
-                args.append(f"-XMP-photoshop:Instructions={iptc.special_instructions}")
-            if iptc.credit:
-                args.append(f"-XMP-photoshop:Credit={iptc.credit}")
-            if iptc.source:
-                args.append(f"-XMP-photoshop:Source={iptc.source}")
-
-            # Keywords
-            if iptc.keywords:
-                args.append("-XMP-dc:Subject=")  # Clear first
-                for kw in iptc.keywords:
-                    args.append(f"-XMP-dc:Subject={kw}")
-
-            # Categories as supplemental
-            if iptc.supplemental_categories:
-                args.append("-XMP-photoshop:SupplementalCategories=")
-                for cat in iptc.supplemental_categories:
-                    args.append(f"-XMP-photoshop:SupplementalCategories={cat}")
-
-        # Add additional XMP data
-        if xmp_data:
-            xmp_args = self._build_xmp_args(xmp_data)
-            args.extend(xmp_args)
-
-        if not args:
-            return True
-
-        # Write to XMP sidecar
-        return self._run_exiftool_write(xmp_path, args)
-
-    def read_xmp_sidecar(self, file_path: Path) -> Optional[Dict[str, Any]]:
-        """
-        Read metadata from XMP sidecar file
-
-        Args:
-            file_path: Path to the original image file
-
-        Returns:
-            Dictionary of XMP metadata or None if sidecar doesn't exist
-        """
-        xmp_path = self.get_xmp_sidecar_path(file_path)
-
-        if not xmp_path.exists():
-            return None
-
-        cmd = [self.exiftool_path, "-json", "-charset", "utf8", "-XMP:all", str(xmp_path)]
-
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=30,
-                **SUBPROCESS_NO_WINDOW,
-            )
-
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
-                if data and len(data) > 0:
-                    return data[0]
-
-        except Exception as e:
-            logger.error(f"Failed to read XMP sidecar: {e}")
-
-        return None
-
-    def sync_sidecar_to_raw(self, file_path: Path) -> bool:
-        """
-        Sync XMP sidecar metadata back to RAW file (if supported)
-
-        Args:
-            file_path: Path to the RAW file
-
-        Returns:
-            True if successful
-        """
-        xmp_path = self.get_xmp_sidecar_path(file_path)
-
-        if not xmp_path.exists():
-            logger.warning(f"No XMP sidecar found for: {file_path}")
-            return False
-
-        # DRY RUN MODE
-        if self.dry_run:
-            dry_result = DryRunResult(
-                file_path=file_path,
-                would_write=True,
-                args=["sync_sidecar_to_raw"],
-                changes=[f"Would sync {xmp_path} to {file_path}"],
-            )
-            self._dry_run_results.append(dry_result)
-            return True
-
-        cmd = [self.exiftool_path, "-tagsFromFile", str(xmp_path), "-XMP:all", "-charset", "utf8"]
-
-        if not self.create_backup:
-            cmd.append("-overwrite_original")
-
-        cmd.append(str(file_path))
-
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=60,
-                **SUBPROCESS_NO_WINDOW,
-            )
-
-            if "1 image files updated" in result.stdout:
-                logger.info(f"Synced sidecar to RAW: {file_path}")
-                return True
-
-        except Exception as e:
-            logger.error(f"Failed to sync sidecar: {e}")
-
-        return False
-
-    def delete_xmp_sidecar(self, file_path: Path) -> bool:
-        """
-        Delete XMP sidecar file
-
-        Args:
-            file_path: Path to the original image file
-
-        Returns:
-            True if deleted or didn't exist
-        """
-        xmp_path = self.get_xmp_sidecar_path(file_path)
-
-        if not xmp_path.exists():
-            return True
-
-        # DRY RUN MODE
-        if self.dry_run:
-            dry_result = DryRunResult(
-                file_path=xmp_path,
-                would_write=True,
-                args=["delete_xmp_sidecar"],
-                changes=[f"Would delete XMP sidecar: {xmp_path}"],
-            )
-            self._dry_run_results.append(dry_result)
-            return True
-
-        try:
-            xmp_path.unlink()
-            logger.info(f"Deleted XMP sidecar: {xmp_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete sidecar: {e}")
-            return False
-
     def write_metadata_auto(
         self,
         file_path: Path,
@@ -888,35 +392,30 @@ class MetadataWriter:
         write_xmp: bool = True,
     ) -> bool:
         """
-        Automatically write metadata to file or XMP sidecar based on file type
+        Write IPTC and/or XMP metadata directly into the file.
 
-        For RAW files: Creates/updates XMP sidecar
-        For other files: Writes directly to file
+        The historical RAW branch (XMP sidecar suite) was removed in the
+        2026-06-12 audit: the app only ever scans JPEG/PNG/TIFF, so the
+        sidecar path was unreachable. Restore from git if RAW support
+        comes back.
 
         Args:
             file_path: Path to the image file
             iptc: IPTC fields to write
             xmp_data: XMP data to write
-            write_iptc: Write IPTC tags (for non-RAW files)
+            write_iptc: Write IPTC tags
             write_xmp: Write XMP tags
 
         Returns:
             True if successful
         """
         file_path = Path(file_path)
+        success = True
 
-        if self.is_raw_file(file_path):
-            # RAW file: Write to XMP sidecar
-            logger.info(f"RAW file detected, writing to XMP sidecar: {file_path}")
-            return self.write_to_xmp_sidecar(file_path, iptc, xmp_data)
-        else:
-            # Regular file: Write directly
-            success = True
+        if write_iptc and iptc:
+            success = self.write_iptc(file_path, iptc) and success
 
-            if write_iptc and iptc:
-                success = self.write_iptc(file_path, iptc) and success
+        if write_xmp and xmp_data:
+            success = self.write_xmp(file_path, xmp_data) and success
 
-            if write_xmp and xmp_data:
-                success = self.write_xmp(file_path, xmp_data) and success
-
-            return success
+        return success

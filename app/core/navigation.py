@@ -17,8 +17,11 @@ ViewFactory = Callable[[ctk.CTkFrame], ctk.CTkFrame]
 
 
 class Router:
-    """Owns the central view container, instantiates views on demand,
-    maintains a navigation history stack with cursor for back/forward.
+    """Owns the central view container, instantiates views on demand.
+
+    The back/forward history stack was removed in the 2026-06-12 audit:
+    the workspace is the single navigable view since the sidebar was
+    dropped (Phase 8), so the stack never held more than one entry.
     """
 
     def __init__(self, container: ctk.CTkFrame, bus: EventBus) -> None:
@@ -28,9 +31,6 @@ class Router:
         self._labels: dict[str, str] = {}
         self._current_view: ctk.CTkFrame | None = None
         self._current_id: str | None = None
-        self._history: list[str] = []
-        self._cursor: int = -1
-        self._navigating_history: bool = False
 
     # ------------------------------------------------------------------
     # Registration
@@ -64,32 +64,10 @@ class Router:
         self._current_view = view
         self._current_id = view_id
 
-        if not self._navigating_history:
-            del self._history[self._cursor + 1 :]
-            self._history.append(view_id)
-            self._cursor = len(self._history) - 1
-
         self._bus.emit("router.navigated", view_id, kwargs)
-
-    def back(self) -> None:
-        if self._cursor > 0:
-            self._cursor -= 1
-            self._navigate_history()
-
-    def forward(self) -> None:
-        if self._cursor + 1 < len(self._history):
-            self._cursor += 1
-            self._navigate_history()
 
     # ------------------------------------------------------------------
     # Internals
-
-    def _navigate_history(self) -> None:
-        self._navigating_history = True
-        try:
-            self.navigate_to(self._history[self._cursor])
-        finally:
-            self._navigating_history = False
 
     def _destroy_current(self) -> None:
         if self._current_view is not None:

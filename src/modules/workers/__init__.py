@@ -1,7 +1,7 @@
 """
-Worker pool for multithreaded/multiprocess image processing
+Worker pool for multithreaded image processing
 """
 
-from .worker_pool import ProcessingPipeline, WorkerPool
+from .worker_pool import WorkerPool
 
-__all__ = ["WorkerPool", "ProcessingPipeline"]
+__all__ = ["WorkerPool"]

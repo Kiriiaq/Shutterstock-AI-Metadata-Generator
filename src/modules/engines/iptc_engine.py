@@ -3,12 +3,9 @@ IPTCEngine - Complete IPTC metadata management
 Handles editorial workflows, templates, and validation
 """
 
-import json
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..models.metadata_models import SHUTTERSTOCK_CATEGORIES, IPTCFields, ShutterstockMetadata
@@ -416,68 +413,6 @@ class IPTCEngine:
 
         return cleaned
 
-    def generate_copyright_notice(
-        self, year: Optional[int] = None, holder: str = "", rights: str = "All Rights Reserved"
-    ) -> str:
-        """
-        Generate a standard copyright notice
-
-        Args:
-            year: Copyright year (default: current year)
-            holder: Copyright holder name
-            rights: Rights statement
-
-        Returns:
-            Formatted copyright notice
-        """
-        if year is None:
-            year = datetime.now().year
-
-        if holder:
-            return f"© {year} {holder}. {rights}"
-        else:
-            return f"© {year}. {rights}"
-
-    def merge_iptc(self, base: IPTCFields, overlay: IPTCFields, overwrite: bool = False) -> IPTCFields:
-        """
-        Merge two IPTC objects
-
-        Args:
-            base: Base IPTC fields
-            overlay: IPTC fields to merge in
-            overwrite: If True, overlay values replace base values
-
-        Returns:
-            Merged IPTCFields
-        """
-        result = IPTCFields()
-
-        # Get all field names
-        fields = [f for f in dir(base) if not f.startswith("_") and not callable(getattr(base, f))]
-
-        for field_name in fields:
-            base_value = getattr(base, field_name, None)
-            overlay_value = getattr(overlay, field_name, None)
-
-            if isinstance(base_value, list):
-                # Merge lists
-                combined = list(base_value) if base_value else []
-                if overlay_value:
-                    for item in overlay_value:
-                        if item not in combined:
-                            combined.append(item)
-                setattr(result, field_name, combined)
-            else:
-                # Scalar values
-                if overwrite and overlay_value is not None:
-                    setattr(result, field_name, overlay_value)
-                elif base_value is not None:
-                    setattr(result, field_name, base_value)
-                else:
-                    setattr(result, field_name, overlay_value)
-
-        return result
-
     def add_template(self, template: IPTCTemplate):
         """Add a custom template"""
         self.templates[template.name.lower().replace(" ", "_")] = template
@@ -490,72 +425,3 @@ class IPTCEngine:
         """List all available template names"""
         return list(self.templates.keys())
 
-    def save_templates(self, file_path: Path):
-        """Save all templates to JSON file"""
-        data = {name: tpl.to_dict() for name, tpl in self.templates.items()}
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
-    def load_templates(self, file_path: Path):
-        """Load templates from JSON file"""
-        if not file_path.exists():
-            return
-
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        for name, tpl_data in data.items():
-            self.templates[name] = IPTCTemplate.from_dict(tpl_data)
-
-    def extract_location_from_keywords(self, keywords: List[str]) -> Dict[str, Optional[str]]:
-        """
-        Try to extract location information from keywords
-
-        Args:
-            keywords: List of keywords
-
-        Returns:
-            Dict with city, country_name, country_code if found
-        """
-        result = {
-            "city": None,
-            "country_name": None,
-            "country_code": None,
-        }
-
-        keywords_lower = [k.lower() for k in keywords]
-
-        # Check for country names
-        for code, name in COUNTRY_CODES.items():
-            if name.lower() in keywords_lower:
-                result["country_name"] = name
-                result["country_code"] = code
-                break
-
-        # Common city detection (basic)
-        major_cities = {
-            "new york": ("New York", "USA"),
-            "los angeles": ("Los Angeles", "USA"),
-            "london": ("London", "GBR"),
-            "paris": ("Paris", "FRA"),
-            "tokyo": ("Tokyo", "JPN"),
-            "berlin": ("Berlin", "DEU"),
-            "sydney": ("Sydney", "AUS"),
-            "rome": ("Rome", "ITA"),
-            "madrid": ("Madrid", "ESP"),
-            "amsterdam": ("Amsterdam", "NLD"),
-            "barcelona": ("Barcelona", "ESP"),
-            "dubai": ("Dubai", "ARE"),
-            "singapore": ("Singapore", "SGP"),
-            "hong kong": ("Hong Kong", "CHN"),
-        }
-
-        for city_key, (city_name, country_code) in major_cities.items():
-            if city_key in keywords_lower or city_name.lower() in keywords_lower:
-                result["city"] = city_name
-                if not result["country_code"]:
-                    result["country_code"] = country_code
-                    result["country_name"] = COUNTRY_CODES.get(country_code)
-                break
-
-        return result

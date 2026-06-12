@@ -123,18 +123,6 @@ def test_collect_image_files(tmp_path):
     assert {p.name.lower() for p in deep} == {"a.jpg", "b.png", "c.tiff"}
 
 
-def test_clean_keywords_basic():
-    from src.modules.workers.worker_pool import clean_keywords_advanced
-
-    raw = ["mountain", "the", "Mountain", "x", "  trees  ", "photo"]
-    cleaned = clean_keywords_advanced(raw)
-    assert "the" not in cleaned
-    assert "photo" not in cleaned
-    assert cleaned.count("mountain") == 1
-    assert "trees" in cleaned
-    assert all(len(k) >= 2 for k in cleaned)
-
-
 def test_worker_pool_start_stop():
     from src.modules.workers.worker_pool import WorkerPool
 
