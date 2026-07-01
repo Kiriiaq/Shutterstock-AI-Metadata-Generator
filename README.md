@@ -2,14 +2,25 @@
 
 > **Generate Adobe Stock & Shutterstock metadata locally — AI optional, FTP push built-in.**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-120%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-110%20passing-success.svg)](tests/)
 [![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
 
-> _Demo GIF placeholder — see [`docs/MEDIA.md`](docs/MEDIA.md) for the asset list to produce._
+![ShutterstockAnalyzer — workspace](docs/media/workspace.png)
+
+<details>
+<summary>More screenshots — dark theme, expert report, batch export</summary>
+
+| Dark theme | Expert report | Batch export |
+|:---:|:---:|:---:|
+| ![Workspace in dark theme](docs/media/workspace_dark.png) | ![Heuristic expert report](docs/media/expert_report.png) | ![Batch export with free-tier quota](docs/media/export_batch.png) |
+
+</details>
+
+> _A short demo GIF (`docs/media/demo_v2.gif`) is still to be recorded — see [`docs/MEDIA.md`](docs/MEDIA.md) for the storyboard._
 
 ---
 
