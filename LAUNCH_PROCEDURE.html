@@ -526,19 +526,20 @@ Free download of the Community edition: <em>github.com/Kiriiaq/Shutterstock-AI-M
 <strong>Not affiliated with</strong> Shutterstock, Inc. or Adobe Inc.</div>
     </div>
 
-    <h3>C.3 — Bundle de livraison</h3>
+    <h3>C.3 — Bundle de téléchargement optionnel (Gumroad)</h3>
     <div class="check-row">
       <input type="checkbox" data-key="c3_assets">
       <div class="text">
-        <div class="what">Préparer le ZIP livré à chaque achat</div>
-        <div class="why">À chaque vente, Gumroad envoie ce zip au client. Contient l'EXE + un README + INSTALL.md</div>
+        <div class="what">Préparer le ZIP attaché au produit Gumroad (téléchargement instantané)</div>
+        <div class="why">Build unique, pas de second binaire (voir <code>vente.html</code> §4) : c'est le même EXE Community que sur GitHub Releases, juste pratique pour l'acheteur qui préfère tout avoir depuis Gumroad. La clé de licence n'est PAS dedans — elle est livrée séparément par email, cf. C.4.</div>
       </div>
     </div>
     <p><strong>Contenu du zip à uploader sur Gumroad</strong> (~ 25 Mo) :</p>
     <pre style="background: var(--bg); color: var(--text); border: 1px solid var(--border);">ShutterstockAnalyzer-Pro.zip
-├── ShutterstockAnalyzer.exe       ← 25 Mo, le binaire
+├── ShutterstockAnalyzer.exe       ← 25 Mo, build Community identique à GitHub
 ├── README.txt                      ← pitch + lien GitHub
-└── INSTALL.md                      ← marche à suivre détaillée</pre>
+└── INSTALL.md                      ← installation + activation de la clé (cf. C.4)</pre>
+    <p class="small" style="color: var(--muted, #666);">Ne jamais inclure <code>tools/generate_license.py</code> ni <code>.env</code> dans ce zip — voir la note de sécurité en C.4.</p>
 
     <h3>C.4 — Workflow post-purchase (fulfillment)</h3>
     <div class="check-row">
