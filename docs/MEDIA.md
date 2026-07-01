@@ -14,10 +14,10 @@
 | Asset | Target file | Format | Specs | Status |
 |---|---|---|---|---|
 | **Hero GIF** | `docs/media/demo_v2.gif` | GIF | 1100×720, ≤ 8 Mo, 12 fps, 25-30 s | 🟡 TODO |
-| **Workspace screenshot** | `docs/media/workspace.png` | PNG | 1400×900, light theme | 🟡 TODO |
-| **Workspace dark** | `docs/media/workspace_dark.png` | PNG | 1400×900, dark theme | 🟡 TODO |
-| **Export Batch modal** (Community : « Les deux 🔒 Pro » + IA verrouillée) | `docs/media/export_batch.png` | PNG | 1100×780 modal capture | 🟡 TODO |
-| **Expert Report modal** (bandeau quota « 🎁 1/2 ») | `docs/media/expert_report.png` | PNG | 1100×780 modal capture | 🟡 TODO |
+| **Workspace screenshot** | `docs/media/workspace.png` | PNG | 2582×1550, light theme, 15 files scanned | ✅ Done |
+| **Workspace dark** | `docs/media/workspace_dark.png` | PNG | 2582×1550, dark theme, 15 files scanned | ✅ Done |
+| **Export Batch modal** (« Les deux » + bandeau quota « 🎁 3/3 exports gratuits · Pro 10 € = illimité ») | `docs/media/export_batch.png` | PNG | 1672×1226 modal capture | ✅ Done |
+| **Expert Report modal** (4 scores, titres SEO, keywords — gratuit, sans quota post-pivot) | `docs/media/expert_report.png` | PNG | 1672×1226 modal capture | ✅ Done |
 | **Upsell screen** (rapport expert, quota épuisé) | `docs/media/expert_report_upsell.png` | PNG | 1100×780 modal capture | 🟡 TODO |
 
 **Hero GIF storyboard** (25-30 s) :
