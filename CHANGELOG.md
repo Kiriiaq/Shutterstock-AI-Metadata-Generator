@@ -7,6 +7,8 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.1] — 2026-07-01
+
 > **Audit complet 2026-06-12** (branche `audit/2026-06-12`) — scan
 > intégral du code, 2 bugs majeurs + 7 mineurs corrigés, ~2 800 lignes
 > de code mort v1 retirées. Aucun changement de comportement voulu en
