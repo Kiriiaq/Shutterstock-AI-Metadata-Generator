@@ -325,60 +325,61 @@
   <div class="step-body">
     <h3>A.1 — Push les commits + le tag</h3>
     <div class="check-row">
-      <input type="checkbox" data-key="a1_push">
+      <input type="checkbox" data-key="a1_push" checked>
       <div class="text">
-        <div class="what">Pousser main + tag v2.1.0 sur GitHub</div>
-        <div class="why">8 commits cette session + tag annoté à publier en une fois</div>
+        <div class="what">Pousser main + tag v2.2.1 sur GitHub</div>
+        <div class="why">Commits de la session + tag annoté v2.2.1 — poussés (main synchro avec origin).</div>
       </div>
     </div>
     <div class="code-wrap">
       <pre>git push origin main
-git push origin v2.1.0</pre>
-      <button class="copy-btn" data-copy="git push origin main&#10;git push origin v2.1.0">Copier</button>
+git push origin v2.2.1</pre>
+      <button class="copy-btn" data-copy="git push origin main&#10;git push origin v2.2.1">Copier</button>
     </div>
 
     <h3>A.2 — Créer la GitHub Release</h3>
     <div class="check-row">
       <input type="checkbox" data-key="a2_release">
       <div class="text">
-        <div class="what">Créer la Release v2.1.0 avec les 2 EXE attachés</div>
-        <div class="why">Requiert <code>gh</code> (GitHub CLI) authentifié — sinon faire via l'UI GitHub</div>
+        <div class="what">Créer la Release v2.2.1 avec les 2 EXE attachés</div>
+        <div class="why">Requiert <code>gh</code> (GitHub CLI) authentifié (<code>gh auth login -h github.com</code>) — sinon faire via l'UI GitHub. Ne PAS attacher le zip Pro (canal Gumroad payant).</div>
       </div>
     </div>
 
     <h4>Option 1 — via gh CLI (recommandé)</h4>
     <div class="code-wrap">
-      <pre>gh release create v2.1.0 \
+      <pre>gh release create v2.2.1 \
   dist/ShutterstockAnalyzer.exe \
   dist/ShutterstockAnalyzer-debug.exe \
-  --title "v2.1.0 — Pro tier : quality evaluation, dual CSV, AI enrichment" \
+  --title "v2.2.1 — audit fixes (batch AI skip-if-metadata, truthful Meta, dead-code cleanup)" \
   --notes-file CHANGELOG.md</pre>
-      <button class="copy-btn" data-copy="gh release create v2.1.0 dist/ShutterstockAnalyzer.exe dist/ShutterstockAnalyzer-debug.exe --title &quot;v2.1.0 — Multi-platform microstock export, AI optional, FTP push&quot; --notes-file CHANGELOG.md">Copier</button>
+      <button class="copy-btn" data-copy="gh release create v2.2.1 dist/ShutterstockAnalyzer.exe dist/ShutterstockAnalyzer-debug.exe --title &quot;v2.2.1 — audit fixes (batch AI skip-if-metadata, truthful Meta, dead-code cleanup)&quot; --notes-file CHANGELOG.md">Copier</button>
     </div>
 
     <h4>Option 2 — via UI GitHub</h4>
     <p>Aller sur <code>github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/new</code>,
-    sélectionner le tag <code>v2.1.0</code>, drag-and-drop les 2 EXE
+    sélectionner le tag <code>v2.2.1</code>, drag-and-drop les 2 EXE
     depuis <code>dist/</code>, et coller dans le champ description :</p>
 
     <div class="template">
       <h4>Description GitHub Release</h4>
-      <div class="body"><strong>Multi-platform microstock metadata, local AI, FTP push.</strong>
+      <div class="body"><strong>Patch release — freezes the June 2026 code audit.</strong>
 
-Major release — transforms a Shutterstock-only generator into a multi-platform tool with optional local AI and built-in FTP push to contributor portals.
+2 major + 7 minor bugs fixed, ~2 800 lines of dead v1 code removed. No intentional behavior change beyond the fixes.
 
-🆕 <strong>Headline features</strong>
-• Adobe Stock + Shutterstock CSV export (single or both at once)
-• Heuristic-first expert report — works WITHOUT Ollama on any PC
-• Optional AI enrichment via local Ollama (model preload + status chip)
-• FTP / FTPS push integrated with credentials test
-• IPTC write-back opt-in (files stay untouched if checkbox is off)
+🐛 <strong>Fixed</strong>
+• Batch AI "Skip if metadata" now actually pre-filters files that already carry a usable IPTC block
+• Sources "Meta" column probes the real IPTC block instead of showing "Yes" for every readable file
+• Validation dead route, license-chip refresh, expert-report CSV UI freeze, concurrent Sources de-dup, resizable audit textbox, working "AI Model" modal
+
+🗑️ <strong>Removed</strong>
+• ~2 800 lines of unused v1 code (dead facade surface, ProcessingPipeline, XMP sidecar writer, legacy src/core + src/utils, processing_queue table)
 
 📦 <strong>Downloads</strong>
 • <code>ShutterstockAnalyzer.exe</code> — production (windowed, no console)
 • <code>ShutterstockAnalyzer-debug.exe</code> — debug (with console + import trace)
 
-Both are 24,8 MB, Windows 10/11, no installation required. Just double-click.
+Windows 10/11, no installation required. Just double-click.
 
 🔧 <strong>Optional dependencies</strong>
 • ExifTool — IPTC read/write (recommended)
@@ -392,7 +393,7 @@ Full changelog in <code>CHANGELOG.md</code>.</div>
       <input type="checkbox" data-key="a3_verify">
       <div class="text">
         <div class="what">Vérifier la release publique</div>
-        <div class="why">Page release affiche les 2 EXE, le tag pointe vers le commit 237fec0</div>
+        <div class="why">Page release affiche les 2 EXE, le tag v2.2.1 pointe vers le commit 8234cd6 (« release: v2.2.1 »).</div>
       </div>
     </div>
   </div>
@@ -439,10 +440,10 @@ ffmpeg -i raw.gif -vf "fps=12,scale=1100:-1:flags=lanczos" -loop 0 demo_v2.gif</
 
     <h3>B.2 — Screenshots interactifs (4 captures)</h3>
     <div class="check-row">
-      <input type="checkbox" data-key="b2_screens">
+      <input type="checkbox" data-key="b2_screens" checked>
       <div class="text">
         <div class="what">Capturer 4 PNG (workspace light/dark, expert_report, export_batch)</div>
-        <div class="why">Script helper prêt — guide étape par étape via dialogues Tkinter</div>
+        <div class="why">Fait — capturés dans <code>docs/media/</code> (PrintWindow natif) et intégrés au README.</div>
       </div>
     </div>
     <div class="code-wrap">
@@ -456,10 +457,10 @@ python tools\take_screenshots.py</pre>
 
     <h3>B.3 — Intégrer dans le README</h3>
     <div class="check-row">
-      <input type="checkbox" data-key="b3_readme">
+      <input type="checkbox" data-key="b3_readme" checked>
       <div class="text">
-        <div class="what">Remplacer le placeholder GIF dans le README</div>
-        <div class="why">Ligne ~12 : <code>&gt; Demo GIF placeholder...</code> à remplacer par <code>![demo](docs/media/demo_v2.gif)</code></div>
+        <div class="what">Intégrer les visuels dans le README</div>
+        <div class="why">Fait — hero <code>workspace.png</code> + galerie (dark, expert report, export batch). Le GIF <code>demo_v2.gif</code> (B.1) reste à tourner : slot README réservé.</div>
       </div>
     </div>
   </div>
