@@ -28,7 +28,8 @@
 
 - **Python 3.11+** (`requires-python = ">=3.11"` dans `pyproject.toml`).
 - **UI** : CustomTkinter `>=5.2,<6.0` (CTk + Tkinter stdlib).
-- **Images** : Pillow `>=10,<12`.
+- **Images** : Pillow `>=10,<12` + `pillow-heif >=0.16,<2` (ouverture
+  HEIC/HEIF/AVIF ; optionnelle — dégradation gracieuse si absente).
 - **HTTP** : `requests` + `urllib3`.
 - **Tests** : `pytest`. **Lint/format** : `ruff` (line 120, py311 target).
 - **Packaging** : PyInstaller (debug + release profiles via `build.py`).

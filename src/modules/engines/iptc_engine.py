@@ -227,15 +227,14 @@ class IPTCEngine:
         Returns:
             ShutterstockMetadata object
         """
-        # Title: prefer headline, fall back to object_name
-        title = iptc.headline or iptc.object_name or ""
-        if len(title) > 200:
-            title = title[:197] + "..."
+        from ..analysis.limits import SHUTTERSTOCK_DESCRIPTION_MAX, smart_truncate
+
+        # Title: prefer headline, fall back to object_name. Truncate at
+        # a word boundary — a clean shorter sentence, never "…".
+        title = smart_truncate(iptc.headline or iptc.object_name or "", SHUTTERSTOCK_DESCRIPTION_MAX)
 
         # Description: use caption
-        description = iptc.caption or title
-        if len(description) > 200:
-            description = description[:197] + "..."
+        description = smart_truncate(iptc.caption or title, SHUTTERSTOCK_DESCRIPTION_MAX)
 
         # Keywords
         keywords = iptc.keywords.copy() if iptc.keywords else []

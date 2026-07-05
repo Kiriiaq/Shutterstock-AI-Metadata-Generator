@@ -465,7 +465,12 @@ class OllamaClient:
     @staticmethod
     def encode_image(image_path: Path) -> str:
         """
-        Encode image to base64 for API
+        Encode image to base64 for API.
+
+        Ollama vision models only ingest JPEG/PNG, so smartphone
+        formats (HEIC/HEIF/AVIF/WebP/DNG/TIFF…) are transparently
+        re-encoded to JPEG in memory first. JPEG/PNG bytes are sent
+        as-is — no quality loss on the classic path.
 
         Args:
             image_path: Path to image file
@@ -473,6 +478,19 @@ class OllamaClient:
         Returns:
             Base64-encoded string
         """
+        from ..formats import convert_to_jpeg_bytes, needs_ai_conversion
+
+        image_path = Path(image_path)
+        if needs_ai_conversion(image_path):
+            try:
+                data = convert_to_jpeg_bytes(image_path)
+                return base64.b64encode(data).decode("utf-8")
+            except Exception as e:
+                # Fall through to raw bytes — the model may still cope
+                # (e.g. some builds accept WebP), and the error path
+                # stays a normal per-file analysis failure.
+                logger.warning("Conversion JPEG impossible pour %s (%s) — envoi brut", image_path.name, e)
+
         with open(image_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
 

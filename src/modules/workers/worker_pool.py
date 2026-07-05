@@ -399,7 +399,9 @@ def collect_image_files(
     import fnmatch
 
     if extensions is None:
-        extensions = [".jpg", ".jpeg", ".tif", ".tiff", ".png", ".eps"]
+        from ..formats import SUPPORTED_EXTENSIONS
+
+        extensions = sorted(SUPPORTED_EXTENSIONS)
 
     if exclude_extensions is None:
         exclude_extensions = []

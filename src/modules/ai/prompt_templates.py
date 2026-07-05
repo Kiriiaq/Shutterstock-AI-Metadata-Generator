@@ -39,7 +39,8 @@ class PlatformLimits:
     keyword_max_chars: int = 50
 
 
-# Platform-specific limits
+# Platform-specific limits (hard caps mirrored from
+# src.modules.analysis.limits — Adobe caps keywords at 49, not 50)
 PLATFORM_LIMITS = {
     Platform.GENERIC: PlatformLimits(
         title_max=200, description_max=2000, keywords_min=5, keywords_max=50, keyword_max_chars=50
@@ -48,7 +49,7 @@ PLATFORM_LIMITS = {
         title_max=200, description_max=200, keywords_min=7, keywords_max=50, keyword_max_chars=50
     ),
     Platform.ADOBE_STOCK: PlatformLimits(
-        title_max=200, description_max=200, keywords_min=5, keywords_max=50, keyword_max_chars=50
+        title_max=200, description_max=200, keywords_min=5, keywords_max=49, keyword_max_chars=50
     ),
     Platform.GETTY: PlatformLimits(
         title_max=250, description_max=2000, keywords_min=5, keywords_max=75, keyword_max_chars=50
@@ -65,33 +66,45 @@ class PromptTemplates:
     Generates optimized prompts for metadata extraction
     """
 
-    # Base system prompt for all requests
-    SYSTEM_PROMPT = """You are an expert image analyst specializing in stock photography metadata.
-Your task is to analyze images and generate accurate, SEO-optimized metadata.
+    # Base system prompt for all requests — tightly bounded so every
+    # image gets exactly ONE quality title and ONE quality description
+    # that fit the portal fields without any downstream truncation.
+    SYSTEM_PROMPT = """You are a senior stock photography metadata editor for Adobe Stock and Shutterstock.
+You write exactly ONE title, ONE description and ONE keyword list per image — final, portal-ready quality.
 
-RULES:
-1. Be accurate and descriptive
-2. Use commercial stock photography terminology
-3. Focus on visual elements, not assumptions
-4. Include both specific and general terms
-5. Consider searchability and discoverability
-6. Avoid trademarked terms and brand names
-7. No subjective opinions or emotions unless clearly depicted
-8. Use English language
+HARD RULES:
+1. Describe only what is VISIBLE. Never guess location, brand, event or person identity.
+2. No brand names, trademarks, logos or celebrity names — ever.
+3. Never start with "Photo of", "Image of", "A picture of", "Stock photo".
+4. No filler adjectives (beautiful, stunning, amazing, nice) — use precise, concrete words.
+5. No meta-words as keywords: photo, image, picture, stock, wallpaper, jpg, closeup (unless the framing IS a close-up).
+6. English only. Sentence case for title and description.
+7. Respect every character budget strictly — text longer than the budget is discarded.
 """
 
     # Full analysis prompt template
-    FULL_ANALYSIS_TEMPLATE = """Analyze this image and provide complete metadata for stock photography.
+    FULL_ANALYSIS_TEMPLATE = """Analyze this image and write its final stock metadata.
 
-REQUIREMENTS:
-- Title: {title_max} characters max, descriptive and searchable
-- Description: {desc_max} characters max, detailed scene description
-- Keywords: {kw_min}-{kw_max} relevant terms, comma-separated
-- Categories: 1-2 main categories from this list: [Animals, Arts, Backgrounds/Textures, Beauty/Fashion, Buildings/Landmarks, Business/Finance, Celebrities, Editorial, Education, Food/Drink, Healthcare/Medical, Holidays, Industrial, Interiors, Miscellaneous, Nature, Objects, Parks/Outdoor, People, Religion, Science, Signs/Symbols, Sports/Recreation, Technology, Transportation, Vintage]
+TITLE — one line, {title_target_min}-{title_target_max} characters (hard max {title_max}):
+- A specific, searchable summary: main subject + action/state + setting.
+- Good: "Two young architects reviewing blueprints in a sunlit open-plan office"
+- Bad: "Beautiful photo of people working" (vague, filler, no setting)
+
+DESCRIPTION — exactly one sentence, {desc_target_min}-{desc_target_max} characters (hard max {desc_max}):
+- Expands the title with 2-3 concrete visual details (colors, mood, composition).
+- Must stand alone as the Shutterstock search text. No second sentence.
+
+KEYWORDS — {kw_target_min} to {kw_target_max} terms, comma-separated:
+- Order matters: the FIRST 10 must be the strongest commercial search terms.
+- Single words or short 2-word phrases, all lowercase.
+- Cover: subject, action, setting, concept, mood, color, composition, demographics (only if visible).
+- No duplicates, no plurals of a word already listed, no brands, no meta-words.
+
+CATEGORIES — 1 or 2 from exactly this list: [Animals, Arts, Backgrounds/Textures, Beauty/Fashion, Buildings/Landmarks, Business/Finance, Celebrities, Editorial, Education, Food/Drink, Healthcare/Medical, Holidays, Industrial, Interiors, Miscellaneous, Nature, Objects, Parks/Outdoor, People, Religion, Science, Signs/Symbols, Sports/Recreation, Technology, Transportation, Vintage]
 
 FORMAT YOUR RESPONSE EXACTLY AS:
-TITLE: [your title here]
-DESCRIPTION: [your description here]
+TITLE: [title]
+DESCRIPTION: [description]
 KEYWORDS: [keyword1, keyword2, keyword3, ...]
 CATEGORIES: [category1, category2]
 
@@ -193,13 +206,28 @@ REASON: [brief explanation if YES]"""
         Returns:
             Formatted prompt string
         """
+        from ..analysis.limits import (
+            DESCRIPTION_TARGET_MAX,
+            DESCRIPTION_TARGET_MIN,
+            KEYWORDS_TARGET_MAX,
+            KEYWORDS_TARGET_MIN,
+            TITLE_TARGET_MAX,
+            TITLE_TARGET_MIN,
+        )
+
+        full_kwargs = {
+            "title_max": self.limits.title_max,
+            "desc_max": self.limits.description_max,
+            "title_target_min": TITLE_TARGET_MIN,
+            "title_target_max": TITLE_TARGET_MAX,
+            "desc_target_min": DESCRIPTION_TARGET_MIN,
+            "desc_target_max": DESCRIPTION_TARGET_MAX,
+            "kw_target_min": max(KEYWORDS_TARGET_MIN, self.limits.keywords_min),
+            "kw_target_max": min(KEYWORDS_TARGET_MAX, self.limits.keywords_max),
+        }
+
         if prompt_type == PromptType.FULL:
-            template = self.FULL_ANALYSIS_TEMPLATE.format(
-                title_max=self.limits.title_max,
-                desc_max=self.limits.description_max,
-                kw_min=self.limits.keywords_min,
-                kw_max=self.limits.keywords_max,
-            )
+            template = self.FULL_ANALYSIS_TEMPLATE.format(**full_kwargs)
         elif prompt_type == PromptType.TITLE_ONLY:
             template = self.TITLE_TEMPLATE.format(title_max=self.limits.title_max)
         elif prompt_type == PromptType.DESCRIPTION_ONLY:
@@ -209,12 +237,7 @@ REASON: [brief explanation if YES]"""
         elif prompt_type == PromptType.CATEGORIES_ONLY:
             template = self.CATEGORIES_TEMPLATE
         else:
-            template = self.FULL_ANALYSIS_TEMPLATE.format(
-                title_max=self.limits.title_max,
-                desc_max=self.limits.description_max,
-                kw_min=self.limits.keywords_min,
-                kw_max=self.limits.keywords_max,
-            )
+            template = self.FULL_ANALYSIS_TEMPLATE.format(**full_kwargs)
 
         # Add language instruction if not English
         if language and language.lower() != "en":
@@ -349,17 +372,36 @@ REASON: [brief explanation if YES]"""
         return result[:2]  # Max 2 categories
 
     def _apply_limits(self, result: Dict) -> Dict:
-        """Apply platform limits to parsed result"""
+        """Enforce platform budgets on the parsed AI result.
+
+        - Title/description are word-boundary trimmed (no "…" ellipsis)
+          via ``smart_truncate`` so the portal field never overflows.
+        - Keywords are filtered against brand + stuffing lists (defense
+          in depth — the prompt forbids them too) and capped.
+        """
+        from ..analysis.expert_report import BRAND_KEYWORDS, STUFFING_KEYWORDS
+        from ..analysis.limits import clamp_keywords, smart_truncate
+
         if result["title"]:
-            result["title"] = result["title"][: self.limits.title_max]
+            result["title"] = smart_truncate(result["title"], self.limits.title_max)
 
         if result["description"]:
-            result["description"] = result["description"][: self.limits.description_max]
+            result["description"] = smart_truncate(result["description"], self.limits.description_max)
 
-        # Ensure keyword count within limits
-        if len(result["keywords"]) > self.limits.keywords_max:
-            result["keywords"] = result["keywords"][: self.limits.keywords_max]
+        # Drop brands and meta/stuffing words the model may have slipped in.
+        title_words = set((result.get("title") or "").lower().split())
+        filtered = []
+        for kw in result["keywords"]:
+            kl = kw.lower().strip()
+            if kl in BRAND_KEYWORDS:
+                continue
+            # Stuffing words are allowed only if they appear in the title
+            # (there they describe the image rather than pad the list).
+            if kl in STUFFING_KEYWORDS and kl not in title_words:
+                continue
+            filtered.append(kw)
 
+        result["keywords"] = clamp_keywords(filtered, self.limits.keywords_max)
         return result
 
     @staticmethod

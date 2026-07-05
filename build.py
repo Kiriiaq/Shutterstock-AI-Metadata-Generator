@@ -32,6 +32,9 @@ HIDDEN_IMPORTS = [
     "customtkinter",
     "darkdetect",
     "PIL",
+    # Imported lazily in src/modules/formats.py — PyInstaller can't see
+    # it. Registers the HEIC/HEIF/AVIF openers for Pillow.
+    "pillow_heif",
 ]
 
 # Modules NOT used by v2 but pulled in by transitive trees we want to strip

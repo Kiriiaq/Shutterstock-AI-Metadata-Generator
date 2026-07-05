@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .engines.iptc_engine import IPTCEngine
 from .engines.metadata_reader import ExifToolNotFoundError, MetadataReader
 from .engines.metadata_writer import MetadataWriter
+from .formats import SUPPORTED_EXTENSIONS
 from .models.metadata_models import (
     ImageMetadata,
     IPTCFields,
@@ -28,6 +29,10 @@ class ShutterstockAIv2:
     Main integration class for Shutterstock AI v2.0
     Provides unified API for all v2.0 functionality
     """
+
+    # Image formats the app scans/analyzes — re-exported from
+    # src.modules.formats so the UI reads it through the facade.
+    SUPPORTED_EXTENSIONS = SUPPORTED_EXTENSIONS
 
     def __init__(self, db_path: Optional[Path] = None, exiftool_path: Optional[str] = None, max_workers: int = 4):
         """
@@ -48,6 +53,7 @@ class ShutterstockAIv2:
         # any error). Stored as a plain attribute; the UI reads via the
         # ``license`` property below.
         from .licensing import load_license
+
         self._license = load_license()
 
         # Initialize engines
@@ -145,6 +151,7 @@ class ShutterstockAIv2:
         iptc: Optional[IPTCFields] = None,
         shutterstock: Optional[ShutterstockMetadata] = None,
         xmp: Optional[Dict[str, Any]] = None,
+        authoritative: bool = False,
     ) -> bool:
         """
         Write metadata to an image file
@@ -154,6 +161,11 @@ class ShutterstockAIv2:
             iptc: IPTC fields to write
             shutterstock: Shutterstock metadata to write
             xmp: XMP data to write
+            authoritative: When True, the IPTC field set is written as
+                the new truth — empty fields are *deleted* from the
+                file (IPTC + XMP + EXIF mirrors kept in sync) instead
+                of being left untouched. Used by the manual editor so
+                a re-read always matches what the user last saw.
 
         Returns:
             True if successful
@@ -172,7 +184,10 @@ class ShutterstockAIv2:
                 iptc = self.iptc_engine.create_iptc_from_shutterstock(shutterstock)
 
             if iptc:
-                self.metadata_writer.write_iptc(file_path, iptc)
+                if authoritative:
+                    self.metadata_writer.write_editor_fields(file_path, iptc)
+                else:
+                    self.metadata_writer.write_iptc(file_path, iptc)
 
                 # Save to history
                 self.database.save_metadata_history(
@@ -940,6 +955,7 @@ class ShutterstockAIv2:
 
         ai_runner = None
         if use_ai and hasattr(self, "vision_analyzer"):
+
             def _ai_runner(p: Path) -> Dict[str, Any]:
                 res = self.vision_analyzer.analyze_image(p)
                 if not res.is_successful:
@@ -950,6 +966,7 @@ class ShutterstockAIv2:
                     "keywords": res.keywords,
                     "categories": res.categories,
                 }
+
             ai_runner = _ai_runner
 
         return run_export_batch(
@@ -969,6 +986,7 @@ class ShutterstockAIv2:
     def test_ftp_connection(self, ftp_config: Any) -> Tuple[bool, str]:
         """Probe the FTP endpoint — used by the UI's « Tester » button."""
         from .export.ftp_uploader import test_connection
+
         return test_connection(ftp_config)
 
     # ==================== Licence ====================
