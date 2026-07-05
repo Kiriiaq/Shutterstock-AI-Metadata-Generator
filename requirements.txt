@@ -7,6 +7,11 @@ customtkinter>=5.2.0,<6.0.0
 # Image processing (Pillow.Image; no ImageTk usage in v2)
 Pillow>=10.0.0,<12.0.0
 
+# HEIC/HEIF/AVIF openers for Pillow (smartphone formats — iPhone,
+# Samsung, Google). Graceful degradation without it: these formats are
+# still scanned + written via ExifTool, but lose compliance probe + AI.
+pillow-heif>=0.16.0,<2.0.0
+
 # HTTP client used by src/modules/ai/ollama_client.py
 requests>=2.31.0,<3.0.0
 # Transitive dep of requests — pinned here only to control its version

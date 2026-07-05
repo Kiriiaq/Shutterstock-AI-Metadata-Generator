@@ -87,6 +87,11 @@ def _probe_file(path: Path) -> Tuple[float, float, str, str]:
     try:
         from PIL import Image
 
+        from ..formats import ensure_pillow_plugins
+
+        # HEIC/HEIF/AVIF need the pillow-heif openers; no-op otherwise.
+        ensure_pillow_plugins()
+
         with Image.open(path) as img:
             mp = (img.width * img.height) / 1_000_000
             # PIL.Image.mode gives us a coarse color space hint
@@ -123,13 +128,9 @@ def check_adobe_compliance(
 
     if megapixels is not None and megapixels > 0:
         if megapixels < MIN_MEGAPIXELS:
-            warnings.append(
-                f"Adobe : résolution {megapixels:.1f} MP < {MIN_MEGAPIXELS} MP minimum"
-            )
+            warnings.append(f"Adobe : résolution {megapixels:.1f} MP < {MIN_MEGAPIXELS} MP minimum")
         elif megapixels > ADOBE_MAX_MEGAPIXELS:
-            warnings.append(
-                f"Adobe : résolution {megapixels:.1f} MP > {ADOBE_MAX_MEGAPIXELS} MP maximum"
-            )
+            warnings.append(f"Adobe : résolution {megapixels:.1f} MP > {ADOBE_MAX_MEGAPIXELS} MP maximum")
 
     if size_mb is not None and size_mb > ADOBE_MAX_FILE_MB:
         warnings.append(f"Adobe : poids {size_mb:.1f} Mo > {ADOBE_MAX_FILE_MB} Mo")
@@ -165,14 +166,10 @@ def check_shutterstock_compliance(
     warnings: List[str] = []
 
     if megapixels is not None and megapixels > 0 and megapixels < MIN_MEGAPIXELS:
-        warnings.append(
-            f"Shutterstock : résolution {megapixels:.1f} MP < {MIN_MEGAPIXELS} MP minimum"
-        )
+        warnings.append(f"Shutterstock : résolution {megapixels:.1f} MP < {MIN_MEGAPIXELS} MP minimum")
 
     if size_mb is not None and size_mb > SHUTTERSTOCK_MAX_FILE_MB:
-        warnings.append(
-            f"Shutterstock : poids {size_mb:.1f} Mo > {SHUTTERSTOCK_MAX_FILE_MB} Mo"
-        )
+        warnings.append(f"Shutterstock : poids {size_mb:.1f} Mo > {SHUTTERSTOCK_MAX_FILE_MB} Mo")
 
     if fmt:
         fmt_norm = fmt.lower().lstrip(".")

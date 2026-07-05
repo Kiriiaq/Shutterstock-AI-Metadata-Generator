@@ -34,6 +34,7 @@ from ..models.metadata_models import (
     TechnicalFlags,
     map_shutterstock_to_adobe,
 )
+from .limits import ADOBE_TITLE_MAX, SHUTTERSTOCK_DESCRIPTION_MAX, smart_truncate
 from .platform_compliance import (
     ADOBE_MAX_FILE_MB,
     ADOBE_MAX_MEGAPIXELS,
@@ -370,16 +371,17 @@ def enrich_with_ai_result(
         logger.debug("enrich_with_ai_result: non-dict input, skipping")
         return report
 
-    # Title — single or split
+    # Title — single or split. Word-boundary truncation (no chopped
+    # word, no ellipsis) via the shared limits module.
     title_adobe = ai_result.get("title_adobe") or ai_result.get("title")
     title_shutterstock = ai_result.get("title_shutterstock") or ai_result.get("title")
     if title_adobe:
-        report.title_adobe = str(title_adobe).strip()[:200]
+        report.title_adobe = smart_truncate(str(title_adobe), ADOBE_TITLE_MAX)
     if title_shutterstock:
-        report.title_shutterstock = str(title_shutterstock).strip()[:200]
+        report.title_shutterstock = smart_truncate(str(title_shutterstock), SHUTTERSTOCK_DESCRIPTION_MAX)
 
     if ai_result.get("description"):
-        report.description = str(ai_result["description"]).strip()[:200]
+        report.description = smart_truncate(str(ai_result["description"]), SHUTTERSTOCK_DESCRIPTION_MAX)
 
     if ai_result.get("keywords"):
         merged = _merge_keywords(report.keywords, ai_result["keywords"], title=report.title_shutterstock)
@@ -455,10 +457,10 @@ def _pick_title(iptc: IPTCFields, path: Path) -> str:
     """Best-effort title from IPTC fields, with filename fallback."""
     for candidate in (iptc.headline, iptc.object_name):
         if candidate and candidate.strip():
-            return candidate.strip()[:200]
+            return smart_truncate(candidate, ADOBE_TITLE_MAX)
     # Filename without extension, cleaned: "my_photo-01.jpg" -> "My Photo 01"
     stem = path.stem.replace("_", " ").replace("-", " ").strip()
-    return stem.title()[:200] if stem else ""
+    return smart_truncate(stem.title(), ADOBE_TITLE_MAX) if stem else ""
 
 
 def _clean_keywords(keywords: Iterable[str], *, title: str) -> List[str]:

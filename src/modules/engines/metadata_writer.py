@@ -1,6 +1,18 @@
 """
 MetadataWriter - Write EXIF, IPTC, and XMP metadata to image files
 Uses ExifTool for comprehensive metadata writing
+
+Two write semantics coexist:
+
+- **Additive** (historical): only fields carrying a value are sent to
+  ExifTool. Empty/None fields are left untouched in the file.
+- **Authoritative** (`write_editor_fields`): the editor's field set is
+  written as the new truth — an empty field emits a deletion arg
+  (``-TAG=``) and the XMP + EXIF mirror tags are kept in sync, so a
+  re-read always matches what the user last saw in the editor.
+
+Format awareness: HEIC/HEIF/AVIF/WebP have no IPTC IIM container, so
+IPTC group args are skipped there and XMP + EXIF carry the data.
 """
 
 import logging
@@ -11,6 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ...utils.subprocess_helper import SUBPROCESS_NO_WINDOW
+from ..analysis.limits import ADOBE_TITLE_MAX, smart_truncate
+from ..formats import supports_iptc_iim
 from ..models.metadata_models import ImageMetadata, IPTCFields, ShutterstockMetadata
 
 logger = logging.getLogger(__name__)
@@ -102,6 +116,75 @@ class MetadataWriter:
 
         return self._run_exiftool_write(file_path, args)
 
+    def write_editor_fields(self, file_path: Path, iptc: IPTCFields) -> bool:
+        """Authoritative write of the IPTC editor's field set.
+
+        Every editor-managed field (title, caption, keywords, byline,
+        copyright) is written as the new truth: a value → set, empty →
+        **deleted** via a bare ``-TAG=`` arg. The XMP and EXIF mirror
+        tags are synchronized in the same call so that whichever group
+        a reader prefers, it sees the same data. This is the fix for
+        "cleared fields come back on re-read".
+
+        On containers without IPTC IIM support (HEIC/AVIF/WebP), the
+        IPTC group is skipped entirely and XMP + EXIF carry the data.
+        """
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise MetadataWriteError(f"File not found: {file_path}")
+
+        args = self._build_authoritative_args(file_path, iptc)
+        return self._run_exiftool_write(file_path, args)
+
+    def _build_authoritative_args(self, file_path: Path, iptc: IPTCFields) -> List[str]:
+        """Set-or-delete args across IPTC + XMP + EXIF for editor fields."""
+        write_iim = supports_iptc_iim(file_path)
+        args: List[str] = []
+
+        headline = (iptc.headline or iptc.object_name or "").strip()
+        caption = (iptc.caption or "").strip()
+        byline = (iptc.byline or "").strip()
+        copyright_notice = (iptc.copyright_notice or "").strip()
+        keywords = [k.strip() for k in (iptc.keywords or []) if k and k.strip()]
+
+        def set_or_delete(tag: str, value: str, max_len: Optional[int] = None) -> None:
+            if value:
+                if max_len:
+                    value = smart_truncate(value, max_len)
+                args.append(f"-{tag}={value}")
+            else:
+                args.append(f"-{tag}=")
+
+        # --- IPTC IIM (JPEG/TIFF/PNG/DNG only) ---
+        if write_iim:
+            set_or_delete("IPTC:Headline", headline, 256)
+            set_or_delete("IPTC:ObjectName", headline, 64)
+            set_or_delete("IPTC:Caption-Abstract", caption, 2000)
+            set_or_delete("IPTC:By-line", byline, 32)
+            set_or_delete("IPTC:CopyrightNotice", copyright_notice, 128)
+            args.append("-IPTC:Keywords=")  # always clear, then re-add
+            for kw in keywords:
+                args.append(f"-IPTC:Keywords={kw}")
+
+        # --- XMP mirrors (every format) ---
+        set_or_delete("XMP-dc:Title", headline)
+        set_or_delete("XMP-photoshop:Headline", headline)
+        set_or_delete("XMP-dc:Description", caption)
+        set_or_delete("XMP-dc:Creator", byline)
+        set_or_delete("XMP-dc:Rights", copyright_notice)
+        args.append("-XMP-dc:Subject=")
+        for kw in keywords:
+            args.append(f"-XMP-dc:Subject={kw}")
+
+        # --- EXIF mirrors (readable by Windows Explorer & portals) ---
+        set_or_delete("EXIF:ImageDescription", caption or headline)
+        set_or_delete("EXIF:Artist", byline)
+        set_or_delete("EXIF:Copyright", copyright_notice)
+        set_or_delete("EXIF:XPTitle", headline)
+        set_or_delete("EXIF:XPKeywords", "; ".join(keywords))
+
+        return args
+
     def write_xmp(self, file_path: Path, xmp_data: Dict[str, Any]) -> bool:
         """
         Write XMP metadata to an image file
@@ -144,24 +227,36 @@ class MetadataWriter:
             raise MetadataWriteError(f"File not found: {file_path}")
 
         args = []
+        title = smart_truncate(metadata.title or "", ADOBE_TITLE_MAX)
+        description = smart_truncate(metadata.description or "", 2000)
+        keywords = [k.strip() for k in metadata.keywords[:50] if k and k.strip()]
+
+        # HEIC/AVIF/WebP have no IPTC IIM container — XMP carries it all.
+        if write_iptc and not supports_iptc_iim(file_path):
+            logger.debug("IPTC IIM unsupported for %s — writing XMP/EXIF only", file_path.suffix)
+            write_iptc = False
+            write_xmp = True
 
         if write_iptc:
             # IPTC fields
             args.extend(
                 [
-                    f"-IPTC:ObjectName={metadata.title[:64]}",  # IPTC limit
-                    f"-IPTC:Caption-Abstract={metadata.description}",
-                    f"-IPTC:Headline={metadata.title[:256]}",
+                    f"-IPTC:ObjectName={title[:64]}",  # IPTC limit
+                    f"-IPTC:Caption-Abstract={description}",
+                    f"-IPTC:Headline={title[:256]}",
                 ]
             )
 
-            # Keywords (IPTC supports multiple -Keywords tags)
-            for kw in metadata.keywords[:50]:
+            # Keywords — clear first so re-runs replace instead of
+            # accumulating duplicates, then one arg per keyword.
+            args.append("-IPTC:Keywords=")
+            for kw in keywords:
                 args.append(f"-IPTC:Keywords={kw}")
 
             # Categories
             if metadata.categories:
                 args.append(f"-IPTC:Category={metadata.categories[0][:3]}")
+                args.append("-IPTC:SupplementalCategories=")
                 for cat in metadata.categories:
                     args.append(f"-IPTC:SupplementalCategories={cat}")
 
@@ -169,21 +264,31 @@ class MetadataWriter:
             # XMP Dublin Core
             args.extend(
                 [
-                    f"-XMP-dc:Title={metadata.title}",
-                    f"-XMP-dc:Description={metadata.description}",
+                    f"-XMP-dc:Title={title}",
+                    f"-XMP-dc:Description={description}",
                 ]
             )
 
-            # XMP Keywords
-            keywords_str = ", ".join(metadata.keywords)
-            args.append(f"-XMP-dc:Subject={keywords_str}")
+            # XMP Keywords — one Subject entry per keyword (a joined
+            # string would create a single bogus keyword on re-read).
+            args.append("-XMP-dc:Subject=")
+            for kw in keywords:
+                args.append(f"-XMP-dc:Subject={kw}")
 
             # XMP Photoshop
-            args.append(f"-XMP-photoshop:Headline={metadata.title}")
+            args.append(f"-XMP-photoshop:Headline={title}")
+
+        # EXIF mirrors — visible in Windows Explorer and read by both
+        # portals when IPTC/XMP are absent.
+        args.append(f"-EXIF:ImageDescription={description or title}")
+        args.append(f"-EXIF:XPTitle={title}")
+        if keywords:
+            args.append(f"-EXIF:XPKeywords={'; '.join(keywords)}")
 
         # Editorial flag in special instructions
         if metadata.editorial:
-            args.append("-IPTC:SpecialInstructions=EDITORIAL USE ONLY")
+            if write_iptc:
+                args.append("-IPTC:SpecialInstructions=EDITORIAL USE ONLY")
             args.append("-XMP-photoshop:Instructions=EDITORIAL USE ONLY")
 
         return self._run_exiftool_write(file_path, args)

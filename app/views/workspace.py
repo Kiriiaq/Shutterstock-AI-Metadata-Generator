@@ -41,12 +41,15 @@ from app.config.theme import (
 from app.utils.formatters import fmt_int, fmt_size
 from app.views.base_view import BaseView
 
+# Formats scannables — source de vérité côté backend, ré-exportée par la
+# facade (inclut HEIC/HEIF/AVIF/WebP/DNG depuis le support smartphone).
+from src.modules.integration import SUPPORTED_EXTENSIONS as SUPPORTED_EXTS
+
 if TYPE_CHECKING:
     from app.app import App
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_EXTS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 REFRESH_INTERVAL_MS = 5000
 HISTORY_TAIL = 5
 
@@ -816,7 +819,10 @@ class WorkspaceView(BaseView):
             copyright_notice=self._iptc_get("copyright_notice") or None,
         )
         try:
-            ok = api.write_metadata(self._current_path, iptc=iptc)
+            # authoritative=True : un champ vidé dans l'éditeur est
+            # réellement supprimé du fichier (IPTC + XMP + EXIF), la
+            # relecture reflète exactement ce qui est affiché.
+            ok = api.write_metadata(self._current_path, iptc=iptc, authoritative=True)
         except Exception:
             logger.exception("write_metadata failed")
             self._editor_status.configure(text="Écriture échouée", text_color=palette_pair("error"))
@@ -870,23 +876,28 @@ class WorkspaceView(BaseView):
 
         self._skip_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(
-            row1, text="Ignorer si méta", variable=self._skip_var,
+            row1,
+            text="Ignorer si méta",
+            variable=self._skip_var,
             font=get_font("body"),
         ).grid(row=0, column=0, sticky="w", padx=(0, SPACE_SM))
 
         self._write_var = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(
-            row1, text="Écrire les résultats", variable=self._write_var,
+            row1,
+            text="Écrire les résultats",
+            variable=self._write_var,
             font=get_font("body"),
         ).grid(row=0, column=1, sticky="w", padx=SPACE_SM)
 
         # Séparateur visuel léger entre options et boutons
-        ctk.CTkLabel(row1, text="│", text_color=palette_pair("border")).grid(
-            row=0, column=2, padx=SPACE_SM
-        )
+        ctk.CTkLabel(row1, text="│", text_color=palette_pair("border")).grid(row=0, column=2, padx=SPACE_SM)
 
         self._start_btn = ctk.CTkButton(
-            row1, text="Démarrer", width=110, height=28,
+            row1,
+            text="Démarrer",
+            width=110,
+            height=28,
             fg_color=palette_pair("accent"),
             hover_color=palette_pair("accent_hover"),
             text_color=palette_pair("accent_fg"),
@@ -898,7 +909,10 @@ class WorkspaceView(BaseView):
         self._start_btn.grid(row=0, column=3, padx=(0, SPACE_XS))
 
         self._stop_btn = ctk.CTkButton(
-            row1, text="Arrêter", width=80, height=28,
+            row1,
+            text="Arrêter",
+            width=80,
+            height=28,
             fg_color=palette_pair("error"),
             text_color=palette_pair("error_fg"),
             text_color_disabled=palette_pair("fg_subtle"),
@@ -908,7 +922,8 @@ class WorkspaceView(BaseView):
         self._stop_btn.grid(row=0, column=4, padx=SPACE_XS)
 
         self._analyze_status = ctk.CTkLabel(
-            row1, text="0 / 0 — En attente",
+            row1,
+            text="0 / 0 — En attente",
             font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         )
@@ -925,13 +940,17 @@ class WorkspaceView(BaseView):
         row2.grid(row=2, column=0, sticky="ew", padx=SPACE_SM, pady=(0, SPACE_XS))
         row2.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(
-            row2, text="⏳",
+            row2,
+            text="⏳",
             font=get_font("body"),
             text_color=palette_pair("fg_muted"),
-            width=20, anchor="w",
+            width=20,
+            anchor="w",
         ).grid(row=0, column=0, sticky="w")
         self._analyze_progress = ctk.CTkProgressBar(
-            row2, height=12, corner_radius=RADIUS_SM,
+            row2,
+            height=12,
+            corner_radius=RADIUS_SM,
             progress_color=palette_pair("accent"),
             fg_color=palette_pair("bg_hover"),
             border_color=palette_pair("border"),
@@ -940,7 +959,9 @@ class WorkspaceView(BaseView):
         self._analyze_progress.set(0)
         self._analyze_progress.grid(row=0, column=1, sticky="ew", padx=SPACE_XS)
         self._analyze_summary = ctk.CTkLabel(
-            row2, text="Aucune image", font=get_font("small"),
+            row2,
+            text="Aucune image",
+            font=get_font("small"),
             text_color=palette_pair("fg_muted"),
         )
         self._analyze_summary.grid(row=0, column=2, sticky="e", padx=(SPACE_SM, 0))
@@ -983,9 +1004,7 @@ class WorkspaceView(BaseView):
         # gating : actif dès qu'au moins un fichier est sélectionné
         # et qu'aucun traitement n'est en cours.
         if hasattr(self, "_export_btn"):
-            self._export_btn.configure(
-                state="normal" if (n_sel > 0 and not processing) else "disabled"
-            )
+            self._export_btn.configure(state="normal" if (n_sel > 0 and not processing) else "disabled")
 
     def _analyze_start(self) -> None:
         # Garde-fou double-clic (D-04 / T-221) : si un traitement est

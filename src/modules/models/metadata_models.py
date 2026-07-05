@@ -420,10 +420,17 @@ class ShutterstockMetadata:
         separated by commas, not spaces — the historical " ".join
         produced a single mega-keyword on import.
         """
+        from ..analysis.limits import (
+            SHUTTERSTOCK_DESCRIPTION_MAX,
+            SHUTTERSTOCK_KEYWORDS_MAX,
+            clamp_keywords,
+            smart_truncate,
+        )
+
         return {
             "Filename": self.filename,
-            "Description": self.description,
-            "Keywords": ", ".join(self.keywords),
+            "Description": smart_truncate(self.description, SHUTTERSTOCK_DESCRIPTION_MAX),
+            "Keywords": ", ".join(clamp_keywords(self.keywords, SHUTTERSTOCK_KEYWORDS_MAX)),
             "Categories": ", ".join(self.categories),
             "Editorial": "Yes" if self.editorial else "No",
             "Mature": "Yes" if self.mature_content else "No",
@@ -700,26 +707,44 @@ class ExpertMetadataReport:
         }
 
     def to_adobe_csv_row(self) -> Dict[str, str]:
-        """One row for the Adobe Stock contributor CSV (5 columns)."""
+        """One row for the Adobe Stock contributor CSV (5 columns).
+
+        Hard portal caps applied here (title 200 chars, 49 keywords)
+        with word-boundary truncation — never a chopped word, never an
+        ellipsis in the portal review queue.
+        """
+        from ..analysis.limits import ADOBE_KEYWORDS_MAX, ADOBE_TITLE_MAX, clamp_keywords, smart_truncate
+
         filename = Path(self.file_path).name
         return {
             "Filename": filename,
-            "Title": self.title_adobe or self.title_shutterstock,
-            "Keywords": ", ".join(self.keywords),
+            "Title": smart_truncate(self.title_adobe or self.title_shutterstock, ADOBE_TITLE_MAX),
+            "Keywords": ", ".join(clamp_keywords(self.keywords, ADOBE_KEYWORDS_MAX)),
             "Category": self.category_adobe_primary,
             "Releases": "",  # filled by user if model/property release exists
         }
 
     def to_shutterstock_csv_row(self) -> Dict[str, str]:
-        """One row for the Shutterstock contributor CSV (7 columns)."""
+        """One row for the Shutterstock contributor CSV (7 columns).
+
+        Hard portal caps applied here (description 200 chars, 50
+        keywords) with word-boundary truncation.
+        """
+        from ..analysis.limits import (
+            SHUTTERSTOCK_DESCRIPTION_MAX,
+            SHUTTERSTOCK_KEYWORDS_MAX,
+            clamp_keywords,
+            smart_truncate,
+        )
+
         filename = Path(self.file_path).name
         # Shutterstock uses Description as the primary text field —
         # we fall back to title if no description was generated.
         description = self.description or self.title_shutterstock
         return {
             "Filename": filename,
-            "Description": description,
-            "Keywords": ", ".join(self.keywords),
+            "Description": smart_truncate(description, SHUTTERSTOCK_DESCRIPTION_MAX),
+            "Keywords": ", ".join(clamp_keywords(self.keywords, SHUTTERSTOCK_KEYWORDS_MAX)),
             "Categories": ", ".join(self.categories_shutterstock),
             "Editorial": "Yes" if self.editorial else "No",
             "Mature": "Yes" if self.mature_content else "No",

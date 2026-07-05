@@ -46,8 +46,29 @@ class MetadataReader:
         "largefilesupport=1",
     ]
 
-    # Mapping of EXIF tags to our fields
+    # Mapping of EXIF tags to our fields.
+    #
+    # ExifTool is invoked with -G1 (family-1 groups), so EXIF tags come
+    # back as "IFD0:Make" / "ExifIFD:ISO" / "GPS:GPSLatitude" — the
+    # historical "EXIF:*" keys (family 0) never matched and EXIF was
+    # silently dropped. Both spellings are mapped for robustness.
     EXIF_MAPPING = {
+        "IFD0:Make": "camera_make",
+        "IFD0:Model": "camera_model",
+        "ExifIFD:LensModel": "lens_model",
+        "ExifIFD:FocalLength": "focal_length",
+        "ExifIFD:FNumber": "aperture",
+        "ExifIFD:ExposureTime": "shutter_speed",
+        "ExifIFD:ISO": "iso",
+        "ExifIFD:Flash": "flash_fired",
+        "ExifIFD:DateTimeOriginal": "date_taken",
+        "GPS:GPSLatitude": "gps_latitude",
+        "GPS:GPSLongitude": "gps_longitude",
+        "GPS:GPSAltitude": "gps_altitude",
+        "IFD0:Orientation": "orientation",
+        "ExifIFD:ColorSpace": "color_space",
+        "IFD0:BitsPerSample": "bit_depth",
+        # Family-0 spellings kept for callers feeding pre-grouped data.
         "EXIF:Make": "camera_make",
         "EXIF:Model": "camera_model",
         "EXIF:LensModel": "lens_model",
@@ -289,6 +310,12 @@ class MetadataReader:
         if xmp_found:
             sources.append(MetadataSource.XMP)
 
+        # Hydrate empty IPTC editor fields from XMP/EXIF mirrors. On
+        # HEIC/AVIF/WebP there is no IPTC IIM block, so title/caption/
+        # keywords live only in XMP (+ EXIF). Without this, the editor
+        # would show blank fields even though metadata is present.
+        self._hydrate_iptc_from_mirrors(metadata, raw_data)
+
         # Calculate megapixels
         if metadata.width and metadata.height:
             metadata.megapixels = round((metadata.width * metadata.height) / 1_000_000, 2)
@@ -329,11 +356,23 @@ class MetadataReader:
                 else:
                     setattr(metadata, field, value)
 
-        # Try alternative tags for dimensions
+        # Try alternative tags for dimensions. HEIC/AVIF/WebP/DNG report
+        # them under container-specific groups (QuickTime:, Track1:,
+        # SubIFD:, VP8:…), so fall back to a generic scan: any group's
+        # ImageWidth/ImageHeight, keeping the largest value (thumbnails
+        # embed smaller ones).
         if not metadata.width:
             metadata.width = raw_data.get("File:ImageWidth", 0)
         if not metadata.height:
             metadata.height = raw_data.get("File:ImageHeight", 0)
+        if not metadata.width or not metadata.height:
+            for key, value in raw_data.items():
+                if not isinstance(value, (int, float)):
+                    continue
+                if key.endswith(":ImageWidth"):
+                    metadata.width = max(int(metadata.width or 0), int(value))
+                elif key.endswith(":ImageHeight"):
+                    metadata.height = max(int(metadata.height or 0), int(value))
 
         return found
 
@@ -360,6 +399,41 @@ class MetadataReader:
 
         metadata.iptc = iptc
         return found
+
+    def _hydrate_iptc_from_mirrors(self, metadata: ImageMetadata, raw_data: Dict[str, Any]) -> None:
+        """Fill blank IPTC editor fields from XMP then EXIF mirror tags.
+
+        Symmetric with MetadataWriter, which writes those mirrors on
+        every format. Only *empty* IPTC fields are filled — a real IIM
+        value always wins. Keyword lists are only taken from a mirror
+        when IPTC had none.
+        """
+        iptc = metadata.iptc or IPTCFields()
+
+        def first(*keys: str) -> Optional[str]:
+            for k in keys:
+                v = raw_data.get(k)
+                if v not in (None, ""):
+                    return v if isinstance(v, str) else str(v)
+            return None
+
+        if not iptc.headline:
+            iptc.headline = first("XMP-photoshop:Headline", "XMP-dc:Title", "EXIF:XPTitle")
+        if not iptc.caption:
+            iptc.caption = first("XMP-dc:Description", "EXIF:ImageDescription")
+        if not iptc.byline:
+            iptc.byline = first("XMP-dc:Creator", "EXIF:Artist")
+        if not iptc.copyright_notice:
+            iptc.copyright_notice = first("XMP-dc:Rights", "EXIF:Copyright")
+
+        if not iptc.keywords:
+            subj = raw_data.get("XMP-dc:Subject")
+            if isinstance(subj, str):
+                subj = [s.strip() for s in subj.split(",") if s.strip()]
+            if subj:
+                iptc.keywords = list(subj)
+
+        metadata.iptc = iptc
 
     def _parse_xmp(self, metadata: ImageMetadata, raw_data: Dict[str, Any]) -> bool:
         """Parse XMP data from raw ExifTool output"""

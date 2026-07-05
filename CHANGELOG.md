@@ -7,6 +7,51 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Formats smartphone** : scan, analyse et écriture des métadonnées
+  sur HEIC/HEIF (iPhone, Samsung), AVIF, WebP et DNG (RAW smartphone),
+  en plus de JPEG/PNG/TIFF. Nouveau module `src/modules/formats.py`
+  (source de vérité unique des extensions + capacités par format).
+  Dépendance optionnelle `pillow-heif` pour ouvrir HEIC/AVIF côté
+  Pillow (compliance + conversion IA) ; dégradation gracieuse si
+  absente (métadonnées via ExifTool seul).
+- **Conversion IA transparente** : les formats non-JPEG/PNG sont
+  ré-encodés en JPEG en mémoire (redimensionnés ≤ 2048 px) avant
+  d'être envoyés au modèle vision Ollama.
+- **Limites plateformes centralisées** : `src/modules/analysis/limits.py`
+  (bornes officielles Adobe/Shutterstock + `smart_truncate` qui coupe à
+  la frontière de mot **sans ellipse « … »** + `clamp_keywords`).
+
+### Fixed
+- **Suppression de métadonnées effective** : l'éditeur IPTC écrit
+  désormais en mode *autoritaire* — un champ vidé est réellement
+  supprimé du fichier (args ExifTool `-TAG=`), et non laissé intact.
+  Les miroirs IPTC + XMP + EXIF sont synchronisés à chaque écriture, si
+  bien qu'une relecture reflète exactement ce qui était affiché
+  (bug « les données censées être supprimées réapparaissent »).
+- **Lecture EXIF réparée** : le reader mappait les tags en famille 0
+  (`EXIF:*`) alors qu'ExifTool renvoie la famille 1 (`IFD0:`, `ExifIFD:`,
+  `GPS:`) avec `-G1` — l'EXIF était silencieusement ignoré. Les deux
+  familles sont désormais mappées.
+- **Dimensions HEIC/AVIF/WebP/DNG** : fallback générique sur tout groupe
+  `*:ImageWidth/ImageHeight` (les conteneurs smartphone les exposent
+  sous des groupes spécifiques).
+- **Champs éditeur hydratés depuis XMP/EXIF** : sur les formats sans
+  bloc IPTC IIM (HEIC/AVIF/WebP), titre/description/mots-clés sont
+  relus depuis les miroirs XMP puis EXIF (sinon l'éditeur affichait
+  des champs vides malgré des métadonnées présentes).
+- **Zéro texte tronqué « … »** : titres/descriptions bornés aux limites
+  Adobe (titre 200) / Shutterstock (description 200) via `smart_truncate`
+  dans les exports CSV, le rapport expert et le post-traitement IA.
+
+### Changed
+- **Prompt IA borné** : le modèle vision produit désormais **un** titre
+  et **une** description qualitatifs par image, avec budgets de
+  caractères explicites, une seule phrase pour la description, et
+  interdiction stricte des marques et mots « stuffing ». Post-traitement
+  qui refiltre marques/stuffing (défense en profondeur) et applique les
+  budgets sans ellipse.
+
 ## [2.2.1] — 2026-07-01
 
 > **Audit complet 2026-06-12** (branche `audit/2026-06-12`) — scan
