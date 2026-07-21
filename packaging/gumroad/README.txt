@@ -12,10 +12,14 @@ folder). See INSTALL.md to activate it.
 
 Everything except unlimited export is already free and unlimited:
   - Scan + multi-select, IPTC read/write editor
+  - Smartphone formats: HEIC/HEIF (iPhone, Samsung), AVIF, WebP, DNG
+    -- alongside the usual JPEG / PNG / TIFF
   - Expert metadata report (4 scores + improvements + marketing uses)
   - AI enrichment via local Ollama (no API keys, no telemetry)
   - Dual-platform CSV layout -- Adobe Stock + Shutterstock side-by-side
   - Direct FTP / FTPS push
+
+Version included: v2.3.0
 
 Links
 -----
