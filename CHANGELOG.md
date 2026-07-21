@@ -7,6 +7,13 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-07-21
+
+> **Support des formats smartphone + fiabilisation des métadonnées.**
+> L'app traite désormais les photos HEIC/AVIF/WebP/DNG (iPhone,
+> Samsung, Pixel) et l'effacement d'un champ de métadonnées est enfin
+> réellement appliqué au fichier.
+
 ### Added
 - **Formats smartphone** : scan, analyse et écriture des métadonnées
   sur HEIC/HEIF (iPhone, Samsung), AVIF, WebP et DNG (RAW smartphone),
