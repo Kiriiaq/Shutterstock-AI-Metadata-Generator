@@ -23,9 +23,10 @@ JSON file by email, separately from this package (usually within a
 few hours of your Gumroad purchase).
 
 1. Open the app.
-2. Go to **Réglages -> Licence** (Settings -> License).
+2. In the **PARAMÈTRES** panel (bottom right), click **Modifier…**
+   (Settings). Scroll to the **Licence** section.
 3. Open the `.json` file you received, copy its full contents.
-4. Paste it into the text field in the app.
+4. Paste it into the field "Coller votre clé de licence (JSON)".
 5. Click **Activer** (Activate).
 
 You should see "Édition Pro -- licence à vie -- your@email.com" in
