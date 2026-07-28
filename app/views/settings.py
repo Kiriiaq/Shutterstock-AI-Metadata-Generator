@@ -25,6 +25,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Listing Gumroad ouvert par le bouton « Acheter Pro → » de la section
+# Licence. Constante nommée : changer d'URL de vente ne doit demander
+# qu'une seule édition ici (un rebuild de l'EXE reste nécessaire).
+PURCHASE_URL = "https://kiriiaq.gumroad.com/l/stockmeta"
+
 
 DEFAULTS: dict[str, Any] = {
     "ollama_url": "http://localhost:11434",
@@ -375,10 +380,10 @@ class SettingsView(BaseView):
             self.app.toasts.show(f"Échec : {msg}", kind="error")
 
     def _open_purchase_link(self) -> None:
-        """Ouvre le listing Gumroad/Lemon Squeezy dans le navigateur."""
+        """Ouvre le listing Gumroad dans le navigateur."""
         import webbrowser
-        url = "https://gumroad.com/l/shutterstockanalyzer-pro"  # TODO: remplacer par l'URL réelle
+
         try:
-            webbrowser.open(url)
+            webbrowser.open(PURCHASE_URL)
         except Exception:
-            self.app.toasts.show(f"Lien : {url}", kind="info")
+            self.app.toasts.show(f"Lien : {PURCHASE_URL}", kind="info")
