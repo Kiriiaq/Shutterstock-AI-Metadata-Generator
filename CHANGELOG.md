@@ -7,6 +7,23 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Fulfilment automatisé** (`tools/fulfill.py`) : interroge les ventes
+  Gumroad, signe une clé à vie par nouvel acheteur via
+  `generate_license.py` (chemin de signature unique), écrit la clé dans
+  `keys/` et rédige l'email prêt à envoyer. Un registre local évite toute
+  double émission. Envoi SMTP **optionnel** (`--send`) : sans
+  identifiants configurés le script fait tout le reste et laisse le
+  brouillon — il ne bloque jamais sur des secrets et n'en stocke aucun.
+  `--dry-run` pour prévisualiser, `--reissue <email>` pour un renvoi.
+- 25 tests couvrant l'extraction des champs acheteur (Gumroad a renommé
+  ces champs au fil du temps), le registre anti-doublon et le verrou SMTP.
+
+### Security
+- `keys/` ajouté au `.gitignore` : il contient des clés **réellement
+  signées** et des emails d'acheteurs.
+
+
 ## [2.4.0] — 2026-07-28
 
 > **Renommage produit : ShutterstockAnalyzer → StockMeta Pro.** Le nom

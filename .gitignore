@@ -98,3 +98,7 @@ photos_unmatched/
 # Claude Code
 .claude/
 tmpclaude-*
+
+# Issued licence keys + the fulfilment ledger. These are REAL signed keys
+# (anyone holding one unlocks Pro) plus buyer email addresses. Never commit.
+keys/
