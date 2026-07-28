@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+        },
+        colors: {
+          ink:   { 950:'#0a0c16', 900:'#11142400', 850:'#141826' },
+          brand: { 300:'#a5b4ff', 400:'#8b9cff', 500:'#6384ff', 600:'#4c68e8' },
+          mint:  { 400:'#7ccdbe', 500:'#4fb3a1' },
+        },
+      }
+    }
+  }
+</script>
+<style>
+  :root { color-scheme: light dark; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  /* Reveal-on-scroll — disabled entirely for reduced-motion users. */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+  .reveal.is-in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+    .pulse-dot { animation: none !important; }
+  }
+
+  .pulse-dot { animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+
+  /* Focus ring that is visible in both themes. */
+  :where(a,button,input,summary,[tabindex]):focus-visible {
+    outline: 2px solid #6384ff; outline-offset: 3px; border-radius: 6px;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(127,140,180,.10) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(127,140,180,.10) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 55%, transparent 100%);
+            mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 55%, transparent 100%);
+  }
+
+  /* Marquee of supported formats. */
+  .marquee { overflow: hidden; }
+  .marquee__track { display: flex; gap: .6rem; width: max-content; animation: slide 32s linear infinite; }
+  @keyframes slide { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee { overflow-x: auto; }
+    .marquee__track { animation: none; }
+  }
+  .marquee:hover .marquee__track { animation-play-state: paused; }
+</style>
+</head>
+
+<body>
+<!-- Gumroad strips class attributes from <html> and <body> when it embeds
+     the page, so the theme background must live on a real element. -->
+<div id="page" class="min-h-screen bg-white text-slate-800 dark:bg-[#0a0c16] dark:text-slate-200 font-sans antialiased selection:bg-brand-500/30">
+
+<a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:px-4 focus:py-2 focus:bg-brand-600 focus:text-white focus:rounded-lg">Skip to content</a>
+
+<!-- ───────────────────────── NAV ───────────────────────── -->
+<header class="sticky top-0 z-40 backdrop-blur-md bg-white/85 dark:bg-[#0a0c16]/85 border-b border-slate-200/80 dark:border-white/10">
+  <nav class="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between gap-4" aria-label="Primary">
+    <a href="#main" class="flex items-center gap-2.5 font-semibold tracking-tight">
+      <span aria-hidden="true" class="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white text-sm font-bold">S</span>
+      <span data-gumroad-field="name">StockMeta Pro</span>
+    </a>
+
+    <div class="flex items-center gap-2">
+      <button id="theme-toggle" type="button"
+              class="grid place-items-center w-9 h-9 rounded-lg border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 transition"
+              aria-label="Toggle dark mode">
+        <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="w-4 h-4 block dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+
+      <a data-gumroad-action="buy" data-gumroad-price="10"
+         class="cursor-pointer inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition shadow-sm whitespace-nowrap">
+        <span class="hidden sm:inline">Get it —</span>
+        <span data-gumroad-field="price">€10</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ───────────────────────── HERO ───────────────────────── -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-6xl px-5 pt-16 pb-14 md:pt-24 md:pb-20">
+    <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-12 lg:gap-16 items-center">
+
+      <div>
+        <p class="inline-flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300 mb-6">
+          <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-mint-500" aria-hidden="true"></span>
+          Runs 100% on your machine
+        </p>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-[3.4rem] font-bold tracking-tight leading-[1.08] text-slate-900 dark:text-white">
+          Stop writing keywords.<br>
+          <span class="bg-gradient-to-r from-brand-500 to-mint-500 bg-clip-text text-transparent">Ship your photos.</span>
+        </h1>
+
+        <p class="mt-6 text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl">
+          Titles, descriptions, keywords and categories for Adobe Stock and Shutterstock —
+          generated in seconds instead of 5–10 minutes per image. No cloud, no API bills,
+          nothing leaves your PC.
+        </p>
+
+        <div id="buy" class="mt-9 flex flex-wrap items-center gap-3">
+          <a data-gumroad-action="buy" data-gumroad-price="10"
+             class="cursor-pointer inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[.98] text-white font-semibold transition shadow-lg shadow-brand-600/20">
+            Unlock unlimited exports — <span data-gumroad-field="price">€10</span>
+          </a>
+          <a href="#pricing" class="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/5 font-medium transition">
+            What's free?
+          </a>
+        </div>
+
+        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          One payment, lifetime licence · No subscription · Works offline
+        </p>
+      </div>
+
+      <!-- Product cover: served from Gumroad's own asset host. -->
+      <div class="reveal">
+        <div class="rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl shadow-slate-900/10 dark:shadow-black/50 bg-slate-100 dark:bg-white/5">
+          <img src="https://public-files.gumroad.com/han4by8oqjy533yrrori6w5msddf"
+               alt="StockMeta Pro workspace: a scanned folder of images with the IPTC metadata editor open."
+               width="1280" height="720" loading="eager"
+               class="w-full h-auto block">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── FORMATS MARQUEE ───────────────────── -->
+<section class="py-8 border-y border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[.03]" aria-labelledby="formats-h">
+  <h2 id="formats-h" class="sr-only">Supported image formats</h2>
+  <p class="text-center text-xs font-mono uppercase tracking-[.18em] text-slate-500 dark:text-slate-400 mb-5">
+    Reads your phone photos — no conversion step
+  </p>
+  <div class="marquee" role="list" aria-label="Supported formats">
+    <div class="marquee__track px-3">
+      <!-- duplicated once for a seamless loop; copy is aria-hidden -->
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">HEIC <span class="text-slate-400 dark:text-slate-500">· iPhone</span></span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">HEIF <span class="text-slate-400 dark:text-slate-500">· Samsung</span></span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">DNG <span class="text-slate-400 dark:text-slate-500">· RAW</span></span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">AVIF</span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">WebP</span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">JPEG</span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">PNG</span>
+      <span role="listitem" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">TIFF</span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">HEIC <span class="text-slate-400 dark:text-slate-500">· iPhone</span></span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">HEIF <span class="text-slate-400 dark:text-slate-500">· Samsung</span></span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">DNG <span class="text-slate-400 dark:text-slate-500">· RAW</span></span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">AVIF</span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">WebP</span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">JPEG</span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">PNG</span>
+      <span aria-hidden="true" class="px-4 py-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 whitespace-nowrap">TIFF</span>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── THE TRANSFORM ───────────────────── -->
+<section class="py-20 md:py-28" aria-labelledby="how-h">
+  <div class="mx-auto max-w-6xl px-5">
+    <div class="max-w-2xl mb-14 reveal">
+      <h2 id="how-h" class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">From bare file to upload-ready</h2>
+      <p class="mt-4 text-slate-600 dark:text-slate-300 text-lg">
+        Point it at a folder. It reads what's already in the file, scores it, and writes the CSV each portal expects.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 items-stretch">
+      <!-- BEFORE -->
+      <div class="reveal rounded-2xl border border-slate-200 dark:border-white/10 p-6 bg-slate-50 dark:bg-white/[.03]">
+        <p class="font-mono text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-4">Before</p>
+        <div class="font-mono text-sm space-y-2.5">
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">file</span><span class="text-slate-700 dark:text-slate-200">IMG_4821.HEIC</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">title</span><span class="text-rose-500 dark:text-rose-400">— empty —</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">keywords</span><span class="text-rose-500 dark:text-rose-400">— empty —</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">category</span><span class="text-rose-500 dark:text-rose-400">— empty —</span></div>
+        </div>
+        <p class="mt-5 pt-4 border-t border-slate-200 dark:border-white/10 text-sm text-slate-500 dark:text-slate-400">
+          ≈ 5–10 minutes of typing, per image.
+        </p>
+      </div>
+
+      <!-- AFTER -->
+      <div class="reveal rounded-2xl border-2 border-brand-500/60 dark:border-brand-500/50 p-6 bg-white dark:bg-brand-500/[.06] shadow-lg shadow-brand-600/5">
+        <p class="font-mono text-xs uppercase tracking-widest text-brand-600 dark:text-brand-300 mb-4">After · a few seconds</p>
+        <div class="font-mono text-sm space-y-2.5">
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">title</span><span class="text-slate-800 dark:text-slate-100">Two architects reviewing blueprints in a sunlit studio</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">keywords</span><span class="text-slate-800 dark:text-slate-100">architect, blueprint, studio, teamwork, daylight…</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">category</span><span class="text-slate-800 dark:text-slate-100">Business/Finance</span></div>
+          <div class="flex gap-3"><span class="text-slate-400 w-24 shrink-0">export</span><span class="text-mint-500">adobe.csv + shutterstock.csv ✓</span></div>
+        </div>
+        <p class="mt-5 pt-4 border-t border-brand-500/20 text-sm text-slate-600 dark:text-slate-300">
+          Trimmed to each portal's limits — never a truncated “…”.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── PRICING / THE MODEL ───────────────────── -->
+<section id="pricing" class="py-20 md:py-28 bg-slate-50 dark:bg-white/[.03] border-y border-slate-200 dark:border-white/10" aria-labelledby="pricing-h">
+  <div class="mx-auto max-w-6xl px-5">
+
+    <div class="max-w-2xl mb-14 reveal">
+      <h2 id="pricing-h" class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">Almost everything is free</h2>
+      <p class="mt-4 text-slate-600 dark:text-slate-300 text-lg">
+        Not a trial, not a crippled demo. The full analysis pipeline is free forever.
+        The single metered thing is writing the export file.
+      </p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+
+      <!-- FREE -->
+      <div class="reveal rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-7">
+        <div class="flex items-baseline justify-between gap-4 mb-6">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Community</h3>
+          <span class="font-mono text-2xl font-bold text-slate-900 dark:text-white">€0</span>
+        </div>
+        <ul class="space-y-3 text-[15px] text-slate-700 dark:text-slate-300">
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Folder scanning, multi-select, full IPTC editor</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Expert report — commercial, technical, SEO &amp; rejection-risk scores</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Local AI enrichment via Ollama (LLaVA, LLaMA Vision, Moondream)</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Adobe + Shutterstock CSV layout, side by side</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>FTP / FTPS upload, pre-upload validation, history</li>
+          <li class="flex gap-3"><span class="text-amber-500 mt-px" aria-hidden="true">◐</span><span><strong>3 export runs</strong>, then the export step asks for a licence</span></li>
+        </ul>
+        <a href="https://github.com/Kiriiaq/StockMeta" target="_blank" rel="noopener noreferrer"
+           class="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-brand-600 dark:text-brand-300 hover:underline">
+          Download the free build on GitHub
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <!-- PRO -->
+      <div class="reveal rounded-2xl border-2 border-brand-500 bg-white dark:bg-brand-500/[.07] p-7 relative shadow-xl shadow-brand-600/10">
+        <span class="absolute -top-3 left-7 px-3 py-1 rounded-full bg-brand-600 text-white text-xs font-semibold tracking-wide">LIFETIME</span>
+        <div class="flex items-baseline justify-between gap-4 mb-6">
+          <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Pro</h3>
+          <span class="font-mono text-2xl font-bold text-slate-900 dark:text-white" data-gumroad-field="price">€10</span>
+        </div>
+        <ul class="space-y-3 text-[15px] text-slate-700 dark:text-slate-300">
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Everything in Community</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span><strong>Unlimited exports</strong>, forever</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>One payment — no subscription, no renewal</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Activates offline; keeps working without internet</li>
+          <li class="flex gap-3"><span class="text-mint-500 mt-px" aria-hidden="true">✓</span>Licence tied to your email, not to one machine</li>
+        </ul>
+
+        <a data-gumroad-action="buy" data-gumroad-price="10"
+           class="cursor-pointer mt-7 w-full inline-flex justify-center items-center gap-2 px-6 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[.98] text-white font-semibold transition shadow-lg shadow-brand-600/20">
+          Get Pro — <span data-gumroad-field="price">€10</span>
+        </a>
+
+        <!-- Pay-what-you-want: this product accepts more than the minimum. -->
+        <div class="mt-5 pt-5 border-t border-slate-200 dark:border-white/10">
+          <label for="gr-price" class="block text-sm text-slate-600 dark:text-slate-300 mb-2">
+            Want to pay more and support the work? <span class="text-slate-400 dark:text-slate-500">(optional)</span>
+          </label>
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm" aria-hidden="true">€</span>
+              <input id="gr-price" type="number" min="10" step="0.01" placeholder="10.00"
+                     aria-describedby="gr-price-hint"
+                     class="w-full pl-7 pr-3 py-2.5 rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 text-slate-900 dark:text-white font-mono text-sm">
+            </div>
+            <button id="gr-buy" type="button"
+                    class="px-5 py-2.5 rounded-lg border border-brand-500 text-brand-600 dark:text-brand-300 hover:bg-brand-500/10 font-semibold text-sm transition whitespace-nowrap">
+              Pay that
+            </button>
+          </div>
+          <p id="gr-price-hint" class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            €10 minimum. Leave it empty and Gumroad will ask you at checkout.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── PRIVACY ───────────────────── -->
+<section class="py-20 md:py-28" aria-labelledby="local-h">
+  <div class="mx-auto max-w-6xl px-5 grid md:grid-cols-[1fr_1.1fr] gap-12 items-center">
+    <div class="reveal">
+      <h2 id="local-h" class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">Your photos never leave the machine</h2>
+      <p class="mt-5 text-slate-600 dark:text-slate-300 text-lg leading-relaxed">
+        The analysis is heuristic first: it reads the metadata and image properties already in your files.
+        AI is an optional enhancer running on your own GPU through Ollama — not a cloud API.
+      </p>
+      <ul class="mt-7 space-y-3 text-[15px] text-slate-700 dark:text-slate-300">
+        <li class="flex gap-3"><span class="text-mint-500" aria-hidden="true">✓</span>No API keys, no per-image billing</li>
+        <li class="flex gap-3"><span class="text-mint-500" aria-hidden="true">✓</span>No telemetry, no analytics, no account</li>
+        <li class="flex gap-3"><span class="text-mint-500" aria-hidden="true">✓</span>Originals untouched unless you opt into IPTC write-back</li>
+      </ul>
+    </div>
+
+    <!-- Pure-CSS "network monitor" motif: no external assets. -->
+    <div class="reveal rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-950 p-6 font-mono text-sm overflow-hidden">
+      <div class="flex gap-1.5 mb-5" aria-hidden="true">
+        <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+        <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+        <span class="w-3 h-3 rounded-full bg-mint-500/80"></span>
+      </div>
+      <p class="text-slate-500 mb-3">$ netstat — outbound while analysing 200 images</p>
+      <p class="text-mint-400">› 0 connections to any cloud service</p>
+      <p class="text-mint-400">› 0 bytes of image data uploaded</p>
+      <p class="text-slate-400 mt-3">› localhost:11434 <span class="text-slate-600">(your own Ollama, optional)</span></p>
+      <p class="text-slate-400">› your FTP host <span class="text-slate-600">(only when you press upload)</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── FAQ ───────────────────── -->
+<section class="py-20 md:py-28 bg-slate-50 dark:bg-white/[.03] border-t border-slate-200 dark:border-white/10" aria-labelledby="faq-h">
+  <div class="mx-auto max-w-3xl px-5">
+    <h2 id="faq-h" class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-10 reveal">Before you buy</h2>
+
+    <div class="space-y-3">
+      <details class="reveal group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-5 open:shadow-md transition">
+        <summary class="cursor-pointer font-semibold text-slate-900 dark:text-white list-none flex justify-between items-center gap-4">
+          How fast do I get my licence key?
+          <span class="text-brand-500 shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+          Keys are issued by hand, so it is <strong>not instant</strong> — usually within a few hours of your purchase,
+          sent to your Gumroad email as a JSON file. If nothing has arrived after 24 hours, reply to your receipt
+          and it will be sorted out. Check your spam folder first.
+        </p>
+      </details>
+
+      <details class="reveal group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-5 open:shadow-md transition">
+        <summary class="cursor-pointer font-semibold text-slate-900 dark:text-white list-none flex justify-between items-center gap-4">
+          How do I activate it?
+          <span class="text-brand-500 shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+          Open the app, go to the <span class="font-mono text-sm">PARAMÈTRES</span> panel → <span class="font-mono text-sm">Modifier…</span> →
+          <span class="font-mono text-sm">Licence</span>, paste the JSON, and click <span class="font-mono text-sm">Activer</span>.
+          It verifies offline and stays active forever.
+        </p>
+      </details>
+
+      <details class="reveal group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-5 open:shadow-md transition">
+        <summary class="cursor-pointer font-semibold text-slate-900 dark:text-white list-none flex justify-between items-center gap-4">
+          What do I actually need to run it?
+          <span class="text-brand-500 shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+          Windows 10 or 11 and about 4 GB of RAM. No installation — it is a single executable you double-click.
+          <strong>ExifTool</strong> is recommended for reading and writing metadata inside your files, and
+          <strong>Ollama</strong> is optional if you want AI enrichment. Both are free, and the app works without them.
+        </p>
+      </details>
+
+      <details class="reveal group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-5 open:shadow-md transition">
+        <summary class="cursor-pointer font-semibold text-slate-900 dark:text-white list-none flex justify-between items-center gap-4">
+          Is this a subscription?
+          <span class="text-brand-500 shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+          No. One payment, and the licence keeps working — offline, with no renewal and no expiry date.
+        </p>
+      </details>
+
+      <details class="reveal group rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[.04] p-5 open:shadow-md transition">
+        <summary class="cursor-pointer font-semibold text-slate-900 dark:text-white list-none flex justify-between items-center gap-4">
+          Can I try it before paying?
+          <span class="text-brand-500 shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <p class="mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+          Yes — and you should. The free build on
+          <a href="https://github.com/Kiriiaq/StockMeta" target="_blank" rel="noopener noreferrer" class="text-brand-600 dark:text-brand-300 underline underline-offset-2">GitHub</a>
+          is the same application, including 3 free export runs. Buy only once you have seen it work on your own photos.
+        </p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────── FINAL CTA ───────────────────── -->
+<section class="py-20 md:py-28" aria-labelledby="cta-h">
+  <div class="mx-auto max-w-3xl px-5 text-center reveal">
+    <h2 id="cta-h" class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+      Ten euros, once.
+    </h2>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-300">
+      Roughly the time you lose keywording a dozen images by hand.
+    </p>
+    <a data-gumroad-action="buy" data-gumroad-price="10"
+       class="cursor-pointer mt-9 inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[.98] text-white font-semibold text-lg transition shadow-xl shadow-brand-600/25">
+      Unlock unlimited exports
+    </a>
+    <p class="mt-5 text-sm text-slate-500 dark:text-slate-400">
+      Licence key emailed after purchase · Windows 10/11
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="border-t border-slate-200 dark:border-white/10 py-10">
+  <div class="mx-auto max-w-6xl px-5 flex flex-col sm:flex-row gap-4 justify-between items-center text-sm text-slate-500 dark:text-slate-400">
+    <p><span data-gumroad-field="name">StockMeta Pro</span> — metadata for microstock, generated locally.</p>
+    <p>Not affiliated with Shutterstock, Inc. or Adobe Inc.</p>
+  </div>
+</footer>
+
+</div><!-- /#page -->
+
+<script>
+  // ---- Theme: follow the system, remember an explicit choice. ----
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try { saved = localStorage.getItem('sm-theme'); } catch (e) {}
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (saved === null && prefersDark)) root.classList.add('dark');
+
+    var btn = document.getElementById('theme-toggle');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        root.classList.toggle('dark');
+        try { localStorage.setItem('sm-theme', root.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+      });
+    }
+  })();
+
+  // ---- Reveal on scroll (skipped when the user prefers reduced motion). ----
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  // ---- Pay-what-you-want: post the chosen amount to the Gumroad host. ----
+  // Deliberately NOT data-gumroad-action="buy": the delegated handler would
+  // fire before the custom price is attached.
+  (function () {
+    var buy = document.getElementById('gr-buy');
+    var input = document.getElementById('gr-price');
+    if (!buy || !input) return;
+
+    function checkout() {
+      var raw = (input.value || '').trim();
+      var params = {};
+      if (raw !== '') {
+        var n = parseFloat(raw);
+        if (!isNaN(n) && n >= 0) params.price = String(n);
+      }
+      parent.postMessage({ type: 'gumroad:checkout', params: params }, '*');
+    }
+
+    buy.addEventListener('click', checkout);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); checkout(); }
+    });
+  })();
+</script>
+
+</body>
+</html>

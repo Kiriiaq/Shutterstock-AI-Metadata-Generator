@@ -18,7 +18,7 @@
 | **Workspace dark** | `docs/media/workspace_dark.png` | PNG | 2582×1550, dark theme, 15 files scanned | ✅ Done |
 | **Export Batch modal** (« Les deux » + bandeau quota « 🎁 3/3 exports gratuits · Pro 10 € = illimité ») | `docs/media/export_batch.png` | PNG | 1672×1226 modal capture | ✅ Done |
 | **Expert Report modal** (4 scores, titres SEO, keywords — gratuit, sans quota post-pivot) | `docs/media/expert_report.png` | PNG | 1672×1226 modal capture | ✅ Done |
-| **Upsell screen** (rapport expert, quota épuisé) | `docs/media/expert_report_upsell.png` | PNG | 1100×780 modal capture | 🟡 TODO |
+| ~~Upsell rapport expert~~ | — | — | **Sans objet** depuis le pivot v2.2.0 : le rapport expert est gratuit et sans quota. L'upsell vit désormais dans la modale d'export. | ⬜ N/A |
 
 **Hero GIF storyboard** (25-30 s) :
 
@@ -38,6 +38,8 @@ Outil suggéré : **ScreenToGif** (gratuit, Windows, export optimisé).
 | Asset | Target file | Format | Specs | Status |
 |---|---|---|---|---|
 | **Icône Windows** | `assets/icons/icone.ico` | ICO | 256, 128, 64, 32, 16 | ✅ existe |
+| **Cover Gumroad** | `docs/media/gumroad_cover.png` | PNG | 1280×720 | ✅ Done |
+| **Vignette Gumroad** | `docs/media/gumroad_thumbnail.png` | PNG | 600×600 | ✅ Done |
 | **PNG carré social** | `docs/media/social_square.png` | PNG | 1080×1080, fond accent | 🟡 TODO |
 | **Bannière header** | `docs/media/banner_1920.png` | PNG | 1920×400, fond gradient | 🟡 TODO |
 | **Logo SVG vectoriel** | `assets/logo.svg` | SVG | 512×512 source | 🟡 TODO |

@@ -15,7 +15,7 @@
   v2.2 : **tout est gratuit** (scan, IPTC, rapport expert, IA, dual CSV,
   FTP) ; **seul l'export de données est payant** — 3 exports gratuits
   puis clé à vie **10 € (paiement unique)**.
-- **Version actuelle** : `v2.3.0` — voir `CHANGELOG.md` pour le détail.
+- **Version actuelle** : `v2.4.0` — voir `CHANGELOG.md` pour le détail.
 - **Statut** : **stable et publié** (132 tests verts, ruff propre, 2 EXE
   PyInstaller en GitHub Release, dossier de qualification IHM).
 

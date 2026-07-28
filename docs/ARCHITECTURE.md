@@ -1,10 +1,10 @@
-# Architecture IHM — ShutterstockAnalyzer v3
+# Architecture IHM — StockMeta Pro (UI v3)
 
 **Statut** : implémenté et actif (commit `386741c` + Phase 6).
 **Stack** : Python 3.11+, customtkinter, tkinter/ttk, Pillow (icônes seulement), stdlib.
 **Langue interface** : 100 % français, vouvoiement / impersonnel.
 **Entrée** : `python main.py` ou `python -m app.main`. EXE produit par
-`python build.py release` (`dist/ShutterstockAnalyzer.exe`).
+`python build.py release` (`dist/StockMetaPro.exe`).
 
 ## 1. Philosophie
 
@@ -125,7 +125,9 @@ Les vues s'abonnent aux changements (`state.on("selected_paths", callback)`) et 
 - `app.config.theme.LIGHT` et `DARK` exposent toutes les couleurs sémantiques.
 - `get_color(name)` lit `ctk.get_appearance_mode()` à chaque appel — la bascule est instantanée.
 - Le `ttk.Style` du Treeview (DataTable) s'auto-resync via une callback `on_theme_change` posée par le composant.
-- Préférence persistée dans `%APPDATA%/ShutterstockAnalyzer/ui_prefs.json` (Windows) ou `~/.shutterstock_analyzer/ui_prefs.json` (autres).
+- Préférence persistée dans `%APPDATA%/ShutterstockAnalyzer/ui_prefs.json`
+  (nom de dossier historique conservé au renommage v2.4.0, pour ne pas
+  orpheliner les préférences existantes) (Windows) ou `~/.shutterstock_analyzer/ui_prefs.json` (autres).
 - `Ctrl+Shift+T` bascule clair ↔ sombre (ne touche pas au mode `system`).
 
 ## 9. Composants réutilisables (`app/components/`)
