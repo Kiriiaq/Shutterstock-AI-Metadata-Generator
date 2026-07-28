@@ -14,8 +14,20 @@ src/modules/licensing/_secret_compiled.py
 # Run `git add -f vente.html` if you want to version it in a private repo.
 vente.html
 
-# Gumroad delivery bundle (~25 MB binary — built by hand, not versioned)
-packaging/gumroad/*.zip
+# Internal working docs — kept local, never published on the public repo.
+# Commercial strategy (revenue projections, pricing rationale, launch
+# checklist, marketing drafts) and the internal audit history: useful to
+# the maintainer, pure noise (or oversharing) for a visitor.
+docs/MONETIZATION.md
+LAUNCH_PROCEDURE.html
+LINKEDIN_DRAFTS.md
+PROJECT_OVERVIEW.html
+AUDIT.md
+audit/
+
+# Gumroad delivery bundle — buyer-facing files + the ~33 MB binary,
+# assembled by hand for the paid channel, not part of the free repo.
+packaging/gumroad/
 
 # ExifTool backups written next to edited images when create_backup=True
 *_original

@@ -2,11 +2,11 @@
 
 > **Generate Adobe Stock & Shutterstock metadata locally — AI optional, FTP push built-in.**
 
-[![Version](https://img.shields.io/badge/version-2.2.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-110%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-132%20passing-success.svg)](tests/)
 [![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
 
 ![ShutterstockAnalyzer — workspace](docs/media/workspace.png)
@@ -50,7 +50,7 @@ No cloud API costs · no telemetry · everything stays on your machine.
 
 ### Option 1 — Download the EXE (recommended)
 
-1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~25 MB).
+1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~33 MB).
 2. Double-click. Done.
 
 ### Option 2 — Run from source
@@ -134,7 +134,6 @@ key (10 € — lifetime, one-shot)** unlocks unlimited exports.
 
 Pro is activated by pasting a JSON licence key into **Settings → Licence**.
 One-shot **10 €** payment, works offline forever, no subscription.
-See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the rationale.
 
 ---
 
@@ -225,7 +224,7 @@ pip install -e ".[dev]"
 # Run
 python main.py
 
-# Tests (120 tests, ~7 s)
+# Tests (132 tests, ~9 s)
 pytest tests/ -q
 
 # Lint
@@ -246,10 +245,9 @@ Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
 |---|---|
 | `app/` | UI v3 — CustomTkinter, French locale |
 | `src/` | Backend — UI-agnostic, single facade entry point |
-| `tests/` | Automated suite (pytest, 120 tests) |
+| `tests/` | Automated suite (pytest, 132 tests) |
 | `test/` | Qualification dossier (tool qualification methodology) — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
-| `docs/` | ARCHITECTURE, MEDIA, MONETIZATION |
-| `audit/` | Internal audit history + screenshots |
+| `docs/` | ARCHITECTURE, MEDIA |
 | `assets/icons/` | Windows ICO |
 | `tools/` | Standalone scripts (WCAG colour checker) |
 | `.github/workflows/` | CI (lint + test) + Release (tag-triggered) |
@@ -301,9 +299,6 @@ export 3 times for free). Everything else — scan, IPTC, expert report,
 AI enrichment, dual-platform CSV, FTP — is free. Sold via Gumroad as a
 **10 € one-shot lifetime key**, activated locally with HMAC signature
 verification.
-
-See [`docs/MONETIZATION.md`](docs/MONETIZATION.md) for the full
-breakdown.
 
 *Not affiliated with Shutterstock, Inc. or Adobe Inc.*
 
