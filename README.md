@@ -50,14 +50,14 @@ No cloud API costs · no telemetry · everything stays on your machine.
 
 ### Option 1 — Download the EXE (recommended)
 
-1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases) page (~25 MB).
+1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~25 MB).
 2. Double-click. Done.
 
 ### Option 2 — Run from source
 
 ```bash
-git clone https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator.git
-cd Shutterstock-AI-Metadata-Generator
+git clone https://github.com/Kiriiaq/StockMeta.git
+cd StockMeta
 pip install -r requirements.txt
 python main.py
 ```

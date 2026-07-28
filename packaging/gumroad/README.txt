@@ -23,8 +23,8 @@ Version included: v2.3.0
 
 Links
 -----
-Source code & releases : https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator
-Changelog               : https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/blob/main/CHANGELOG.md
+Source code & releases : https://github.com/Kiriiaq/StockMeta
+Changelog               : https://github.com/Kiriiaq/StockMeta/blob/main/CHANGELOG.md
 Support                 : reply to your Gumroad purchase receipt email.
 
 Not affiliated with Shutterstock, Inc. or Adobe Inc.
