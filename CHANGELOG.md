@@ -7,6 +7,39 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-07-28
+
+> **Renommage produit : ShutterstockAnalyzer → StockMeta Pro.** Le nom
+> commercial ne contient plus de marque déposée tierce, ce qui lève le
+> risque de takedown sur le canal de vente. Aucun changement
+> fonctionnel.
+
+### Changed
+- **Nom du produit** : `ShutterstockAnalyzer` → **StockMeta Pro** dans
+  le titre de fenêtre, la topbar, les docs et le dépôt (renommé
+  `Kiriiaq/StockMeta`).
+- **Binaire** : `ShutterstockAnalyzer.exe` → **`StockMetaPro.exe`**
+  (sans espace, pour ne pas imposer de guillemets en ligne de commande).
+- `AppUserModelID` Windows et nom du logger alignés sur `StockMetaPro`.
+- Nom de paquet `pyproject.toml` : `stockmeta-pro`.
+
+### Fixed
+- **Bouton « Acheter Pro » réparé** : il ouvrait une URL placeholder
+  (`gumroad.com/l/shutterstockanalyzer-pro`) qui renvoyait 404. L'URL
+  est désormais une constante `PURCHASE_URL` pointant sur le listing
+  réel.
+
+### Notes de compatibilité
+- Le dossier de données utilisateur reste **`~/.shutterstock_ai/`** et le
+  chemin de licence **`~/.shutterstock_ai/license.json`** : les renommer
+  aurait fait perdre historique et licence activée aux utilisateurs
+  existants. Idem pour `%APPDATA%/ShutterstockAnalyzer` (préférences UI).
+- `DEFAULT_DEV_SECRET` conserve son ancienne valeur : la modifier
+  invaliderait toutes les licences signées avec le secret de dev.
+- Les identifiants liés à la **plateforme** Shutterstock
+  (`ShutterstockMetadata`, `SHUTTERSTOCK_CATEGORIES`, CSV, conformité)
+  sont inchangés — ils désignent le portail, pas le produit.
+
 ## [2.3.0] — 2026-07-21
 
 > **Support des formats smartphone + fiabilisation des métadonnées.**

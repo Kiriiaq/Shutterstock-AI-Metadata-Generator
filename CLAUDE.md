@@ -9,7 +9,7 @@
 ## Identité du projet
 
 - **Nom** : dépôt **StockMeta** ; binaire et nom technique
-  `ShutterstockAnalyzer` ; nom commercial *StockMeta Pro*.
+  `StockMeta Pro` ; nom commercial *StockMeta Pro*.
 - **Pitch** : générateur local de métadonnées microstock (Adobe Stock +
   Shutterstock) avec IA optionnelle via Ollama. **Freemium** depuis
   v2.2 : **tout est gratuit** (scan, IPTC, rapport expert, IA, dual CSV,

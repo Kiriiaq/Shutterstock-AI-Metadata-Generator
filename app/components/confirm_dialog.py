@@ -38,7 +38,7 @@ def confirm(
     dialog.transient(parent.winfo_toplevel())
     dialog.resizable(False, False)
     dialog.configure(fg_color=palette_pair("bg"))
-    # Phase G (2026-05-16) — propage l'icône ShutterstockAnalyzer sur
+    # Phase G (2026-05-16) — propage l'icône StockMeta Pro sur
     # la fenêtre de confirmation, comme sur les autres modales. On
     # remonte au winfo_toplevel() (la fenêtre App) puis on appelle son
     # helper ``_apply_modal_icon`` si présent. Aucun import circulaire :

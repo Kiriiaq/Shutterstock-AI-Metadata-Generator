@@ -22,13 +22,13 @@ def _configure_logging() -> None:
 
 
 def _set_appusermodel_id() -> None:
-    """Windows: anchor the taskbar icon to ShutterstockAnalyzer.v2.0."""
+    """Windows: anchor the taskbar icon to StockMetaPro.v2."""
     if sys.platform != "win32":
         return
     try:
         import ctypes
 
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ShutterstockAnalyzer.v2.0")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("StockMetaPro.v2")
     except Exception:
         logging.getLogger(__name__).warning("Could not set AppUserModelID", exc_info=True)
 
@@ -48,7 +48,7 @@ def _instantiate_backend():
 def main() -> int:
     _configure_logging()
     _set_appusermodel_id()
-    logger = logging.getLogger("ShutterstockAnalyzer")
+    logger = logging.getLogger("StockMetaPro")
 
     # Import after sys.path setup
     from app.app import App
