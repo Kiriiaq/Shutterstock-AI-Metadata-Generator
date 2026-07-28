@@ -55,7 +55,7 @@ The `.gitignore` blocks:
 - The local SQLite database (lives in `~/.shutterstock_ai/`, never in the
   project tree)
 
-The Phase 1 audit (see `AUDIT.md`) confirmed **no secrets** are checked in.
+A full repository audit confirmed **no secrets** are checked in.
 
 ---
 

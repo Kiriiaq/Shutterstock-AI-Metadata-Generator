@@ -8,19 +8,16 @@
 
 ## Identité du projet
 
-- **Nom** : ShutterstockAnalyzer (alias *Shutterstock AI Metadata Generator*)
+- **Nom** : dépôt **StockMeta** ; binaire et nom technique
+  `ShutterstockAnalyzer` ; nom commercial *StockMeta Pro*.
 - **Pitch** : générateur local de métadonnées microstock (Adobe Stock +
   Shutterstock) avec IA optionnelle via Ollama. **Freemium** depuis
   v2.2 : **tout est gratuit** (scan, IPTC, rapport expert, IA, dual CSV,
   FTP) ; **seul l'export de données est payant** — 3 exports gratuits
   puis clé à vie **10 € (paiement unique)**.
-- **Version actuelle** : `v2.2.0` (pivot monétisation = export-only, 10 € à vie)
-  + audit complet 2026-06-12 (branche `audit/2026-06-12`, voir CHANGELOG
-  `[Unreleased]`).
-- **Statut** : **stable, monétisation amorçable** (110 tests verts,
-  EXE PyInstaller, dossier de qualification IHM, mécanique de
-  licence + gate export + UI livrés). Reste avant ship public : assets
-  visuels + listing Gumroad 10 €.
+- **Version actuelle** : `v2.3.0` — voir `CHANGELOG.md` pour le détail.
+- **Statut** : **stable et publié** (132 tests verts, ruff propre, 2 EXE
+  PyInstaller en GitHub Release, dossier de qualification IHM).
 
 ---
 
@@ -44,7 +41,7 @@
 ```bash
 pip install -e ".[dev]"                                                # install
 python main.py                                                         # run from source
-pytest tests/ -q                                                       # tests (110)
+pytest tests/ -q                                                       # tests (132)
 ruff check app/ src/ main.py build.py tests/                           # lint
 ruff format app/ src/ main.py build.py tests/                          # format
 python build.py debug | release | all | clean                         # PyInstaller
@@ -129,8 +126,11 @@ main.py  →  app.main:main()
 - **Posture lax sur la validation** : warnings, pas d'erreurs bloquantes.
   Les reviewers Adobe / Shutterstock font le QA final.
 - **Pas de nouvelle dépendance runtime** sans discussion. Liste actuelle
-  (`customtkinter`, `Pillow`, `requests`, `urllib3`) intentionnellement
-  minimale → EXE PyInstaller ≤ 25 Mo.
+  (`customtkinter`, `Pillow`, `pillow-heif`, `requests`, `urllib3`)
+  intentionnellement minimale → **EXE PyInstaller ≤ 35 Mo**. Le plafond
+  est passé de 25 à 35 Mo en v2.3.0 : `pillow-heif` ajoute ~8 Mo mais
+  débloque HEIC/AVIF, sans quoi les photos de smartphone (cœur de cible)
+  ne sont pas traitables.
 
 ### Patterns à éviter
 - Imports directs `src.modules.*` depuis `app/views/*` (utiliser la facade).
@@ -140,7 +140,39 @@ main.py  →  app.main:main()
 
 ---
 
-## État actuel & priorités
+## État actuel
+
+**v2.3.0 — stable.** 132 tests verts, ruff propre, 2 EXE PyInstaller
+(release + debug) publiés en GitHub Release.
+
+> L'historique détaillé par version vit dans **`CHANGELOG.md`**, seule
+> source de vérité. Ne pas le recopier ici : c'est ce qui a provoqué la
+> dérive documentaire de juillet 2026 (ce fichier annonçait encore
+> v2.2.0 et 110 tests alors que le code était en v2.3.0 / 132 tests).
+
+Capacités livrées, en une ligne : scan multi-format (JPEG/PNG/TIFF +
+HEIC/HEIF/AVIF/WebP/DNG), éditeur IPTC avec écriture *autoritaire*
+(IPTC + XMP + EXIF synchronisés, suppression réellement appliquée),
+rapport expert heuristique, enrichissement IA Ollama optionnel, export
+CSV double plateforme borné aux limites Adobe/Shutterstock, push FTP/FTPS.
+
+### Bugs connus
+- Aucun bloquant.
+
+### Non couvert / limites assumées
+- **macOS / Linux non testés** — le code est portable, seuls
+  l'`AppUserModelID` et l'ICO sont Windows-only.
+- **HEIC validé sur fichier généré**, pas sur une photo Samsung/iPhone
+  native (pas d'échantillon au moment du dev). Les chemins sont les
+  mêmes, mais un test sur vrai fichier reste à faire.
+- **Licence = honor-system HMAC**, contournable ; assumé au prix pratiqué.
+
+---
+
+## Historique (archive)
+
+<details>
+<summary>Détail des versions antérieures — conservé pour contexte</summary>
 
 ### Fini (v2.0.0)
 - Multi-plateforme Adobe + Shutterstock (CSV double export, BOM UTF-8,
@@ -186,46 +218,17 @@ main.py  →  app.main:main()
   historique Router). Suite : **110 tests verts**, ruff propre.
   Détail dans CHANGELOG `[Unreleased]`.
 
-### En cours
-- **Production des assets visuels** — GIF hero, 3 screenshots, vidéo
-  démo. Specs prêtes dans `docs/MEDIA.md`.
-- **Listing Gumroad** — texte produit prêt dans
-  `LAUNCH_PROCEDURE.html` (section C.2), reste création du listing
-  + workflow fulfillment.
+### Fini (v2.3.0 — formats smartphone + fiabilité métadonnées)
+- HEIC/HEIF/AVIF/WebP/DNG en scan, analyse et écriture ;
+  `src/modules/formats.py` = source de vérité des extensions.
+- Écriture autoritaire : un champ vidé est réellement supprimé du
+  fichier, miroirs IPTC/XMP/EXIF synchronisés.
+- `src/modules/analysis/limits.py` : bornes Adobe/Shutterstock +
+  `smart_truncate` (coupe au mot, jamais d'ellipse).
+- Prompt IA borné (un titre + une description par image).
+- Suite : **132 tests verts**.
 
-### Fini (Phases 1-7)
-- **Phase 1** ✅ — `AUDIT.md` (inventaire, stack, fonctionnel, gaps).
-- **Phase 2** ✅ — nettoyage : `_archive/` supprimé, 4 .md déplacés vers
-  `audit/`, ruff propre, author harmonisé.
-- **Phase 3** ✅ — README v2, CHANGELOG, CONTRIBUTING, SECURITY,
-  CLAUDE.md (ce fichier), PROJECT_OVERVIEW.html, docs/MEDIA.md.
-- **Phase 4** ✅ — section "Gaps" dans `AUDIT.md` avec P0/P1/P2 + effort
-  chiffré. Plan d'attaque ≤ 1 journée pour ship publiquement.
-- **Phase 5** ✅ — `docs/MONETIZATION.md` : voie freemium dual-license
-  (Pro 29 €/an, 79 € lifetime) + voie fallback (lead magnet portfolio).
-- **Phase 6** ✅ — calendrier de distribution sur 4 semaines (GitHub
-  Release → dev.to → Reddit → Product Hunt → LinkedIn) dans
-  `docs/MONETIZATION.md`.
-- **Phase 7** ✅ — `LINKEDIN_DRAFTS.md` : 3 formats prêts à publier
-  (court ~ 1 000 char, carousel 8 slides, storytelling ~ 1 900 char) +
-  templates de réponses aux commentaires + calendrier.
-- **Pivot 2026-05-27** ✅ — réalignement Pro sur l'évaluation qualité,
-  3 nouvelles features gated, frontière Community/Pro refondue dans
-  les docs (README, MONETIZATION, LAUNCH_PROCEDURE, LINKEDIN_DRAFTS,
-  PROJECT_OVERVIEW).
-
-### Chemin critique restant (~ 3,5 j-h avant ship public)
-1. `git tag v2.1.0 && git push --tags` (5 min)
-2. Capture GIF hero (1 h, storyboard dans `docs/MEDIA.md`)
-3. 3 screenshots (workspace, expert_report avec quota, export_batch avec gates) (30 min)
-4. `gh release create v2.1.0 dist/*.exe` (15 min)
-5. Création listing Gumroad « ShutterstockAnalyzer Pro » (1 h)
-6. Mettre à jour README avec liens images réels + URL Gumroad (15 min)
-7. Publier le post technique court LinkedIn (5 min)
-
-### Bugs connus
-- Aucun bloquant. Voir `audit/JOURNAL_CORRECTIONS.md` pour l'historique
-  des correctifs.
+</details>
 
 ---
 
@@ -235,7 +238,7 @@ main.py  →  app.main:main()
   bibliothèques utilisées. Compat freemium (l'API publique reste MIT, la
   version pro packagera des features supplémentaires sous licence
   commerciale distincte).
-- **CustomTkinter** plutôt que Qt/PySide — bundling 25 Mo PyInstaller vs
+- **CustomTkinter** plutôt que Qt/PySide — bundling ~33 Mo PyInstaller vs
   ~120 Mo pour PyQt6. Restriction CTk acceptable pour ce projet.
 - **`ftplib` stdlib** plutôt que `paramiko`/`pysftp` — Adobe/Shutterstock
   exigent FTPS (TLS over FTP), pas SFTP. Stdlib suffit, zéro dep extra.
@@ -258,7 +261,7 @@ main.py  →  app.main:main()
   est gratuit et illimité. Un seul tier : `lifetime` à 10 € (paiement
   unique — plus d'abonnement ni de Solo/Studio). Raison : zéro barrière
   à l'adoption, prix d'impulsion, conversion au moment où l'utilisateur
-  a déjà produit ses CSV. Voir `docs/MONETIZATION.md` § 2.
+  a déjà produit ses CSV.
 - **Quota Community 3 exports** sur l'export de données — persisté dans
   `settings` SQLite (`community_exports_used`). Partagé par les deux
   points d'export (Export Batch + bouton CSV du rapport expert).
@@ -307,20 +310,26 @@ main.py  →  app.main:main()
 - `assets/icons/icone.ico` (binaire).
 - `~/.shutterstock_ai/shutterstock_ai.db` (base utilisateur, hors repo).
 - Le binaire ExifTool si présent (chemin user).
-- Les fichiers de Phase 1+ déjà signés : `AUDIT.md`, `audit/RAPPORT_*.md`
-  (lecture seule sauf si phase explicite).
 - La méthodo Edvance sous `test/` (matrice + HTML) sans régénérer via les
   scripts `_make_*.py`.
 
-### Fichiers vivants à mettre à jour à chaque phase
+### Fichiers vivants à mettre à jour
 
-- **`CLAUDE.md`** (ce fichier) — sections « État actuel » + « Décisions
-  techniques » + « Instructions » à mettre à jour à chaque ajout majeur.
-- **`PROJECT_OVERVIEW.html`** — features ✅🟡🔴 + roadmap + métriques LOC.
-- **`CHANGELOG.md`** — ajouter une section `## [Unreleased]` puis figer en
-  version sémantique au moment du release.
-- **`AUDIT.md`** — pas à toucher (figé à Phase 1, sert de baseline).
+- **`CHANGELOG.md`** — **source de vérité** de l'historique. Alimenter
+  `## [Unreleased]` au fil de l'eau, figer en version sémantique au
+  moment du release.
+- **`CLAUDE.md`** (ce fichier) — uniquement « État actuel » (2-3 lignes),
+  « Décisions techniques » et « Instructions ». **Ne jamais y recopier le
+  détail du CHANGELOG** : la duplication est ce qui a créé la dérive.
+- **`README.md`** — badges (version, nombre de tests) et taille de l'EXE
+  à resynchroniser à chaque release, ils dérivent vite.
+
+> Les docs de travail internes (stratégie commerciale, historique
+> d'audit, livrables Gumroad) sont volontairement **hors du dépôt
+> public** — voir `.gitignore`. Elles restent sur le disque du mainteneur.
 
 ---
 
-*Dernière mise à jour : 2026-06-12 (audit complet — lots B/C/D/E appliqués, 110 tests verts).*
+*Dernière mise à jour : 2026-07-28 (v2.3.0 — formats smartphone, écriture
+autoritaire des métadonnées, 132 tests verts ; docs internes sorties du
+dépôt public).*
