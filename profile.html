@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      fontFamily: { mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'] },
+      colors: {
+        brand: { 300:'#a5b4ff', 400:'#8b9cff', 500:'#6384ff', 600:'#4c68e8' },
+        mint:  { 400:'#7ccdbe', 500:'#4fb3a1' },
+      },
+    } }
+  }
+</script>
+<style>
+  :root { color-scheme: light dark; }
+
+  .reveal { opacity:0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease; }
+  .reveal.is-in { opacity:1; transform:none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity:1 !important; transform:none !important; transition:none !important; }
+    .blink { animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  .blink { animation: blink 1.6s steps(2, start) infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+  :where(a,button,input,summary,[tabindex]):focus-visible {
+    outline: 2px solid #6384ff; outline-offset: 3px; border-radius: 6px;
+  }
+
+  /* Faint dot field behind the hero. */
+  .dots {
+    background-image: radial-gradient(rgba(127,140,180,.25) 1px, transparent 1px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 0%, #000 40%, transparent 100%);
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 0%, #000 40%, transparent 100%);
+  }
+</style>
+</head>
+
+<body>
+<!-- Gumroad strips class attributes from <html>/<body> when embedding,
+     so the theme surface has to live on a real element. -->
+<div id="page" class="min-h-screen bg-white text-slate-800 dark:bg-[#0a0c16] dark:text-slate-200 font-sans antialiased selection:bg-brand-500/30">
+
+<a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:px-4 focus:py-2 focus:bg-brand-600 focus:text-white focus:rounded-lg">Skip to content</a>
+
+<!-- ─────────────── TOP BAR ─────────────── -->
+<div class="mx-auto max-w-5xl px-5 pt-6 flex justify-end">
+  <button id="theme-toggle" type="button"
+          class="grid place-items-center w-9 h-9 rounded-lg border border-slate-300 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 transition"
+          aria-label="Toggle dark mode">
+    <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg class="w-4 h-4 block dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
+</div>
+
+<main id="main">
+
+<!-- ─────────────── HERO ─────────────── -->
+<section class="relative">
+  <div class="absolute inset-0 dots pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative mx-auto max-w-5xl px-5 pt-10 pb-16 md:pt-16 md:pb-20">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-6 md:gap-8">
+      <img src="https://public-files.gumroad.com/zb37m17gjfm753kpcw8wqykstn41"
+           alt="Emmanuel Grolleau"
+           width="112" height="112" loading="eager"
+           class="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover border border-slate-200 dark:border-white/10 shadow-lg shrink-0">
+
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">Emmanuel Grolleau</h1>
+        <p class="mt-2 font-mono text-sm text-brand-600 dark:text-brand-300">
+          Automation Engineer <span class="text-slate-400 dark:text-slate-600">|</span> Python • VBA • Automation
+        </p>
+        <p class="mt-4 text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-xl">
+          I build small desktop tools that take a tedious job off your hands —
+          and run entirely on your own machine.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── PRINCIPLES ─────────────── -->
+<section class="border-y border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[.03]" aria-labelledby="principles-h">
+  <div class="mx-auto max-w-5xl px-5 py-10">
+    <h2 id="principles-h" class="sr-only">How these tools are built</h2>
+    <div class="grid sm:grid-cols-3 gap-6 md:gap-8">
+      <div class="reveal">
+        <p class="font-mono text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">Local first</p>
+        <p class="text-[15px] text-slate-700 dark:text-slate-300">Your files stay on your disk. No cloud round-trip, no upload you didn't ask for.</p>
+      </div>
+      <div class="reveal">
+        <p class="font-mono text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">No telemetry</p>
+        <p class="text-[15px] text-slate-700 dark:text-slate-300">No analytics, no account, no phone-home. What you do with the tool is your business.</p>
+      </div>
+      <div class="reveal">
+        <p class="font-mono text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">Buy once</p>
+        <p class="text-[15px] text-slate-700 dark:text-slate-300">One payment, lifetime licence. No subscription, no renewal, works offline.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── FEATURED PRODUCT ─────────────── -->
+<section class="py-16 md:py-20" aria-labelledby="product-h">
+  <div class="mx-auto max-w-5xl px-5">
+    <h2 id="product-h" class="font-mono text-xs uppercase tracking-[.18em] text-slate-500 dark:text-slate-400 mb-6">Available now</h2>
+
+    <a href="https://kiriiaq.gumroad.com/l/stockmeta"
+       class="reveal group block rounded-2xl border border-slate-200 dark:border-white/10 hover:border-brand-500 dark:hover:border-brand-500 bg-white dark:bg-white/[.04] overflow-hidden transition shadow-sm hover:shadow-xl">
+      <div>
+        <!-- Cover shown at its native 16:9 so the artwork is never cropped. -->
+        <div class="bg-slate-100 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+          <img src="https://public-files.gumroad.com/han4by8oqjy533yrrori6w5msddf"
+               alt="StockMeta Pro workspace showing scanned images and the metadata editor"
+               width="1280" height="720" loading="lazy"
+               class="w-full h-auto block">
+        </div>
+
+        <div class="p-7 md:p-9">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">StockMeta Pro</h3>
+            <span class="font-mono text-sm px-2.5 py-1 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-300 border border-brand-500/25">€10+</span>
+          </div>
+
+          <p class="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+            Titles, descriptions, keywords and categories for Adobe Stock and Shutterstock —
+            generated in seconds instead of 5–10 minutes per image. Reads HEIC straight off
+            your phone, and never sends a photo anywhere.
+          </p>
+
+          <ul class="mt-5 flex flex-wrap gap-2" aria-label="Highlights">
+            <li class="font-mono text-xs px-2.5 py-1 rounded-md border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300">HEIC · DNG · JPEG</li>
+            <li class="font-mono text-xs px-2.5 py-1 rounded-md border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300">Local AI, optional</li>
+            <li class="font-mono text-xs px-2.5 py-1 rounded-md border border-slate-300 dark:border-white/15 text-slate-600 dark:text-slate-300">Windows 10/11</li>
+          </ul>
+
+          <span class="mt-7 inline-flex items-center gap-2 font-semibold text-brand-600 dark:text-brand-300">
+            See the product
+            <span class="transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+          </span>
+
+          <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+            Free build available — pay only to unlock unlimited exports.
+          </p>
+        </div>
+
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ─────────────── OPEN SOURCE ─────────────── -->
+<section class="py-16 md:py-20 border-t border-slate-200 dark:border-white/10" aria-labelledby="oss-h">
+  <div class="mx-auto max-w-5xl px-5">
+    <h2 id="oss-h" class="font-mono text-xs uppercase tracking-[.18em] text-slate-500 dark:text-slate-400 mb-3">Also free &amp; open source</h2>
+    <p class="text-slate-600 dark:text-slate-300 mb-8 max-w-2xl">
+      Other tools I build in the open. Free, no strings — take them or fork them.
+    </p>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <a href="https://github.com/Kiriiaq/StockMeta" target="_blank" rel="noopener noreferrer"
+         class="reveal group rounded-xl border border-slate-200 dark:border-white/10 hover:border-brand-500 dark:hover:border-brand-500 p-5 transition bg-white dark:bg-white/[.03]">
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="font-semibold text-slate-900 dark:text-white">StockMeta</h3>
+          <span class="font-mono text-[11px] px-2 py-.5 rounded border border-slate-300 dark:border-white/15 text-slate-500 dark:text-slate-400 shrink-0">Python</span>
+        </div>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">The free Community build of the app above — the full analysis pipeline, MIT licensed.</p>
+        <span class="mt-3 inline-block text-sm text-brand-600 dark:text-brand-300 group-hover:underline">github.com/Kiriiaq/StockMeta →</span>
+      </a>
+
+      <a href="https://github.com/Kiriiaq/PhotoOrganizer" target="_blank" rel="noopener noreferrer"
+         class="reveal group rounded-xl border border-slate-200 dark:border-white/10 hover:border-brand-500 dark:hover:border-brand-500 p-5 transition bg-white dark:bg-white/[.03]">
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="font-semibold text-slate-900 dark:text-white">PhotoOrganizer</h3>
+          <span class="font-mono text-[11px] px-2 py-.5 rounded border border-slate-300 dark:border-white/15 text-slate-500 dark:text-slate-400 shrink-0">Python</span>
+        </div>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Move and sort your photos by date, location and camera brand.</p>
+        <span class="mt-3 inline-block text-sm text-brand-600 dark:text-brand-300 group-hover:underline">github.com/Kiriiaq/PhotoOrganizer →</span>
+      </a>
+
+      <a href="https://github.com/Kiriiaq/MorphoLapse" target="_blank" rel="noopener noreferrer"
+         class="reveal group rounded-xl border border-slate-200 dark:border-white/10 hover:border-brand-500 dark:hover:border-brand-500 p-5 transition bg-white dark:bg-white/[.03]">
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="font-semibold text-slate-900 dark:text-white">MorphoLapse</h3>
+          <span class="font-mono text-[11px] px-2 py-.5 rounded border border-slate-300 dark:border-white/15 text-slate-500 dark:text-slate-400 shrink-0">Python</span>
+        </div>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Turn a series of portraits into a video of your face evolving over time.</p>
+        <span class="mt-3 inline-block text-sm text-brand-600 dark:text-brand-300 group-hover:underline">github.com/Kiriiaq/MorphoLapse →</span>
+      </a>
+
+      <a href="https://github.com/Kiriiaq" target="_blank" rel="noopener noreferrer"
+         class="reveal group rounded-xl border border-dashed border-slate-300 dark:border-white/15 hover:border-brand-500 dark:hover:border-brand-500 p-5 transition flex flex-col justify-center">
+        <h3 class="font-semibold text-slate-900 dark:text-white">Everything else</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">The rest of the workshop, including work in progress.</p>
+        <span class="mt-3 inline-block text-sm text-brand-600 dark:text-brand-300 group-hover:underline">github.com/Kiriiaq →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── FOLLOW ─────────────── -->
+<section class="py-16 md:py-20 border-t border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[.03]" aria-labelledby="follow-h">
+  <div class="mx-auto max-w-xl px-5 text-center">
+    <h2 id="follow-h" class="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+      Hear about the next tool
+    </h2>
+    <p class="mt-3 text-slate-600 dark:text-slate-300">
+      A note when I ship something new. No schedule, no filler — I only write when there is
+      actually something to show.
+    </p>
+
+    <form data-gumroad-follow class="mt-7 flex flex-col sm:flex-row gap-2.5">
+      <label for="follow-email" class="sr-only">Your email address</label>
+      <input id="follow-email" type="email" name="email" required placeholder="you@example.com"
+             autocomplete="email"
+             class="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500">
+      <button type="submit"
+              class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-[.98] text-white font-semibold transition shadow-lg shadow-brand-600/20 whitespace-nowrap">
+        Follow
+      </button>
+    </form>
+
+    <p data-gumroad-follow-message role="status" aria-live="polite"
+       class="mt-3 text-sm text-mint-500 font-medium"></p>
+
+    <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+      Unsubscribe in one click, any time.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="py-10 border-t border-slate-200 dark:border-white/10">
+  <div class="mx-auto max-w-5xl px-5 flex flex-col sm:flex-row gap-4 justify-between items-center text-sm text-slate-500 dark:text-slate-400">
+    <p>
+      <span class="font-mono text-mint-500 blink" aria-hidden="true">▍</span>
+      Built in Python, shipped as small desktop tools.
+    </p>
+    <a href="https://github.com/Kiriiaq" target="_blank" rel="noopener noreferrer"
+       class="hover:text-brand-600 dark:hover:text-brand-300 transition">github.com/Kiriiaq</a>
+  </div>
+</footer>
+
+</div><!-- /#page -->
+
+<script>
+  // Theme: follow the system, remember an explicit choice.
+  (function () {
+    var root = document.documentElement, saved = null;
+    try { saved = localStorage.getItem('kq-theme'); } catch (e) {}
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (saved === null && prefersDark)) root.classList.add('dark');
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      root.classList.toggle('dark');
+      try { localStorage.setItem('kq-theme', root.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+    });
+  })();
+
+  // Reveal on scroll, skipped for reduced-motion users.
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(function (el) { el.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>
