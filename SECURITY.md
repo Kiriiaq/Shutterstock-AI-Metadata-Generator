@@ -2,7 +2,7 @@
 
 ## What this app handles
 
-ShutterstockAnalyzer runs **entirely locally**. There is no telemetry, no
+StockMeta Pro runs **entirely locally**. There is no telemetry, no
 cloud API call, no remote analytics. The only network operations are:
 
 | Channel | Purpose | Endpoint |
@@ -66,7 +66,7 @@ DoS, dependency CVE):
 
 1. **Do not open a public GitHub issue.**
 2. Email the author at the address listed in `pyproject.toml`'s `authors`
-   field, with subject `[ShutterstockAnalyzer Security] …`.
+   field, with subject `[StockMeta Pro Security] …`.
 3. Include:
    - Affected version (run `python main.py` and check the topbar / about).
    - Minimal reproduction steps.
@@ -85,6 +85,7 @@ Runtime dependencies (intentionally minimal):
 ```
 customtkinter  >= 5.2  < 6.0
 Pillow         >= 10   < 12
+pillow-heif    >= 0.16 < 2.0
 requests       >= 2.31 < 3.0
 urllib3        >= 2.0  < 3.0
 ```

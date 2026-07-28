@@ -45,10 +45,16 @@ logger = logging.getLogger(__name__)
 #
 # Anyone who reads this file can forge Pro keys — that's by design at
 # this stage. See module docstring for the hardening path.
+#
+# NE PAS renommer malgré le passage à StockMeta Pro (v2.4.0) : cette
+# chaîne est la clé HMAC de secours. La modifier invaliderait toutes
+# les licences déjà signées avec le secret de dev.
 DEFAULT_DEV_SECRET = "ShutterstockAnalyzer-Dev-Secret-Replace-In-Production-v2"
 
 # Default location of the license file on the user's machine. Same dir
-# as the SQLite settings DB, so users find both in one place.
+# as the SQLite settings DB, so users find both in one place. Chemin
+# historique conservé au renommage v2.4.0 : le changer ferait perdre
+# sa licence à tout utilisateur l'ayant déjà activée.
 DEFAULT_LICENSE_PATH = Path.home() / ".shutterstock_ai" / "license.json"
 
 

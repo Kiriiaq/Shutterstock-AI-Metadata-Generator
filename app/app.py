@@ -102,7 +102,7 @@ class App(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _apply_modal_icon(self, modal: ctk.CTkToplevel) -> None:
-        """Phase G (2026-05-16) : pose l'icône ShutterstockAnalyzer sur
+        """Phase G (2026-05-16) : pose l'icône StockMeta Pro sur
         une fenêtre modale (CTkToplevel) — sinon CTk affiche son icône
         Tcl par défaut en haut-gauche de la barre de titre.
 

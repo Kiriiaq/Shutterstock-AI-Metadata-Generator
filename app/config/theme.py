@@ -251,6 +251,9 @@ _DEFAULT_PREFS: Final[dict[str, str]] = {"theme": "light"}
 
 def get_prefs_path() -> Path:
     if os.name == "nt":
+        # Nom historique conservé volontairement après le renommage en
+        # StockMeta Pro (v2.4.0) : le renommer orphelinerait les
+        # préférences déjà écrites chez les utilisateurs existants.
         base = Path(os.environ.get("APPDATA", str(Path.home()))) / "ShutterstockAnalyzer"
     else:
         base = Path.home() / ".shutterstock_analyzer"

@@ -1,4 +1,4 @@
-"""ShutterstockAnalyzer — entry point.
+"""StockMeta Pro — entry point.
 
 Thin wrapper that delegates to ``app.main:main``. Kept at the repo root
 so ``build.py`` (PyInstaller) and existing scripts that invoke

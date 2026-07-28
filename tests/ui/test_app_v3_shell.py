@@ -67,7 +67,7 @@ def test_ui_v3_full_lifecycle(tmp_path, monkeypatch):
 
 
 def _check_shell(app) -> None:
-    assert "ShutterstockAnalyzer" in app.title()
+    assert "StockMeta Pro" in app.title()
     assert app.topbar is not None
     assert app._center.winfo_exists()
     assert app.router.current_id == "home"

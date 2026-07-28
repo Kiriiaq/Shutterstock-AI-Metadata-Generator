@@ -51,7 +51,7 @@ def _read_dot_env_secret() -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate a signed license key for ShutterstockAnalyzer Pro.",
+        description="Generate a signed license key for StockMeta Pro.",
     )
     parser.add_argument("--email", required=True, help="Customer email (displayed in app).")
     parser.add_argument(

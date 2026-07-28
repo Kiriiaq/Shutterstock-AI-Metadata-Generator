@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build ShutterstockAnalyzer executables with PyInstaller.
+"""Build StockMeta Pro executables with PyInstaller.
 
 Usage:
     python build.py debug      # Debug profile: console, --debug=imports, --noupx
@@ -19,7 +19,7 @@ from pathlib import Path
 
 from src import __version__ as VERSION
 
-APP_NAME = "ShutterstockAnalyzer"
+APP_NAME = "StockMetaPro"
 ICON = "assets/icons/icone.ico"
 ENTRY_POINT = "main.py"
 

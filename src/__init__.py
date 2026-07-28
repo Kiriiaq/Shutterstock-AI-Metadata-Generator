@@ -1,5 +1,5 @@
 """
-ShutterstockAnalyzer — single source of truth for the package version.
+StockMeta Pro — single source of truth for the package version.
 
 Professional image metadata management with AI-powered analysis. Every
 other version string (``build.py``, the UI title bars in
@@ -8,5 +8,5 @@ other version string (``build.py``, the UI title bars in
 regression guard that fails the suite if any of them drift apart.
 """
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 __author__ = "Emmanuel Grolleau"

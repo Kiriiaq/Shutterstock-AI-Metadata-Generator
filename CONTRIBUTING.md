@@ -1,4 +1,4 @@
-# Contributing to ShutterstockAnalyzer
+# Contributing to StockMeta Pro
 
 This is a personal project. Contributions are welcome but not the primary
 distribution channel. For bigger ideas, open an issue **before** sending a PR

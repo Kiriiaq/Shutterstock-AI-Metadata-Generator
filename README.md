@@ -1,15 +1,15 @@
-# ShutterstockAnalyzer
+# StockMeta Pro
 
 > **Generate Adobe Stock & Shutterstock metadata locally — AI optional, FTP push built-in.**
 
-[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-132%20passing-success.svg)](tests/)
 [![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
 
-![ShutterstockAnalyzer — workspace](docs/media/workspace.png)
+![StockMeta Pro — workspace](docs/media/workspace.png)
 
 <details>
 <summary>More screenshots — dark theme, expert report, batch export</summary>
@@ -27,7 +27,7 @@
 ## What it does
 
 Stock photographers spend **5–10 minutes per image** writing titles, descriptions,
-keywords and categories before upload. ShutterstockAnalyzer collapses that
+keywords and categories before upload. StockMeta Pro collapses that
 loop to **a few seconds per image**, fully offline:
 
 - **Heuristic metadata builder** — generates an 8-section expert report
@@ -50,7 +50,7 @@ No cloud API costs · no telemetry · everything stays on your machine.
 
 ### Option 1 — Download the EXE (recommended)
 
-1. Grab `ShutterstockAnalyzer.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~33 MB).
+1. Grab `StockMetaPro.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~33 MB).
 2. Double-click. Done.
 
 ### Option 2 — Run from source
@@ -170,7 +170,7 @@ The keyword pipeline silently filters:
 ## Architecture
 
 ```
-ShutterstockAnalyzer/
+StockMeta Pro/
 ├── main.py              ← thin entry point
 ├── app/                 ← UI v3 (CustomTkinter)
 │   ├── app.py           ← shell + router + modal manager
@@ -235,7 +235,7 @@ ruff format app/ src/ main.py build.py tests/
 python build.py all
 ```
 
-Builds drop to `dist/ShutterstockAnalyzer.exe` and `…-debug.exe`.
+Builds drop to `dist/StockMetaPro.exe` and `…-debug.exe`.
 
 ---
 

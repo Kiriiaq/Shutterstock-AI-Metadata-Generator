@@ -44,7 +44,7 @@ CAPTURES = [
     {
         "name": "workspace.png",
         "instructions": (
-            "1. Lance manuellement l'app (dist\\ShutterstockAnalyzer.exe).\n"
+            "1. Lance manuellement l'app (dist\\StockMetaPro.exe).\n"
             "2. Scanne un dossier test (test\\inputs\\ par exemple).\n"
             "3. Theme = LIGHT (clic icône lune si nécessaire).\n"
             "4. Place la fenêtre où tu veux qu'elle apparaisse dans la capture.\n"
@@ -94,7 +94,7 @@ def grab_screen(out: Path, delay_s: float = 3.0) -> None:
 
 def main() -> int:
     print("=" * 70)
-    print("  Helper de capture d'écran — ShutterstockAnalyzer v2")
+    print("  Helper de capture d'écran — StockMeta Pro")
     print("=" * 70)
     print()
 
