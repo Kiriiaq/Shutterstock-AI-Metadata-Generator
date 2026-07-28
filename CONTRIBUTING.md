@@ -22,8 +22,8 @@ Open a GitHub issue with:
 ## Local development setup
 
 ```bash
-git clone https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator.git
-cd Shutterstock-AI-Metadata-Generator
+git clone https://github.com/Kiriiaq/StockMeta.git
+cd StockMeta
 python -m venv .venv
 .venv\Scripts\activate           # PowerShell / cmd
 pip install -e ".[dev]"

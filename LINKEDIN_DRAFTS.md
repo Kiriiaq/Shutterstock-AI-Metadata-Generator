@@ -225,7 +225,7 @@ Disponible maintenant.
    Débloque l'export de données illimité. Zéro abonnement.
 
 [Bloc CTA]
-⭐ github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator
+⭐ github.com/Kiriiaq/StockMeta
 🛒 gumroad.com/l/shutterstockanalyzer-pro
 ☕ ko-fi.com/kiriiaq
 
@@ -258,7 +258,7 @@ Troisième leçon : l'IA locale change le rapport coût-bénéfice. Ollama + LLa
 
 Stack : Python 3.11, CustomTkinter, SQLite local, ftplib stdlib pour le push FTP direct, PyInstaller pour packager en EXE 25 Mo.
 
-Code + EXE : github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator
+Code + EXE : github.com/Kiriiaq/StockMeta
 
 Si tu fais du microstock ou si tu shipes des outils desktop en Python : je suis preneur de retours ou d'idées d'extension. Et si tu cherches un freelance pour un projet similaire (UI desktop, pipeline data, intégration AI locale), DM ouvert.
 

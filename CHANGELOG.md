@@ -352,7 +352,7 @@ and the **AI step is now optional**.
 - Pre-filtering (validates Shutterstock requirements: ≥ 4 MP, correct format).
 - Checklist validator + FTPS upload to Shutterstock servers.
 
-[2.1.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v2.0.0...v2.1.0
-[2.0.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v1.0.1...v2.0.0
-[1.0.1]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/releases/tag/v1.0.0
+[2.1.0]: https://github.com/Kiriiaq/StockMeta/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/Kiriiaq/StockMeta/compare/v1.0.1...v2.0.0
+[1.0.1]: https://github.com/Kiriiaq/StockMeta/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/Kiriiaq/StockMeta/releases/tag/v1.0.0

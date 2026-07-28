@@ -86,7 +86,7 @@ jobs:
             Download the Release `.exe` and run it. No installation required.
 
             ---
-            [Changelog](https://github.com/Kiriiaq/Shutterstock-AI-Metadata-Generator/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)
+            [Changelog](https://github.com/Kiriiaq/StockMeta/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)
           files: |
             dist/*.exe
             dist/checksums-sha256.txt
