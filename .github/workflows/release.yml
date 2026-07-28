@@ -75,13 +75,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Shutterstock AI Metadata Generator ${{ github.ref_name }}"
+          name: "StockMeta Pro ${{ github.ref_name }}"
           body: |
-            ## Shutterstock AI Metadata Generator ${{ github.ref_name }}
+            ## StockMeta Pro ${{ github.ref_name }}
 
             ### Downloads
-            - **Release**: `shutterstock-ai-${{ steps.version.outputs.VERSION }}-windows-release.exe`
-            - **Debug**: `shutterstock-ai-${{ steps.version.outputs.VERSION }}-windows-debug.exe`
+            - **Release**: `StockMetaPro.exe`
+            - **Debug**: `StockMetaPro-debug.exe`
 
             Download the Release `.exe` and run it. No installation required.
 
