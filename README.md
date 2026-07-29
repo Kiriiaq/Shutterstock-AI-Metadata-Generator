@@ -246,7 +246,7 @@ Builds drop to `dist/StockMetaPro.exe` and `…-debug.exe`.
 | `app/` | UI v3 — CustomTkinter, French locale |
 | `src/` | Backend — UI-agnostic, single facade entry point |
 | `tests/` | Automated suite (pytest, 132 tests) |
-| `test/` | Qualification dossier (tool qualification methodology) — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
+| `test/` | Tool qualification dossier — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
 | `docs/` | ARCHITECTURE, MEDIA |
 | `assets/icons/` | Windows ICO |
 | `tools/` | Standalone scripts (WCAG colour checker) |

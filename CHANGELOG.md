@@ -313,7 +313,7 @@ and the **AI step is now optional**.
 - **Keyword anti-stuffing** — silent filters for brand names (Apple, Nike,
   Coca-Cola, BMW…) and stuffing terms (`stock`, `image`, `photo`, `wallpaper`…
   preserved only when present in the title).
-- **Qualification dossier** (`test/`) following the tool qualification methodology:
+- **Qualification dossier** (`test/`) following an industrial tool-qualification approach:
   `matrice_tests.xlsx` (49 tests, 8 categories, with formulas), interactive
   `validation_ihm.html` (sections, 1-click OK/NOK/NA, micro-description per
   test, « Tout OK » per section, localStorage persistence, JSON + Markdown

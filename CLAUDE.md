@@ -183,7 +183,7 @@ CSV double plateforme borné aux limites Adobe/Shutterstock, push FTP/FTPS.
 - FTP / FTPS push intégré (stdlib `ftplib`).
 - Compactage UI workspace (analyse panel 3 → 2 rows, bouton `📤 Exporter…`
   dans Sources).
-- Dossier qualification IHM (méthodologie de qualification) complet sous `test/`.
+- Dossier qualification IHM complet sous `test/`.
 - 90 tests verts, ruff propre.
 - 2 EXE PyInstaller (debug + release) 24,8 Mo chacun.
 
@@ -310,8 +310,8 @@ CSV double plateforme borné aux limites Adobe/Shutterstock, push FTP/FTPS.
 - `assets/icons/icone.ico` (binaire).
 - `~/.shutterstock_ai/shutterstock_ai.db` (base utilisateur, hors repo).
 - Le binaire ExifTool si présent (chemin user).
-- La méthodologie de qualification sous `test/` (matrice + HTML) sans régénérer via les
-  scripts `_make_*.py`.
+- Le dossier de qualification sous `test/` (matrice + HTML) sans régénérer via
+  les scripts `_make_*.py`.
 
 ### Fichiers vivants à mettre à jour
 

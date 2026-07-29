@@ -21,13 +21,35 @@ jobs:
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+      # Without this step the EXE falls back to DEFAULT_DEV_SECRET, which is
+      # readable in this public repo: Pro licences would be forgeable.
+      - name: Embed license secret
+        shell: bash
+        env:
+          SSA_LICENSE_SECRET: ${{ secrets.SSA_LICENSE_SECRET }}
+        run: |
+          if [ -z "$SSA_LICENSE_SECRET" ]; then
+            echo "::error::SSA_LICENSE_SECRET is not configured in repository secrets."
+            exit 1
+          fi
+          python - <<'PY'
+          import os, pathlib
+          target = pathlib.Path("src/modules/licensing/_secret_compiled.py")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(
+              '"""Generated at build time. Never commit."""\n'
+              f'PROD_SECRET = {os.environ["SSA_LICENSE_SECRET"]!r}\n',
+              encoding="utf-8",
+          )
+          print("license secret embedded")
+          PY
       - name: Build Release executable
         shell: cmd
         run: |
           pyinstaller --onefile --noconsole ^
             --name "shutterstock-ai-%VERSION%-windows-release" ^
-            --icon "ico/icone.ico" ^
-            --add-data "ico;ico" ^
+            --icon "assets/icons/icone.ico" ^
+            --add-data "assets;assets" ^
             --hidden-import customtkinter ^
             --hidden-import PIL._tkinter_finder ^
             --hidden-import ollama ^
@@ -38,7 +60,7 @@ jobs:
             --exclude-module scipy ^
             --exclude-module jupyter ^
             --exclude-module pytest ^
-            shutterstock_analyzer_unified.py
+            main.py
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
       - name: Build Debug executable
@@ -46,8 +68,8 @@ jobs:
         run: |
           pyinstaller --onefile --console --debug=all ^
             --name "shutterstock-ai-%VERSION%-windows-debug" ^
-            --icon "ico/icone.ico" ^
-            --add-data "ico;ico" ^
+            --icon "assets/icons/icone.ico" ^
+            --add-data "assets;assets" ^
             --hidden-import customtkinter ^
             --hidden-import PIL._tkinter_finder ^
             --hidden-import ollama ^
@@ -58,10 +80,14 @@ jobs:
             --exclude-module scipy ^
             --exclude-module jupyter ^
             --exclude-module pytest ^
-            shutterstock_analyzer_unified.py
+            main.py
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           SHUTTERSTOCK_DEBUG: "1"
+      - name: Remove embedded secret from workspace
+        if: always()
+        shell: bash
+        run: rm -f src/modules/licensing/_secret_compiled.py
       - name: Generate checksums
         shell: bash
         run: cd dist && sha256sum *.exe > checksums-sha256.txt

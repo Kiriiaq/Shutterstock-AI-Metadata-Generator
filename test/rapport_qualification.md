@@ -1,7 +1,7 @@
 # Rapport de qualification — ShutterstockAnalyzer
 
-> Document généré à partir de la méthodologie « Qualification d'outil à IHM »
-> (template de qualification — EPR/I&C). Toutes les sections sont prêtes à être
+> Document généré à partir d'une méthodologie de « Qualification d'outil à IHM »
+> d'inspiration industrielle. Toutes les sections sont prêtes à être
 > complétées au fur et à mesure des passes manuelles.
 
 ---
