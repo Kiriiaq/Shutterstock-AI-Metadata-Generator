@@ -8,5 +8,5 @@ other version string (``build.py``, the UI title bars in
 regression guard that fails the suite if any of them drift apart.
 """
 
-__version__ = "2.4.0"
+__version__ = "2.4.2"
 __author__ = "Emmanuel Grolleau"

@@ -5,6 +5,27 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] — 2026-07-03
+
+### Fixed
+- **Chaîne de release réparée.** Le workflow appelait PyInstaller sans
+  passer par `build.py` : le secret de signature n'était donc jamais
+  embarqué et l'exécutable publié retombait sur le secret de repli, lisible
+  dans ce dépôt public — les clés Pro devenaient falsifiables. Le workflow
+  embarque désormais le secret depuis les *repository secrets* et **échoue
+  explicitement** s'il est absent, plutôt que de livrer un binaire
+  vulnérable. Le fichier généré est supprimé après le build.
+- Références mortes du workflow corrigées : `main.py` (et non
+  `shutterstock_analyzer_unified.py`), `assets/icons/icone.ico` (et non
+  `ico/icone.ico`). Toute release taguée échouait auparavant.
+- Noms de fichiers publiés alignés sur `build.py` : `StockMetaPro.exe` et
+  `StockMetaPro-debug.exe`, conformes au README et au guide d'installation.
+- CI : import inutilisé supprimé (`ruff` F401) — le lint couvre tout le dépôt.
+
+### Changed
+- Nombre de tests annoncé corrigé : 157 (valeur réellement collectée).
+- Taille annoncée de l'exécutable corrigée : ~26 Mo.
+
 ## [Unreleased]
 
 ### Added

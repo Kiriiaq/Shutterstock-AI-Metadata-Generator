@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stockmeta-pro"
-version = "2.4.0"
+version = "2.4.2"
 description = "Local metadata generator for Adobe Stock and Shutterstock, with optional Ollama AI"
 readme = "README.md"
 license = {text = "MIT"}
