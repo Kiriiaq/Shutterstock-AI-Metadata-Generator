@@ -47,7 +47,7 @@ jobs:
         shell: cmd
         run: |
           pyinstaller --onefile --noconsole ^
-            --name "shutterstock-ai-%VERSION%-windows-release" ^
+            --name "StockMetaPro" ^
             --icon "assets/icons/icone.ico" ^
             --add-data "assets;assets" ^
             --hidden-import customtkinter ^
@@ -67,7 +67,7 @@ jobs:
         shell: cmd
         run: |
           pyinstaller --onefile --console --debug=all ^
-            --name "shutterstock-ai-%VERSION%-windows-debug" ^
+            --name "StockMetaPro-debug" ^
             --icon "assets/icons/icone.ico" ^
             --add-data "assets;assets" ^
             --hidden-import customtkinter ^
@@ -106,10 +106,12 @@ jobs:
             ## StockMeta Pro ${{ github.ref_name }}
 
             ### Downloads
-            - **Release**: `StockMetaPro.exe`
-            - **Debug**: `StockMetaPro-debug.exe`
+            - **Release**: `StockMetaPro.exe` — the one you want (~26 MB)
+            - **Debug**: `StockMetaPro-debug.exe` — console output, for troubleshooting only
+            - `checksums-sha256.txt` — verify your download
 
-            Download the Release `.exe` and run it. No installation required.
+            Download `StockMetaPro.exe` and run it. No installation, no admin
+            rights. Windows may warn on first launch (unsigned binary).
 
             ---
             [Changelog](https://github.com/Kiriiaq/StockMeta/blob/main/CHANGELOG.md) | [Ko-fi](https://ko-fi.com/Kiriiaq)

@@ -50,7 +50,7 @@ No cloud API costs · no telemetry · everything stays on your machine.
 
 ### Option 1 — Download the EXE (recommended)
 
-1. Grab `StockMetaPro.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~33 MB).
+1. Grab `StockMetaPro.exe` from the [Releases](https://github.com/Kiriiaq/StockMeta/releases) page (~26 MB).
 2. Double-click. Done.
 
 ### Option 2 — Run from source
