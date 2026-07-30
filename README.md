@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.11+-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-132%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-157%20passing-success.svg)](tests/)
 [![Build](https://img.shields.io/badge/build-PyInstaller-orange.svg)](build.py)
 
 ![StockMeta Pro — workspace](docs/media/workspace.png)
@@ -224,7 +224,7 @@ pip install -e ".[dev]"
 # Run
 python main.py
 
-# Tests (132 tests, ~9 s)
+# Tests (157 tests, ~9 s)
 pytest tests/ -q
 
 # Lint
@@ -245,7 +245,7 @@ Builds drop to `dist/StockMetaPro.exe` and `…-debug.exe`.
 |---|---|
 | `app/` | UI v3 — CustomTkinter, French locale |
 | `src/` | Backend — UI-agnostic, single facade entry point |
-| `tests/` | Automated suite (pytest, 132 tests) |
+| `tests/` | Automated suite (pytest, 157 tests) |
 | `test/` | Tool qualification dossier — matrix XLSX, interactive HTML, Pillow inputs, run/compare scripts |
 | `docs/` | ARCHITECTURE, MEDIA |
 | `assets/icons/` | Windows ICO |
